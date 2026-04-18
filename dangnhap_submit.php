@@ -58,4 +58,85 @@ try {
     $lockStatus = kiemTraLockout($pdo, $ip, $username);
     if ($lockStatus['locked']) {
         $_SESSION['error_msg'] = "Tài khoản đã bị khóa do nhập sai quá 5 lần. "
-            . "Vui lòng thử lại sau <strong>{$lockStatus['remaining']
+            . "Vui lòng thử lại sau <strong>{$lockStatus['remaining']} phút</strong>.";
+        header("Location: dangnhap.php");
+        exit();
+    }
+
+    // -------------------------------------------------------------
+    // 4. TRUY VẤN DB + XÁC THỰC MẬT KHẨU
+    // Lưu ý: schema DB dùng cột `role_id`, nhưng toàn hệ thống đọc
+    // $_SESSION['user_role'] (xem auth.php::kiemTraRole). Query SELECT
+    // cột role_id của DB, gán vào session key user_role.
+    // -------------------------------------------------------------
+    $stmt = $pdo->prepare("
+        SELECT maNV, tenNV, role_id, password_hash, phai_doi_matkhau
+        FROM NHAN_VIEN
+        WHERE username = ? AND deleted_at IS NULL
+    ");
+    $stmt->execute([$username]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Nếu không tìm thấy tài khoản HOẶC mật khẩu không khớp
+    if (!$user || !password_verify($password, $user['password_hash'])) {
+        ghiLogDangNhap($pdo, $username, $ip, 0); // 5. Ghi LOGIN_ATTEMPT thất bại
+        $_SESSION['error_msg'] = "Thông tin đăng nhập không đúng.";
+        header("Location: dangnhap.php");
+        exit();
+    }
+
+    // -------------------------------------------------------------
+    // 5. GHI LOGIN_ATTEMPT THÀNH CÔNG
+    // -------------------------------------------------------------
+    ghiLogDangNhap($pdo, $username, $ip, 1);
+
+    // -------------------------------------------------------------
+    // 6. KHỞI TẠO SESSION + REGENERATE_ID CHỐNG SESSION FIXATION
+    // -------------------------------------------------------------
+    session_regenerate_id(true);
+
+    $_SESSION['user_id']       = $user['maNV'];
+    $_SESSION['username']      = $username;
+    $_SESSION['ten_user']      = $user['tenNV'];
+    $_SESSION['user_role']     = (int) $user['role_id'];
+    $_SESSION['last_activity'] = time();
+
+    // Reset CSRF token để phiên mới sinh token mới
+    unset($_SESSION['csrf_token']);
+
+    // -------------------------------------------------------------
+    // 7a. FORCE ĐỔI MẬT KHẨU LẦN ĐẦU (nếu có)
+    // -------------------------------------------------------------
+    if ((int) $user['phai_doi_matkhau'] === 1) {
+        header("Location: " . BASE_URL . "modules/ho_so/doi_mat_khau_batbuoc.php");
+        exit();
+    }
+
+    // -------------------------------------------------------------
+    // 7b. REDIRECT THEO ROLE (RBAC - Task 2.2)
+    // -------------------------------------------------------------
+    switch ((int) $user['role_id']) {
+        case ROLE_ADMIN:
+        case ROLE_QUAN_LY_NHA:
+        case ROLE_KE_TOAN:
+            // Nhân sự nội bộ -> Dashboard admin
+            header("Location: " . BASE_URL . "modules/dashboard/admin.php");
+            exit();
+
+        case ROLE_KHACH_HANG:
+            // Khách hàng -> Tenant dashboard
+            header("Location: " . BASE_URL . "modules/tenant/dashboard.php");
+            exit();
+
+        default:
+            // Role lạ/không xác định -> trang chủ public
+            header("Location: " . BASE_URL . "index.php");
+            exit();
+    }
+
+} catch (PDOException $e) {
+    error_log("dangnhap_submit PDO error: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Hệ thống đang gặp sự cố kết nối. Vui lòng thử lại sau.";
+    header("Location: dangnhap.php");
+    exit();
+}
