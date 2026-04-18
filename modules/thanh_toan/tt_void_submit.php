@@ -68,17 +68,11 @@ try {
 
 
     // (b) NHẬT KÝ CHI TIẾT HOA DON VOID
-    // Try catch bọc ngoài rủi DB cũ không Alter Table này (Hoặc chạy lệnh tạo tự động nếu lười)
-    try {
-        $stmtHistoryVoid = $pdo->prepare("
-            INSERT INTO HOA_DON_VOID (soHoaDon, maNV_Void, lyDoVoid, ngayVoid) 
-            VALUES (?, ?, ?, NOW())
-        ");
-        $stmtHistoryVoid->execute([$soHoaDonVoid, $maNVThucThi, $lyDoVoid]);
-    } catch (Exception $ek) {
-        // Fallback pass: Nếu chưa kịp CREATE bảng này, ta vẫn tiến hành các thao tác cực đoan ACiD
-        // Chỉ mất Report View Lịch sử sau này thoy. (Hoặc user tự dán vô DB)
-    }
+    $stmtHistoryVoid = $pdo->prepare("
+        INSERT INTO HOA_DON_VOID (soPhieu, maNV_Void, lyDoVoid, ngayVoid) 
+        VALUES (?, ?, ?, NOW())
+    ");
+    $stmtHistoryVoid->execute([$soHoaDonVoid, $maNVThucThi, $lyDoVoid]);
 
 
     // (c) THUẬT TOÁN ĐẢO CHIỀU TÀI KHOẢN (CREDIT NOTE AUTOMATION GENERATOR)
@@ -114,17 +108,12 @@ try {
 
 
     // (d) LƯỚI QUÉT AUDIT TẦNG CUỐI CỦA THỊ PHẦN THANH TRA DB (AUDIT_LOG)
-    // Rủi ro nếu Table AUDIT_LOG Không Tồn Tại Trong Bản Mẫu User Đưa (Rào Fallback Chống Chết Web)
-    try {
-        $stmtAudit = $pdo->prepare("
-            INSERT INTO AUDIT_LOG (action_name, target_id, user_id, action_time, details) 
-            VALUES ('VOID_INVOICE', ?, ?, NOW(), ?)
-        ");
-        $thongTinDay = "Thủ Khổng Hủy File. Cấp Credit Tự sinh: " . ($tienKhachDaNap > 0 ? 'CóSinhCR' : 'KhôngSinh_DoBillChưaĐóngTiền');
-        $stmtAudit->execute([$soHoaDonVoid, $maNVThucThi, $thongTinDay . " | Note_KhoTàng: " . $lyDoVoid]);
-    } catch (Exception $emA) {
-        // Pass if not exist
-    }
+    $stmtAudit = $pdo->prepare("
+        INSERT INTO AUDIT_LOG (hanhDong, bangBiTacDong, recordId, maNguoiDung, chiTiet, thoiGian) 
+        VALUES ('VOID_INVOICE', 'HOA_DON', ?, ?, ?, NOW())
+    ");
+    $thongTinDay = "Thủ Khổng Hủy File. Cấp Credit Tự sinh: " . ($tienKhachDaNap > 0 ? 'CóSinhCR' : 'KhôngSinh_DoBillChưaĐóngTiền');
+    $stmtAudit->execute([$soHoaDonVoid, $maNVThucThi, $thongTinDay . " | Note_KhoTàng: " . $lyDoVoid]);
 
     // CUỘN TRÒN QUÁ TRÌNH PHÓNG TÊN LỬA VÀO VẠCH KÍ RỒI COMMIT Ổ ĐĨA!
     $pdo->commit();
