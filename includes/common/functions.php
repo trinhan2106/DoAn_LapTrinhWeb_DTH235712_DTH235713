@@ -11,7 +11,7 @@
  * ==================================================================
  */
 
-/**
+    /**
  * Ghi một dòng vào bảng AUDIT_LOG. Gọi hàm này SAU mỗi thao tác nghiệp vụ
  * quan trọng (INSERT/UPDATE HOP_DONG, thanh toán, void, hủy, ký, gia hạn...)
  * theo checklist trong PhanChiaCongViec.md.
@@ -19,7 +19,7 @@
  * Lưu ý: hàm này tự try/catch để không làm gãy luồng chính nếu
  * bảng AUDIT_LOG gặp sự cố. Nên gọi SAU $pdo->commit() (không nằm trong
  * transaction nghiệp vụ) để tránh rollback log khi nghiệp vụ đã thành công.
- *
+     * 
  * @param PDO         $pdo           Kết nối PDO hiện hành
  * @param string|null $maNguoiDung   maNV hoặc maKH của người thao tác (session user_id)
  * @param string      $hanhDong      Tên hành động, ví dụ: 'CREATE_HD', 'VOID_INVOICE'
@@ -27,7 +27,7 @@
  * @param string|null $recordId      Khóa chính bản ghi bị tác động (soHopDong, soHoaDon...)
  * @param string|null $chiTiet       Mô tả thêm, giá trị cũ -> giá trị mới, lý do...
  * @return bool True nếu ghi thành công, false nếu lỗi (đã log vào error_log)
- */
+     */
 function ghiAuditLog(
     PDO $pdo,
     ?string $maNguoiDung,
@@ -36,11 +36,11 @@ function ghiAuditLog(
     ?string $recordId = null,
     ?string $chiTiet = null
 ): bool {
-    try {
-        $stmt = $pdo->prepare("
-            INSERT INTO AUDIT_LOG (maNguoiDung, hanhDong, bangBiTacDong, recordId, chiTiet, thoiGian)
-            VALUES (?, ?, ?, ?, ?, NOW())
-        ");
+        try {
+            $stmt = $pdo->prepare("
+                INSERT INTO AUDIT_LOG (maNguoiDung, hanhDong, bangBiTacDong, recordId, chiTiet, thoiGian) 
+                VALUES (?, ?, ?, ?, ?, NOW())
+            ");
         $stmt->execute([
             $maNguoiDung,
             $hanhDong,
@@ -49,7 +49,7 @@ function ghiAuditLog(
             $chiTiet,
         ]);
         return true;
-    } catch (PDOException $e) {
+        } catch (PDOException $e) {
         // Không throw - audit log lỗi không được làm gãy nghiệp vụ chính
         error_log("[AUDIT_LOG FAIL] action={$hanhDong}, table={$bangBiTacDong}, record={$recordId}: " . $e->getMessage());
         return false;
@@ -103,6 +103,6 @@ function layIP(): string
         // X-Forwarded-For có thể chứa nhiều IP, lấy IP đầu tiên (client gốc)
         $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
         return trim($ips[0]);
-    }
+        }
     return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 }
