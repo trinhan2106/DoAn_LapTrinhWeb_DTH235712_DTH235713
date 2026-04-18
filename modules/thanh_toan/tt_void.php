@@ -16,7 +16,7 @@ kiemTraSession();
 // BỨC TƯỜNG LỬA CHẶN ROLE CẤP THẤP
 // Chỉ Quyền Admin Lõi (1) Hoặc Trưởng Phòng (2) Mới Được Void Hóa Đơn Tránh Thất Thoát Biển Thủ
 // ---------------------------------------------------------------------
-$role = (int)($_SESSION['role_id'] ?? 4);
+$role = (int)($_SESSION['user_role'] ?? 4);
 if (!in_array($role, [1, 2])) {
     die("
     <div style='background:#fce4ec; border:3px solid #c62828; padding:50px; font-family:sans-serif; text-align:center;'>

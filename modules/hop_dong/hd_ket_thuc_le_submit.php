@@ -6,11 +6,15 @@
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 require_once __DIR__ . '/../../config/constants.php';
+require_once __DIR__ . '/../../config/roles.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
 require_once __DIR__ . '/../../includes/common/auth.php';
+require_once __DIR__ . '/../../includes/common/functions.php';
 
 kiemTraSession();
+// Chỉ Admin và Quản lý nhà được kết thúc phòng lẻ
+kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Action Blocked by Engine.");
 
@@ -88,6 +92,18 @@ try {
     // NGÃ ĐÍCH THÀNH CÔNG VÀ LƯU DI CHÚC VÀO DB THẬT
     $pdo->commit();
 
+    // [AUDIT] Ghi log sau khi kết thúc phòng lẻ thành công
+    $maNV_KetThuc = $_SESSION['user_id'] ?? null;
+    $soPhongKetThuc = is_array($mangPhayChon) ? count($mangPhayChon) : 0;
+    ghiAuditLog(
+        $pdo,
+        $maNV_KetThuc,
+        'END_ROOM_PARTIAL',
+        'CHI_TIET_HOP_DONG',
+        $soHD,
+        "Kết thúc phòng lẻ HĐ {$soHD}: số phòng trả={$soPhongKetThuc}, ngày hết hạn HĐ mới={$maxDateTinhToanMoi}"
+    );
+
     header("Location: hd_hienthi.php?msg=tra_le_success");
     exit();
 
@@ -95,6 +111,7 @@ try {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log("CRASH PDOException LOGIC RÚT PHÒNG UC10: " . $e->getMessage());
-    die("Xảy ra lỗi Transaction Rollback khẩn cấp Cấp độ PDO: Hệ thống Đứt Mạch. <br>" . $e->getMessage());
+    // [SEC] Không lộ $e->getMessage() ra HTML
+    error_log("hd_ket_thuc_le_submit PDO error: " . $e->getMessage());
+    die("Xảy ra lỗi khi kết thúc phòng lẻ. Dữ liệu đã được rollback an toàn. Vui lòng liên hệ quản trị viên.");
 }

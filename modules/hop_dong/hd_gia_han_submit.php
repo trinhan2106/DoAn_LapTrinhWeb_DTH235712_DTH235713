@@ -6,11 +6,15 @@
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 require_once __DIR__ . '/../../config/constants.php';
+require_once __DIR__ . '/../../config/roles.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
 require_once __DIR__ . '/../../includes/common/auth.php';
+require_once __DIR__ . '/../../includes/common/functions.php';
 
 kiemTraSession();
+// Chỉ Admin và Quản lý nhà được gia hạn hợp đồng
+kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Action Blocked by Engine.");
 
@@ -102,8 +106,20 @@ try {
         
     }
 
-    // KHÔNG THẤY LỖI, BỐ CÁC PHÉP CHỤP VÀO HARD DISK BẰNG COMMIT CHẶT
+    // KHÔNG THẤY LỖI, COMMIT
     $pdo->commit();
+
+    // [AUDIT] Ghi log sau khi gia hạn thành công
+    $maNV_GiaHan = $_SESSION['user_id'] ?? null;
+    $soPhongGiaHan = $hasSucceedRoom ? count(array_filter($soThangGiaHan, fn($t) => (int)$t > 0)) : 0;
+    ghiAuditLog(
+        $pdo,
+        $maNV_GiaHan,
+        'EXTEND_HD',
+        'HOP_DONG',
+        $soHD,
+        "Gia hạn HĐ: mã gia hạn={$soGiaHan}, số phòng gia hạn={$soPhongGiaHan}, ngày hết hạn mới={$maxDateMoi}"
+    );
 
     // RÚT RA BÊN NGOÀI
     header("Location: hd_hienthi.php?msg=giahan_success");
@@ -113,6 +129,7 @@ try {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log("ACiD TRANSACTION LOG - DATABASE HỎNG KHI LÀM UC08 (GIA HẠN HĐ): " . $e->getMessage());
-    die("Xảy Ra Rủi Ro Mất Gói Dữ Liệu Máy Chủ - Rollback Mode - CSDL An Toàn. Lý Do: " . $e->getMessage());
+    // [SEC] Không lộ $e->getMessage() ra HTML
+    error_log("hd_gia_han_submit PDO error: " . $e->getMessage());
+    die("Xảy ra lỗi khi gia hạn hợp đồng. Dữ liệu đã được rollback an toàn. Vui lòng liên hệ quản trị viên.");
 }

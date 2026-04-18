@@ -12,7 +12,7 @@ require_once __DIR__ . '/../../includes/common/csrf.php';
 kiemTraSession();
 
 // Ràng buộc quy trình: Chỉ QLN/Admin
-$role = (int)($_SESSION['role_id'] ?? 4);
+$role = (int)($_SESSION['user_role'] ?? 4);
 if (!in_array($role, [1, 2])) {
     die("<h2 style='color:red;'>Truy cập bị từ chối: Nút Tòa Án Cọc chỉ cấp cho Quản trị khu vực.</h2>");
 }

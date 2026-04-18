@@ -6,11 +6,15 @@
 
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../../config/constants.php';
+require_once __DIR__ . '/../../config/roles.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
 require_once __DIR__ . '/../../includes/common/auth.php';
+require_once __DIR__ . '/../../includes/common/functions.php';
 
 kiemTraSession();
+// Chỉ Admin và Quản lý nhà được hủy hợp đồng (nghiệp vụ rủi ro cao)
+kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Khóa Trạm Request GET");
 
@@ -38,16 +42,17 @@ try {
     // phải đặt trong rổ Bọc Lõi Transaction In-Memory. Nếu có 1 vết xước, rollback lại toàn diện.
     $pdo->beginTransaction();
 
-    // KIỂM SOÁT LAYER 2: Lỡ User chôm tool Postman Hack ByPass PHP UI Form thì sao? 
-    // Thẩm tra Database Phân Hệ Nợ lại lần 2 bằng Query ngầm. (Anti-Hack 100%)
-    try {
-        $stmtDebt = $pdo->prepare("SELECT SUM(soTienConNo) AS no FROM HOA_DON WHERE soHopDong = ?");
-        $stmtDebt->execute([$soHD]);
-        if((float)$stmtDebt->fetchColumn() > 0) {
-            $pdo->rollBack();
-            die("Hệ Máy Hacker Bị Bám Đuôi: Phát hiện cố ý Bypass Form để hủy phòng có Nợ xấu. Đã ghi IP Admin Block!");
-        }
-    } catch (Exception $e) {}
+    // KIỂM SOÁT LAYER 2 (defense in depth): kiểm tra nợ lần nữa ở backend
+    // phòng trường hợp user bypass form bằng Postman/curl.
+    // [BUG FIX] Trước đây đoạn này bọc try/catch nuốt exception -> nếu query fail,
+    // hệ thống vẫn cho hủy dù còn nợ. Giờ để PDOException bubble lên catch ngoài
+    // và rollback toàn bộ transaction.
+    $stmtDebt = $pdo->prepare("SELECT COALESCE(SUM(soTienConNo), 0) AS no FROM HOA_DON WHERE soHopDong = ?");
+    $stmtDebt->execute([$soHD]);
+    if ((float)$stmtDebt->fetchColumn() > 0) {
+        $pdo->rollBack();
+        die("Không thể hủy hợp đồng: Hợp đồng này còn công nợ chưa thanh toán. Vui lòng xử lý công nợ trước khi hủy.");
+    }
 
 
     // MŨI NHỌN 1: TẤN CÔNG BẢNG CHA [HOP_DONG]
@@ -91,6 +96,17 @@ try {
     // NGHỊ QUYẾT BẢO TỒN TÀI SẢN HOÀN TẤT TRỌN VẸN.
     $pdo->commit();
 
+    // [AUDIT] Ghi log sau khi hủy thành công
+    $maNV_Huy = $_SESSION['user_id'] ?? null;
+    ghiAuditLog(
+        $pdo,
+        $maNV_Huy,
+        'CANCEL_HD',
+        'HOP_DONG',
+        $soHD,
+        "Hủy hợp đồng ngày {$ngayHuy}. Lý do: {$lyDoHuy}"
+    );
+
     // RÚT RA BÊN NGOÀI
     header("Location: hd_hienthi.php?msg=huy_toan_phan_thanh_cong");
     exit();
@@ -99,6 +115,7 @@ try {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log("ACiD LOG: LỖI NGHIÊM TRỌNG Ở SỨ MỆNH HỦY HỢP ĐỒNG UC11 - " . $e->getMessage());
-    die("Xảy Ra Tai Nạn SQL Phân Mảnh Rút Lịch Sử Sập Database. File Lỗi Transaction Rollback ACiD 100%! Báo dev fix: " . $e->getMessage());
+    // [SEC] Không lộ $e->getMessage() ra HTML
+    error_log("hd_huy_submit PDO error: " . $e->getMessage());
+    die("Xảy ra lỗi khi hủy hợp đồng. Dữ liệu đã được rollback an toàn. Vui lòng liên hệ quản trị viên.");
 }

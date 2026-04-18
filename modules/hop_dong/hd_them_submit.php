@@ -8,11 +8,15 @@
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 require_once __DIR__ . '/../../config/constants.php';
+require_once __DIR__ . '/../../config/roles.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
 require_once __DIR__ . '/../../includes/common/auth.php';
+require_once __DIR__ . '/../../includes/common/functions.php';
 
 kiemTraSession();
+// Chỉ Admin và Quản lý nhà được lập hợp đồng mới
+kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: hd_them.php");
@@ -67,8 +71,10 @@ try {
         die("CẢNH BÁO BẢO MẬT ACiD: Lệnh lập Hợp Đồng bị MySQL từ chối vì Phòng <{$maPhong}> đã có Admin khác lập xong Hợp Đồng và trạng thái đã hóa vàng. Không thể đè dữ liệu.");
     }
 
-    // SINH KHÓA ID RẢI RÁC (Tránh Auto Increment do yêu cầu đặc thù phân tán HD)
-    $soHD_Ran = 'HD-' . date('Y') . '-' . substr(str_shuffle('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 5);
+    // SINH KHÓA ID CHO HỢP ĐỒNG - dùng random_int (CSPRNG) thay str_shuffle
+    // str_shuffle không cryptographically secure và dễ trùng, đặc biệt khi
+    // nhiều user tạo HĐ đồng thời. sinhMaNgauNhien dùng random_int nên an toàn hơn.
+    $soHD_Ran = sinhMaNgauNhien('HD-' . date('Y') . '-', 6);
 
     // BƯỚC INSERT 1: NÉM DATA VÀO BẢNG HỢP ĐỒNG GỐC 
     // Trạng thái (3: ChoDuyet / Chờ Khách Ký Cọc) - (1: Hieu Luc Da Ky) - (0: Thanh ly)
@@ -104,18 +110,29 @@ try {
     ]);
 
 
-    // MỌI BƯỚC ĐÃ GỌN GÀNG, LƯU KẾT CƠ SỞ DATA
+    // MỌI BƯỚC ĐÃ XONG, COMMIT TRANSACTION
     $pdo->commit();
 
-    // THÀNH CÔNG -> ĐẨY SANG MÀN HÌNH KÝ HỢP ĐỒNG (HD_KY.PHP -> UC04) ĐỂ ĐỐI TÁC NHẤN CHỐT
+    // [AUDIT] Ghi log sau khi commit thành công (ngoài transaction chính)
+    ghiAuditLog(
+        $pdo,
+        $maNV,
+        'CREATE_HD',
+        'HOP_DONG',
+        $soHD_Ran,
+        "Lập hợp đồng mới cho KH={$maKH}, phòng={$maPhong}, trạng thái=ChoDuyet"
+    );
+
+    // Chuyển sang màn hình ký hợp đồng (UC04)
     header("Location: hd_ky.php?id=" . urlencode($soHD_Ran) . "&msg=created");
     exit();
 
 } catch (PDOException $e) {
-    // Nếu có nổ Exception DB thì Thu hồi Giao Dịch
+    // Rollback nếu transaction còn đang mở
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log("LỖI GIAO DỊCH DATABASE MODULE HỢP ĐỒNG (ACiD Crash): " . $e->getMessage());
-    die("Xảy ra sự cố lưu trữ lõi CSDL. Vui lòng check File Log để sửa lỗi. Dữ liệu rác đã được rollback an toàn.");
+    // [SEC] Không lộ $e->getMessage() ra HTML - chỉ log internal
+    error_log("hd_them_submit PDO error: " . $e->getMessage());
+    die("Xảy ra sự cố khi lưu hợp đồng. Dữ liệu đã được rollback an toàn. Vui lòng liên hệ quản trị viên.");
 }

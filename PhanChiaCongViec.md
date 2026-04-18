@@ -23,10 +23,10 @@
 
 | # | Branch | Task | File đầu ra | Người | Kỹ thuật | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1.1 | `feature/db-pdo` | Tạo kết nối PDO singleton | `includes/common/db.php` | Nhân | PDO, singleton | 🔴 | 🔍 "Cần rà soát (BE)" |
+| 1.1 | `feature/db-pdo` | Tạo kết nối PDO singleton | `includes/common/db.php` | Nhân | PDO, singleton | 🔴 | ✅ "Đã xong (BE)" |
 | 1.2 | `feature/config-constants` | Toàn bộ file /config (app, constants, status, messages, business_rules, **roles.php mới**) | `config/*.php` | Nhân | PHP constants | 🔴 | 🔍 "Cần rà soát (BE)" |
 | 1.3 | `feature/config-lang` | File đa ngôn ngữ vi/en | `config/lang_vi.php`, `lang_en.php` | Nhân | PHP array, Session | 🔴 | 🔍 "Cần rà soát (BE)" |
-| 1.4 | `feature/csrf-auth` | CSRF token, kiemTraSession(), kiemTraQuyen(), **kiemTraRole()** | `includes/common/csrf.php`, `auth.php` | Nhân | PHP Session, hash | 🔴 | 🔍 "Cần rà soát (BE)" |
+| 1.4 | `feature/csrf-auth` | CSRF token, kiemTraSession(), kiemTraQuyen(), **kiemTraRole()** | `includes/common/csrf.php`, `auth.php` | Nhân | PHP Session, hash | 🔴 | ✅ "Đã xong (BE)" |
 | 1.5 | `feature/sql-schema` | File SQL **21+ bảng** (thêm PHONG_LOCK, KHACH_HANG_ACCOUNT, LOGIN_ATTEMPT, TIEN_COC, HOA_DON_VOID, YEU_CAU_GIA_HAN, TRANH_CHAP_HOA_DON) + FULLTEXT INDEX + ALTER TABLE | `database/quan_ly_cao_oc.sql` | Nhân | MySQL DDL, Constraints | 🔴 | ✅ "Đã xong (BE)" |
 | 1.6 | `feature/public-layout` | Header/Navbar/Footer/Banner public | `includes/public/*.php` | Nhật | Bootstrap 5 | 🔴 | ⏳ "Chờ Nhật (FE)" |
 | 1.7 | `feature/admin-layout` | Sidebar + Topbar admin (menu có thêm mục Tenant Account, Tien Coc) | `includes/admin/*.php` | Nhật | Bootstrap Offcanvas | 🔴 | ⏳ "Chờ Nhật (FE)" |
@@ -43,8 +43,8 @@
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2.1 | `feature/auth-login-ui` | Form đăng nhập chung: show/hide password, remember me, **hiển thị thông báo lockout còn X phút** | `dangnhap.php` | Nhật | Bootstrap, JS | 🔴 | ⏳ "Chờ Nhật (FE)" |
 | 2.2 | `feature/auth-login-submit` | Xử lý login: PDO, password_verify(), ghi Session, **gọi login_throttle.php**, **redirect theo role** | `dangnhap_submit.php` | Nhân | PDO, Session, throttle | 🔴 | ✅ "Đã xong (BE)" |
-| 2.3 | `feature/auth-logout` | Hủy session + redirect | `dangxuat.php` | Nhân | session_destroy() | 🔴 | 🔍 "Cần rà soát (BE)" |
-| **2.4** | **`feature/force-password-change`** | **Bắt đổi mật khẩu lần đầu đăng nhập (phai_doi_matkhau=1)** | **`modules/ho_so/doi_mat_khau_batbuoc.php`** | **Nhân** | **PDO UPDATE, redirect** | 🔴 | 🔍 "Cần rà soát (BE)" |
+| 2.3 | `feature/auth-logout` | Hủy session + redirect | `dangxuat.php` | Nhân | session_destroy() | 🔴 | ✅ "Đã xong (BE)" |
+| **2.4** | **`feature/force-password-change`** | **Bắt đổi mật khẩu lần đầu đăng nhập (phai_doi_matkhau=1)** | **`modules/ho_so/doi_mat_khau_batbuoc.php`** | **Nhân** | **PDO UPDATE, redirect** | 🔴 | ✅ "Đã xong (BE)" |
 | 2.5 | `feature/public-index` | Trang chủ: hero banner, phòng nổi bật, filter | `index.php` | Nhật | Bootstrap carousel | 🔴 | ⏳ "Chờ Nhật (FE)" |
 | 2.6 | `feature/public-phong-trong` | Danh sách phòng trống + filter nâng cao | `phong_trong.php` | Nhật | PHP GET, phân trang | 🔴 | ⏳ "Chờ Nhật (FE)" |
 | 2.7 | `feature/public-chi-tiet` | Chi tiết phòng: gallery lightbox + form đăng ký | `chi_tiet_phong.php` | Nhật | JS lightbox | 🔴 | ⏳ "Chờ Nhật (FE)" |
@@ -63,9 +63,9 @@
 | 3.4 | `feature/crud-tang` | CRUD Tầng + heSoGia | `modules/tang/*.php` | Nhật | PDO, FK | 🔴 | ⏳ "Chờ Nhật (FE)" |
 | 3.5 | `feature/crud-phong-list` | Danh sách phòng: filter + DataTables | `modules/phong/phong_hienthi.php` | Nhật | DataTables BS5 | 🔴 | ⏳ "Chờ Nhật (FE)" |
 | 3.6 | `feature/crud-phong-form` | Form thêm/sửa phòng + tính giá real-time | `modules/phong/phong_them.php` | Nhật | JS oninput | 🔴 | ⏳ "Chờ Nhật (FE)" |
-| 3.7 | `feature/crud-phong-submit` | INSERT/UPDATE Phòng + Validate | `modules/phong/phong_them_submit.php` | Nhân | PDO, Validate | 🔴 | 🔍 "Cần rà soát (BE)" |
+| 3.7 | `feature/crud-phong-submit` | INSERT/UPDATE Phòng + Validate | `modules/phong/phong_them_submit.php` | Nhân | PDO, Validate | 🔴 | ✅ "Đã xong (BE)" |
 | 3.8 | `feature/phong-upload` | Upload gallery ảnh: validate + uniqid + preview | `modules/phong/phong_upload.php` | Nhật | PHP $_FILES | 🔴 | ⏳ "Chờ Nhật (FE)" |
-| 3.9 | `feature/phong-delete` | Soft Delete phòng + kiểm tra HĐ đang hiệu lực **và PHONG_LOCK** | `modules/phong/phong_xoa.php` | Nhân | PDO, deleted_at | 🔴 | 🔍 "Cần rà soát (BE)" |
+| 3.9 | `feature/phong-delete` | Soft Delete phòng + kiểm tra HĐ đang hiệu lực **và PHONG_LOCK** | `modules/phong/phong_xoa.php` | Nhân | PDO, deleted_at | 🔴 | ✅ "Đã xong (BE)" |
 
 ---
 

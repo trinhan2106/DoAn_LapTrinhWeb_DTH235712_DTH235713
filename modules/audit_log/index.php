@@ -11,7 +11,7 @@ require_once __DIR__ . '/../../includes/common/auth.php';
 kiemTraSession();
 
 // RÀNG BUỘC AN NINH KHẮT KHE: CHỈ ADMIN LÕI ĐƯỢC PHÉP TRUY CẬP
-$role = (int)($_SESSION['role_id'] ?? 4);
+$role = (int)($_SESSION['user_role'] ?? 4);
 if ($role !== 1) {
     die("
     <div style='background:#fce4ec; border:3px solid #c62828; padding:50px; font-family:sans-serif; text-align:center;'>

@@ -12,7 +12,7 @@ require_once __DIR__ . '/../../includes/common/csrf.php';
 kiemTraSession();
 
 // Quyền truy cập: Admin (1) và Trưởng bộ phận (2)
-$role = (int)($_SESSION['role_id'] ?? 4);
+$role = (int)($_SESSION['user_role'] ?? 4);
 if (!in_array($role, [1, 2])) {
     die("Access Denied: Chỉ cấp quản lý mới được phép vào kho Thùng Rác khôi phục.");
 }

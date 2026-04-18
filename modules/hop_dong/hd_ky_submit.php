@@ -4,11 +4,15 @@
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 require_once __DIR__ . '/../../config/constants.php';
+require_once __DIR__ . '/../../config/roles.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
 require_once __DIR__ . '/../../includes/common/auth.php';
+require_once __DIR__ . '/../../includes/common/functions.php';
 
 kiemTraSession();
+// Chỉ Admin và Quản lý nhà được ký hợp đồng
+kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     die("Từ chối truy cập qua phương thức GET!");
@@ -67,6 +71,18 @@ try {
     // NẾU TẤT CẢ 4 LUỒNG UPDATE ĐỀU TRÔN TRU => GÕ BÚA COMMIT VÀO Ổ CỨNG MYSQL
     $pdo->commit();
 
+    // [AUDIT] Ghi log sau khi ký thành công
+    $maNV_KyHD = $_SESSION['user_id'] ?? null;
+    $soPhongDuyet = count($dsPhong);
+    ghiAuditLog(
+        $pdo,
+        $maNV_KyHD,
+        'SIGN_HD',
+        'HOP_DONG',
+        $soHopDong,
+        "Ký hợp đồng: ChoDuyet -> DangHieuLuc. Số phòng kích hoạt: {$soPhongDuyet}"
+    );
+
     // Điều chuyển Request User về Màn hình PDF kèm Flag Toast
     header("Location: hd_ky.php?id=" . urlencode($soHopDong) . "&msg=signed");
     exit();
@@ -76,6 +92,7 @@ try {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log("CRASH PDOException LOGIC KHỐI DUYỆT HỢP ĐỒNG LÕI 5.4: " . $e->getMessage());
-    die("Xảy ra lỗi Transaction trầm trọng ở cấp độ PDO (Rollback Activated): " . $e->getMessage());
+    // [SEC] Không lộ $e->getMessage() ra HTML
+    error_log("hd_ky_submit PDO error: " . $e->getMessage());
+    die("Xảy ra lỗi khi ký hợp đồng. Dữ liệu đã được rollback an toàn. Vui lòng liên hệ quản trị viên.");
 }

@@ -13,7 +13,7 @@ require_once __DIR__ . '/../../includes/common/csrf.php';
 kiemTraSession();
 
 // Chống Hack Quyền Truy Cập Lõi
-$role = (int)($_SESSION['role_id'] ?? 4);
+$role = (int)($_SESSION['user_role'] ?? 4);
 if (!in_array($role, [1, 2])) {
     die("Blocked: SQL Injection / Permission Escalation Attack Detected.");
 }

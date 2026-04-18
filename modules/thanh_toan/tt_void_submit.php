@@ -6,21 +6,20 @@
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 require_once __DIR__ . '/../../config/constants.php';
+require_once __DIR__ . '/../../config/roles.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
 require_once __DIR__ . '/../../includes/common/auth.php';
+require_once __DIR__ . '/../../includes/common/functions.php';
 
 kiemTraSession();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Route Lỗi - Blocked.");
 
 // ----------------------------------------------------------------------------------
-// LỌC QUYỀN MỘT LẦN NỮA TẠI BACKEND LÕI (CHỐNG BYPASS CURL/POSTMAN)
+// LỌC QUYỀN CẤP MODULE: CHỈ ADMIN VÀ QUẢN LÝ NHÀ MỚI ĐƯỢC VOID (CHỐNG BYPASS CURL/POSTMAN)
 // ----------------------------------------------------------------------------------
-$role = (int)($_SESSION['role_id'] ?? 4);
-if (!in_array($role, [1, 2])) {
-    die("Server PHP Reject: Thẩm quyền Role của bạn dưới mức Khống Chế Database Hủy. Hệ thống hủy chuỗi Tấn công Giao Dịch.");
-}
+kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
 $csrf_token = filter_input(INPUT_POST, 'csrf_token', FILTER_DEFAULT);
 if (!$csrf_token || !validateCSRFToken($csrf_token)) {
@@ -138,6 +137,7 @@ try {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log("BOM HỦY DIỆT LỖI GÃY TRẠM XỬ LÝ TRANSACTION VOID UC_MAX: " . $e->getMessage());
-    die("Xảy Ra Mảnh Rút SQL Lỗi Nặng Ở Tầng Lưu Trữ Hợp Nhất (Rollback Auto-Saved): " . $e->getMessage());
+    // [SEC] Không lộ $e->getMessage() ra HTML
+    error_log("tt_void_submit PDO error: " . $e->getMessage());
+    die("Xảy ra lỗi khi void hóa đơn. Dữ liệu đã được rollback an toàn. Vui lòng liên hệ quản trị viên.");
 }

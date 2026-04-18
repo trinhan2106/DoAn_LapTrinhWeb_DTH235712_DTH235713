@@ -7,11 +7,15 @@
 
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../../config/constants.php';
+require_once __DIR__ . '/../../config/roles.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
 require_once __DIR__ . '/../../includes/common/auth.php';
+require_once __DIR__ . '/../../includes/common/functions.php';
 
 kiemTraSession();
+// Chỉ Admin và Kế toán được tạo giao dịch thanh toán
+kiemTraRole([ROLE_ADMIN, ROLE_KE_TOAN]);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Truy Cập Block Bởi Framework.");
 
@@ -134,6 +138,17 @@ try {
     // DỌN SỔ SẠCH BĂNG BĂNG, COMMIT DATA!
     $pdo->commit();
 
+    // [AUDIT] Ghi log sau khi thanh toán thành công
+    $soBillXuLy = count($listHD_PhaiChiu);
+    ghiAuditLog(
+        $pdo,
+        $maNV_HienHanh,
+        'CREATE_PAYMENT',
+        'HOA_DON',
+        $soHopDong,
+        "Thanh toán HĐ {$soHopDong}: số tiền=" . formatTien($soTienDaNop_POST) . " VNĐ, phương thức={$phuongThucM}, số bill xử lý={$soBillXuLy}"
+    );
+
 
     // ----------------------------------------------------------------------------------
     // API PHÁT BĂNG EMAIL TRƯỚC KHI DỜI VỊ TRÍ HỆ THỐNG
@@ -183,6 +198,7 @@ try {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log("CRASH PDOException ACID THÁC NƯỚC KÊ KẾ TÓA (UC06): " . $e->getMessage());
-    die("Máy Tàu Lõi Lụi Kích Hoạt Lô Gíc Nước Bị Chệch Khớp Hệ Đứt Gãy Rút DB. <br>Lỗi Lại SQL Đâm Block: " . $e->getMessage());
+    // [SEC] Không lộ $e->getMessage() ra HTML
+    error_log("tt_tao_submit PDO error: " . $e->getMessage());
+    die("Xảy ra lỗi khi xử lý thanh toán. Dữ liệu đã được rollback an toàn. Vui lòng liên hệ quản trị viên.");
 }
