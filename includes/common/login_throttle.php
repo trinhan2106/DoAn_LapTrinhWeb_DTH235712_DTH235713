@@ -1,73 +1,68 @@
 <?php
 // includes/common/login_throttle.php
+/**
+ * THUẬT TOÁN LOGIN THROTTLE - CHỐNG BRUTE FORCE
+ */
 
 /**
- * Ghi nhận một lần đăng nhập thất bại vào CSDL.
- * Dữ liệu log này để tính toán giam IP nhằm ngăn chặn Brute-Force Password.
+ * Ghi lại lịch sử đăng nhập vào bảng LOGIN_ATTEMPT
  * 
- * @param PDO $pdo Data base connection
- * @param string $ip Địa chỉ IP trình duyệt
- * @param string $username Tên đăng nhập gửi lên
+ * @param PDO $pdo 
+ * @param string $username Tên đăng nhập thử nghiệm
+ * @param string $ip Địa chỉ IP của client
+ * @param int $status 1 nếu thành công, 0 nếu thất bại
  */
-function ghiNhanDangNhapSai(PDO $pdo, string $ip, string $username): void {
-    // status = 0 tượng trưng cho Log Failed
-    $stmt = $pdo->prepare("INSERT INTO LOGIN_ATTEMPT (username, ip_address, status) VALUES (:user, :ip, 0)");
-    $stmt->execute([
-        ':user' => $username,
-        ':ip' => $ip
-    ]);
-}
-
-/**
- * Quét theo Rule hệ thống: Nếu sai >= 5 lần trong vòng 15 phút là Khóa (Ban).
- * Đo đạc lấy ra thời gian Phút Giam còn lại.
- * 
- * @param PDO $pdo Data base connection
- * @param string $ip Địa chỉ IP trình duyệt
- * @param string $username Tên đăng nhập
- * @return int Trả về 0 nếu Tốt. Trả về Int > 0 = Số PHÚT còn bị cấm.
- */
-function kiemTraKhoaTaiKhoan(PDO $pdo, string $ip, string $username): int {
-    // Quét Log của 15 phút vừa qua
-    $limitTime = date('Y-m-d H:i:s', strtotime('-15 minutes'));
-    
-    $stmt = $pdo->prepare("
-        SELECT COUNT(*) as attempts, MAX(attempt_time) as last_attempt 
-        FROM LOGIN_ATTEMPT 
-        WHERE ip_address = :ip AND username = :user AND status = 0 AND attempt_time >= :l_time
-    ");
-    $stmt->execute([
-        ':ip' => $ip,
-        ':user' => $username,
-        ':l_time' => $limitTime
-    ]);
-    
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    $attempts = (int)$row['attempts'];
-    
-    if ($attempts >= 5) {
-        $lastAttemptTime = strtotime($row['last_attempt']); // Lần thất bại cuối cùng
-        $unlockTime = $lastAttemptTime + (15 * 60);         // + 15 Phút penalty
-        
-        $minutesLeft = ceil(($unlockTime - time()) / 60);
-        return $minutesLeft > 0 ? (int)$minutesLeft : 0;
+function ghiLogDangNhap($pdo, $username, $ip, $status) {
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO LOGIN_ATTEMPT (username, ip_address, status, attempt_time) 
+            VALUES (?, ?, ?, NOW())
+        ");
+        $stmt->execute([$username, $ip, $status]);
+    } catch (PDOException $e) {
+        // Ghi log tệp tin hệ thống để không làm gãy luồng người dùng
+        error_log("Lỗi Database khi ghi Lịch sử Đăng nhập: " . $e->getMessage());
     }
-    
-    return 0; // Chưa đạt ngưỡng Threshold 5 lần
 }
 
 /**
- * Xóa án phạt ngay lập tức hoặc ghi nhận lại trạng thái khi User nhập đúng Password sau nhiều lần bị cảnh cáo.
+ * Kiểm tra xem IP hoặc Username này có đang bị Lockout không
+ * Điều kiện: Có >= 5 lần đăng nhập thất bại (status = 0) trong 15 phút vừa qua.
  * 
- * @param PDO $pdo Data base connection
- * @param string $ip Địa chỉ IP trình duyệt
+ * @param PDO $pdo 
+ * @param string $ip Địa chỉ IP của client
  * @param string $username Tên đăng nhập
+ * @return array ['locked' => boolean, 'remaining' => int phút chờ]
  */
-function xoaLichSuDangNhapSai(PDO $pdo, string $ip, string $username): void {
-    // Xóa record các lần Failed liên đới để Reset sạch Bộ Đếm
-    $stmt = $pdo->prepare("DELETE FROM LOGIN_ATTEMPT WHERE ip_address = :ip AND username = :user AND status = 0");
-    $stmt->execute([
-        ':ip' => $ip,
-        ':user' => $username
-    ]);
+function kiemTraLockout($pdo, $ip, $username) {
+    try {
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) as failed_count, MAX(attempt_time) as last_attempt 
+            FROM LOGIN_ATTEMPT 
+            WHERE (username = ? OR ip_address = ?) 
+            AND status = 0 
+            AND attempt_time >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)
+        ");
+        $stmt->execute([$username, $ip]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($row && $row['failed_count'] >= 5) {
+            // Tính số phút còn lại
+            $lastAttemptTime = strtotime($row['last_attempt']);
+            $unlockTime = $lastAttemptTime + (15 * 60); // Khóa 15 phút
+            $remainingSeconds = $unlockTime - time();
+            
+            if ($remainingSeconds > 0) {
+                // Làm tròn số phút lên hiển thị giao diện báo khách
+                $remainingMinutes = ceil($remainingSeconds / 60);
+                return ['locked' => true, 'remaining' => (int)$remainingMinutes];
+            }
+        }
+        
+        return ['locked' => false];
+        
+    } catch (PDOException $e) {
+        error_log("Lỗi kiểm tra thuật toán Lockout: " . $e->getMessage());
+        return ['locked' => false]; // Fallback pass nếu Database nghẽn cổ chai
+    }
 }

@@ -32,7 +32,7 @@
 | 1.7 | `feature/admin-layout` | Sidebar + Topbar admin (menu có thêm mục Tenant Account, Tien Coc) | `includes/admin/*.php` | Nhật | Bootstrap Offcanvas | 🔴 | ⏳ "Chờ Nhật (FE)" |
 | 1.8 | `feature/dark-mode` | CSS Dark/Light toggle + localStorage key theo userID | `assets/css/dark-mode.css`, `main.js` | Nhật | CSS Custom Properties | 🔴 | ⏳ "Chờ Nhật (FE)" |
 | 1.9 | `feature/brand-css` | CSS brand colors, card, badge | `assets/css/style.css` | Nhật | CSS BEM | 🔴 | ⏳ "Chờ Nhật (FE)" |
-| **1.10** | **`feature/login-lockout`** | **Đếm lần đăng nhập sai, lockout 15 phút, ghi log IP** | **`includes/common/login_throttle.php`**, **`database/LOGIN_ATTEMPT`** | **Nhân** | **PDO, DateTime** | 🔴 | 🔍 "Cần rà soát (BE)" |
+| **1.10** | **`feature/login-lockout`** | **Đếm lần đăng nhập sai, lockout 15 phút, ghi log IP** | **`includes/common/login_throttle.php`**, **`database/LOGIN_ATTEMPT`** | **Nhân** | **PDO, DateTime** | 🔴 | ✅ "Đã xong (BE)" |
 | **1.11** | **`feature/mailer`** | **PHPMailer wrapper – gửi email thông báo** | **`includes/common/mailer.php`** | **Nhân** | **PHPMailer, SMTP** | 🔴 | ✅ "Đã xong (BE)" |
 
 ---
@@ -42,7 +42,7 @@
 | # | Branch | Task | File đầu ra | Người | Kỹ thuật | Ưu tiên | Trạng thái |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2.1 | `feature/auth-login-ui` | Form đăng nhập chung: show/hide password, remember me, **hiển thị thông báo lockout còn X phút** | `dangnhap.php` | Nhật | Bootstrap, JS | 🔴 | ⏳ "Chờ Nhật (FE)" |
-| 2.2 | `feature/auth-login-submit` | Xử lý login: PDO, password_verify(), ghi Session, **gọi login_throttle.php**, **redirect theo role** | `dangnhap_submit.php` | Nhân | PDO, Session, throttle | 🔴 | 🔍 "Cần rà soát (BE)" |
+| 2.2 | `feature/auth-login-submit` | Xử lý login: PDO, password_verify(), ghi Session, **gọi login_throttle.php**, **redirect theo role** | `dangnhap_submit.php` | Nhân | PDO, Session, throttle | 🔴 | ✅ "Đã xong (BE)" |
 | 2.3 | `feature/auth-logout` | Hủy session + redirect | `dangxuat.php` | Nhân | session_destroy() | 🔴 | 🔍 "Cần rà soát (BE)" |
 | **2.4** | **`feature/force-password-change`** | **Bắt đổi mật khẩu lần đầu đăng nhập (phai_doi_matkhau=1)** | **`modules/ho_so/doi_mat_khau_batbuoc.php`** | **Nhân** | **PDO UPDATE, redirect** | 🔴 | 🔍 "Cần rà soát (BE)" |
 | 2.5 | `feature/public-index` | Trang chủ: hero banner, phòng nổi bật, filter | `index.php` | Nhật | Bootstrap carousel | 🔴 | ⏳ "Chờ Nhật (FE)" |

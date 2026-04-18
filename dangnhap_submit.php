@@ -1,135 +1,95 @@
 <?php
 // dangnhap_submit.php
+/**
+ * TRẠM KIỂM SOÁT ĐĂNG NHẬP (AUTH ENTRY POINT)
+ */
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
-// 1. Phải khởi tạo Cấu trúc phiên làm việc đầu tiên
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// 2. Tái cấu trúc (Require các File Lõi logic)
 require_once __DIR__ . '/config/constants.php';
-require_once __DIR__ . '/config/app.php';
-require_once __DIR__ . '/config/roles.php';
 require_once __DIR__ . '/includes/common/db.php';
 require_once __DIR__ . '/includes/common/csrf.php';
-require_once __DIR__ . '/includes/common/auth.php'; 
-require_once __DIR__ . '/includes/common/login_throttle.php';
+require_once __DIR__ . '/includes/common/login_throttle.php'; // Engine bảo vệ Brute Force
 
-// Chỉ nhận DATA từ form POST -> chặn Request GET/Direct Access
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    die("Truy cập bất hợp pháp (Method Not Allowed).");
+}
+
+// 1. CHẶN CSRF (Hợp kim bảo vệ Request)
+$csrf_token = filter_input(INPUT_POST, 'csrf_token', FILTER_DEFAULT);
+if (!$csrf_token || !validateCSRFToken($csrf_token)) {
+    $_SESSION['error_msg'] = "Phiên giao dịch đã hết hạn. Vui lòng tải lại trang đăng nhập.";
     header("Location: dangnhap.php");
     exit();
 }
 
-// -------------------------------------------------------------
-// [BẢO MẬT] VALIDATE CSRF TOKEN
-// -------------------------------------------------------------
-$csrf_token = $_POST['csrf_token'] ?? '';
-if (!$csrf_token || !validateCSRFToken($csrf_token)) {
-    // Nếu bị mất/Sai Token -> Lệnh die chặt chẽ
-    die("<h1>Lỗi 403 - Forbidden</h1><p>Phát hiện lỗ hổng bảo mật rủi ro (Invalid CSRF). Vui lòng tải lại Form đăng nhập!</p>");
-}
-
-// Nhận Form Data
-$username = trim($_POST['username'] ?? ''); // Trim chống space dư chặn SQL fail logic
+$username = trim($_POST['username'] ?? '');
 $password = $_POST['password'] ?? '';
-$ip_address = $_SERVER['REMOTE_ADDR'];
+$ip = $_SERVER['REMOTE_ADDR'];
 
-// Triển khai Singleton DB PDO Object
-$pdo = Database::getInstance()->getConnection();
-
-
-// -------------------------------------------------------------
-// [BẢO MẬT] KIỂM TRA PENALTY (BRUTE FORCE THROTTLING)
-// -------------------------------------------------------------
-$lockTime = kiemTraKhoaTaiKhoan($pdo, $ip_address, $username);
-if ($lockTime > 0) {
-    // Đang dính án phạt (Chuyển param GET wait để ném lỗi UI kèm số phút)
-    header("Location: dangnhap.php?error=locked&wait=" . $lockTime);
+if (empty($username) || empty($password)) {
+    $_SESSION['error_msg'] = "Vui lòng cung cấp cả Tài Khoản Mạng và Mật Khẩu Phiên.";
+    header("Location: dangnhap.php");
     exit();
 }
 
+try {
+    $pdo = Database::getInstance()->getConnection();
 
-// -------------------------------------------------------------
-// LUỒNG TÌM KIẾM ACCOUNT THEO HAI NHÁNH NHÂN VIÊN & KHÁCH HÀNG
-// -------------------------------------------------------------
-$user = null;
+    // -------------------------------------------------------------
+    // LỚP KIỂM SOÁT SỐ 1: KIỂM TRA LOCKOUT BRUTE FORCE
+    // -------------------------------------------------------------
+    $lockStatus = kiemTraLockout($pdo, $ip, $username);
+    if ($lockStatus['locked']) {
+        $_SESSION['error_msg'] = "Tài khoản hoặc Dải IP của bạn đã bị MẠNG CỤC BỘ KHÓA DO NHẬP SAI QUÁ 5 LẦN. Vui lòng bẻ khóa hoặc thử lại sau <strong>{$lockStatus['remaining']} phút</strong>.";
+        header("Location: dangnhap.php");
+        exit();
+    }
 
-// Nhánh 1: Tìm bên bảng Tài Khoản Nhân Viên Quản Trị
-// Chú ý hàm COALESCE hỗ trợ gán giá trị 0 nếu phai_doi_matkhau bị NULL
-$stmt_nv = $pdo->prepare("
-    SELECT maNV as MaND, tenNV as HoVaTen, password_hash, role_id, COALESCE(phai_doi_matkhau, 0) as phai_doi_matkhau 
-    FROM NHAN_VIEN 
-    WHERE username = :u AND deleted_at IS NULL
-");
-$stmt_nv->execute([':u' => $username]);
-
-if ($stmt_nv->rowCount() > 0) {
-    $user = $stmt_nv->fetch(PDO::FETCH_ASSOC);
-} 
-else {
-    // Nhánh 2: Nếu chưa tìm ra ở Nhân Sự, chuyển sang check Tenant Account
-    $stmt_kh = $pdo->prepare("
-        SELECT a.accountId as MaND, k.tenKH as HoVaTen, a.password_hash, a.role_id, COALESCE(a.phai_doi_matkhau, 0) as phai_doi_matkhau 
-        FROM KHACH_HANG_ACCOUNT a 
-        JOIN KHACH_HANG k ON a.maKH = k.maKH 
-        WHERE a.username = :u AND a.deleted_at IS NULL
+    // -------------------------------------------------------------
+    // LỚP KIỂM SOÁT SỐ 2: TRUY VẤN VÀ XÁC THỰC MẬT MÃ BCRYPT
+    // -------------------------------------------------------------
+    $stmt = $pdo->prepare("
+        SELECT maNV, tenNV, role_id, password_hash, phai_doi_matkhau 
+        FROM NHAN_VIEN 
+        WHERE username = ? AND deleted_at IS NULL
     ");
-    $stmt_kh->execute([':u' => $username]);
-    if ($stmt_kh->rowCount() > 0) {
-        $user = $stmt_kh->fetch(PDO::FETCH_ASSOC);
-    }
-}
+    $stmt->execute([$username]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-
-// -------------------------------------------------------------
-// XÁC MINH CỨNG BẰNG NGHIỆP VỤ BĂM MẬT KHẨU
-// -------------------------------------------------------------
-// Tuyệt đối dẹp bỏ MD5, PHP hiện nay dùng password_verify đối chiếu mã Băm (BCrypt, Argon)
-if ($user && password_verify($password, $user['password_hash'])) {
-    
-    // Đăng nhập hợp lệ gốc rễ -> Gỡ Bỏ Bộ Đếm Sai Pass
-    xoaLichSuDangNhapSai($pdo, $ip_address, $username);
-    
-    // Yêu cầu quan trọng: Chống Session Fixation tặc
-    session_regenerate_id(true);
-
-    // Gán cờ lệnh Session
-    $_SESSION['user_id'] = $user['MaND'];        // Phù hợp chuẩn check kiemTraSession()
-    $_SESSION['MaND'] = $user['MaND'];           
-    $_SESSION['HoVaTen'] = $user['HoVaTen'];
-    
-    // Ép kiểu Data Roles thành INT để hàm in_array kiểm định Strict_Type
-    $_SESSION['user_role'] = (int)$user['role_id']; 
-    $_SESSION['QuyenHan'] = (int)$user['role_id'];
-    
-    // Reset thời điểm Online Timeout
-    $_SESSION['last_activity'] = time();
-
-    // ---------------------------------------------------------
-    // HƯỚNG DẪN KỊCH BẢN ĐỔI MẬT KHẨU HOẶC TIẾN VÀO DASHBOARD
-    // ---------------------------------------------------------
-    $phaiDoiMatKhau = (int)$user['phai_doi_matkhau'];
-    // Gán cờ hiệu trạng thái đổi mật khẩu vào phiên làm việc
-    $_SESSION['phai_doi_matkhau'] = $phaiDoiMatKhau;
-
-    if ($phaiDoiMatKhau === 1) {
-        // Redict văng ra cổng ép buộc đổi pass
-        header("Location: " . BASE_URL . "modules/ho_so/doi_mat_khau_batbuoc.php");
-        exit();
-    } else {
-        // Redict thẳng vào Màn hình chính
-        header("Location: dashboard.php");
+    // Nếu Mất dấu mục tiêu HOẶC Hash Bcrypt Gãy
+    if (!$user || !password_verify($password, $user['password_hash'])) {
+        ghiLogDangNhap($pdo, $username, $ip, 0); // Lưu Vết Hacking: Status 0
+        $_SESSION['error_msg'] = "Thông tin xác thực danh tính không trùng khớp.";
+        header("Location: dangnhap.php");
         exit();
     }
+
+    // -------------------------------------------------------------
+    // VƯỢT RÀO THÀNH CÔNG: KHỞI TẠO SESION KHUNG XƯƠNG
+    // -------------------------------------------------------------
+    ghiLogDangNhap($pdo, $username, $ip, 1); // Cổng Trắng: Status 1
     
-} else {
-    // ---------------------------------------------------------
-    // ĐĂNG NHẬP PASS SAI / HOẶC KHÔNG CÓ USER
-    // ---------------------------------------------------------
-    // Cộng thẻ phạt đếm log
-    ghiNhanDangNhapSai($pdo, $ip_address, $username);
-    
-    header("Location: dangnhap.php?error=invalid");
+    $_SESSION['user_id']  = $user['maNV'];
+    $_SESSION['username'] = $username;
+    $_SESSION['ten_user'] = $user['tenNV'];
+    $_SESSION['role_id']  = (int)$user['role_id'];
+
+    // -------------------------------------------------------------
+    // CHUỖI REDIRECT PHÂN LUỒNG MỤC TIÊU (RBAC)
+    // -------------------------------------------------------------
+    // NẾU Tài khoản nằm trong diện Bắt Buộc Kích Hoạt Mật Khẩu (Lần đầu đăng nhập)
+    if ($user['phai_doi_matkhau'] == 1) {
+        header("Location: modules/ho_so/doi_mat_khau_batbuoc.php");
+        exit();
+    }
+
+    // Pass hết thì về Main Matrix
+    header("Location: index.php");
+    exit();
+
+} catch (PDOException $e) {
+    error_log("Lỗi Xương Sống Kết Nối Đăng Nhập: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Mất kết nối Tâm Máy Trạm. Bộ Phận Sửa Chữa đang hồi phục...";
+    header("Location: dangnhap.php");
     exit();
 }
