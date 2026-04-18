@@ -10,7 +10,7 @@
 | **Sinh viên 2**    | Huỳnh Minh Nhật – DTH235713                                     |
 | **Tỉ lệ đóng góp** | 50% – 50%                                                       |
 | **Quy tắc Git**    | Mỗi task = 1 branch `feature/ten-task`. Merge qua Pull Request. |
-| **Phiên bản**      | v2 – Cập nhật sau QA review                                     |
+| **Phiên bản**      | Chính thức                                                      |
 
 > **Ghi chú phân loại task:**
 >
