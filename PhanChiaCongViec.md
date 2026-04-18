@@ -76,8 +76,8 @@
 | 4.1     | `feature/crud-khachhang`          | CRUD Khách hàng + Modal confirm xóa + Soft Delete                  | `modules/khach_hang/*.php`                       | Nhật     | Bootstrap Modal           | 🔴      | ⏳ "Chờ Nhật (FE)"    |
 | 4.2     | `feature/khachhang-history`       | Tab lịch sử HĐ + Hóa đơn của khách                                 | `modules/khach_hang/kh_lichsu.php`               | Nhật     | PDO JOIN, Bootstrap Tabs  | 🔴      | ⏳ "Chờ Nhật (FE)"    |
 | 4.3     | `feature/crud-nhanvien`           | CRUD NV (Admin only) + **chặn xóa NV có hóa đơn ConNo**            | `modules/nhan_vien/*.php`                        | Nhân     | Session role check        | 🔴      | ✅ "Đã xong (BE)"     |
-| **4.4** | **`feature/tenant-account-crud`** | **CRUD tài khoản KH (Admin): tạo, reset mật khẩu, kích hoạt/khóa** | **`modules/khach_hang_account/*.php`**           | **Nhân** | **PDO, password_hash**    | 🔴      | 🔍 "Cần rà soát (BE)" |
-| **4.5** | **`feature/tenant-login`**        | **Đăng nhập riêng cho Khách hàng + lockout + buộc đổi MK**         | **`modules/khach_hang_account/kh_dangnhap.php`** | **Nhân** | **PDO Session, throttle** | 🔴      | 🔍 "Cần rà soát (BE)" |
+| **4.4** | **`feature/tenant-account-crud`** | **CRUD tài khoản KH (Admin): tạo, reset mật khẩu, kích hoạt/khóa** | **`modules/khach_hang_account/*.php`**           | **Nhân** | **PDO, password_hash**    | 🔴      | ✅ "Đã xong (BE)" |
+| **4.5** | **`feature/tenant-login`**        | **Đăng nhập riêng cho Khách hàng + lockout + buộc đổi MK**         | **`modules/khach_hang_account/kh_dangnhap.php`** | **Nhân** | **PDO Session, throttle** | 🔴      | ✅ "Đã xong (BE)" |
 | 4.6     | `feature/ho-so-canhan`            | Hồ sơ cá nhân + Đổi mật khẩu (mọi role)                            | `modules/ho_so/*.php`                            | Nhân     | PDO UPDATE                | 🔴      | 🔍 "Cần rà soát (BE)" |
 
 ---
