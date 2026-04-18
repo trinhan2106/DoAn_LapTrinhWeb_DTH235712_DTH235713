@@ -25,6 +25,7 @@ CREATE TABLE TANG (
     maTang VARCHAR(20) PRIMARY KEY,
     maCaoOc VARCHAR(20) NOT NULL,
     tenTang VARCHAR(100) NOT NULL,
+    heSoGia DECIMAL(4,2) DEFAULT 1.00,
     deleted_at DATETIME DEFAULT NULL,
     CONSTRAINT fk_tang_cao_oc FOREIGN KEY (maCaoOc) REFERENCES CAO_OC(maCaoOc) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -35,8 +36,10 @@ CREATE TABLE PHONG (
     maTang VARCHAR(20) NOT NULL,
     tenPhong VARCHAR(100) NOT NULL,
     loaiPhong VARCHAR(50),
-    giaThue DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     dienTich DECIMAL(10,2),
+    soChoLamViec INT DEFAULT 0,
+    donGiaM2 DECIMAL(15,2) DEFAULT 0.00,
+    giaThue DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     trangThai TINYINT DEFAULT 1 COMMENT '1: Trong, 2: Da thue, 3: Dang sua chua, 4: Lock',
     deleted_at DATETIME DEFAULT NULL,
     CONSTRAINT fk_phong_tang FOREIGN KEY (maTang) REFERENCES TANG(maTang) ON DELETE CASCADE
@@ -350,6 +353,15 @@ CREATE TABLE MAINTENANCE_STATUS_LOG (
 -- ==========================================================
 -- PHẦN 3: DỮ LIỆU KHỞI TẠO (SEED DATA)
 -- ==========================================================
+-- TẠO DỮ LIỆU CƠ SỞ VẬT CHẤT (TÒA NHÀ & TẦNG MỒI)
+INSERT INTO CAO_OC (maCaoOc, tenCaoOc, diaChi, soTang) 
+VALUES ('CO-01', 'Blue Sky Tower Khối A', '123 CMT8, Q1', 10);
+
+INSERT INTO TANG (maTang, maCaoOc, tenTang, heSoGia) 
+VALUES ('T-01', 'CO-01', 'Tầng Trệt Kinh Doanh (Khối A)', 1.25);
+
+INSERT INTO TANG (maTang, maCaoOc, tenTang, heSoGia) 
+VALUES ('T-02', 'CO-01', 'Tầng Văn Phòng VIP (Khối A)', 1.00);
 
 -- Tạo tài khoản Admin mặc định để test hệ thống
 -- Lưu ý: password_hash bên dưới là kết quả sau khi Bcrypt (Cost 10) chữ "password"
