@@ -68,6 +68,10 @@ CREATE TABLE NHAN_VIEN (
     chucVu VARCHAR(50),
     sdt VARCHAR(15),
     email VARCHAR(100),
+    username VARCHAR(100) UNIQUE,
+    password_hash VARCHAR(255),
+    role_id INT COMMENT '1: Admin, 2: QLN, 3: Ke Toan',
+    phai_doi_matkhau BOOLEAN DEFAULT 0,
     deleted_at DATETIME DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -247,6 +251,7 @@ CREATE TABLE KHACH_HANG_ACCOUNT (
     username VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     role_id INT DEFAULT 4 COMMENT '4 tương đương ROLE_KHACH_HANG',
+    phai_doi_matkhau BOOLEAN DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     deleted_at DATETIME DEFAULT NULL,
     CONSTRAINT fk_account_kh FOREIGN KEY (maKH) REFERENCES KHACH_HANG(maKH) ON DELETE CASCADE
@@ -341,3 +346,12 @@ CREATE TABLE MAINTENANCE_STATUS_LOG (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_maintenacne_log_req FOREIGN KEY (request_id) REFERENCES MAINTENANCE_REQUEST(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ==========================================================
+-- PHẦN 3: DỮ LIỆU KHỞI TẠO (SEED DATA)
+-- ==========================================================
+
+-- Tạo tài khoản Admin mặc định để test hệ thống
+-- Lưu ý: password_hash bên dưới là kết quả sau khi Bcrypt (Cost 10) chữ "password"
+INSERT INTO NHAN_VIEN (maNV, tenNV, chucVu, sdt, email, username, password_hash, role_id, phai_doi_matkhau) 
+VALUES ('NV-ADMIN', 'Quản trị viên', 'Admin Hệ Thống', '0901234567', 'admin@example.com', 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1, 1);
