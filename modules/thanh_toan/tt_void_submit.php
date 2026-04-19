@@ -1,8 +1,14 @@
 <?php
 // modules/thanh_toan/tt_void_submit.php
 /**
- * MA TRẬN BACKEND BÙ TRỪ KẾ TOÁN CAO CẤP TẦNG 4: VOID BILL VÀ SINH CREDIT NOTE
+ * Xu ly void hoa don va sinh credit note (neu khach da nop tien).
+ * - Precondition: chi void khi trangThai la 'ConNo', 'DaThuMotPhan', hoac 'DaThu'.
+ * - Credit note: loaiHoaDon = 'CreditNote' de waterfall khong lay nham.
+ * - Sinh ID bang sinhMaNgauNhien (Convention C.5).
+ * - Dung ghiAuditLog() helper thay vi INSERT thu cong.
+ * - Khong die() hay echo HTML truc tiep (Convention C.2, C.4).
  */
+
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 require_once __DIR__ . '/../../config/constants.php';
@@ -13,131 +19,157 @@ require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 
 kiemTraSession();
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Route Lỗi - Blocked.");
-
-// ----------------------------------------------------------------------------------
-// LỌC QUYỀN CẤP MODULE: CHỈ ADMIN VÀ QUẢN LÝ NHÀ MỚI ĐƯỢC VOID (CHỐNG BYPASS CURL/POSTMAN)
-// ----------------------------------------------------------------------------------
 kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
-$csrf_token = filter_input(INPUT_POST, 'csrf_token', FILTER_DEFAULT);
-if (!$csrf_token || !validateCSRFToken($csrf_token)) {
-    die("<h1>Xâm Phạm Cổng CSRF Mềm Layer 3.</h1>");
+// Kiem tra phuong thuc HTTP
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: tt_tao.php");
+    exit();
 }
 
+// Validate CSRF token
+$csrf_token = $_POST['csrf_token'] ?? '';
+if (!$csrf_token || !validateCSRFToken($csrf_token)) {
+    $_SESSION['error_msg'] = "Phien lam viec het han. Vui long tai lai trang.";
+    header("Location: tt_tao.php");
+    exit();
+}
+
+// Doc input
 $soHoaDonVoid = trim($_POST['soHoaDon'] ?? '');
-$lyDoVoid = trim($_POST['lyDoVoid'] ?? '');
-$maNVThucThi = $_SESSION['user_id'] ?? null;
+$lyDoVoid     = trim($_POST['lyDoVoid'] ?? '');
+$maNVThucThi  = $_SESSION['user_id'] ?? null;
 
 if (empty($soHoaDonVoid) || empty($lyDoVoid) || !$maNVThucThi) {
-    die("Chưa Khai Báo Hành Lý Tại Node Nhận (Lý do trống).");
+    $_SESSION['error_msg'] = "Du lieu khong hop le. Ma hoa don va ly do void la bat buoc.";
+    header("Location: tt_tao.php");
+    exit();
 }
 
+// Validate do dai input
+if (strlen($soHoaDonVoid) > 50 || strlen($lyDoVoid) > 2000) {
+    $_SESSION['error_msg'] = "Du lieu vuot qua do dai cho phep.";
+    header("Location: tt_tao.php");
+    exit();
+}
 
 $pdo = Database::getInstance()->getConnection();
+$crID = ''; // Luu ma credit note (neu co) de hien thi trong success message
+$soHopDongGoc = '';
 
 try {
-    // ----------------------------------------------------------------------------------
-    // ĐIỆN PHÂN CHÂN KHÔNG TRANSACTION (4 CÚ NỔ ĐỒNG LƯỢNG ACiD)
-    // ----------------------------------------------------------------------------------
     $pdo->beginTransaction();
 
-    // CHIÊU THỨC LOCK ĐỤC TRÁNH XUNG ĐỘT (Race Condition Lần Nữa)
+    // SELECT ... FOR UPDATE: Khoa hoa don truoc khi xu ly
     $stmtLock = $pdo->prepare("SELECT * FROM HOA_DON WHERE soHoaDon = ? FOR UPDATE");
     $stmtLock->execute([$soHoaDonVoid]);
-    $billXacUop = $stmtLock->fetch(PDO::FETCH_ASSOC);
+    $billData = $stmtLock->fetch(PDO::FETCH_ASSOC);
 
-    if (!$billXacUop) {
+    if (!$billData) {
         $pdo->rollBack();
-        die("Hệ Database Bị Ổ Nhện Càn Quét: Hóa đơn mốc không còn tồn tại.");
-    }
-    if ($billXacUop['trangThai'] === 'Void') {
-        $pdo->rollBack();
-        die("Chống Hack Dội Bom Nhóm 2 Admin: File Kế Toán Đã Bị Ông Trưởng Phòng khác VOID trước bạn 1 phút! Hủy bỏ chệch hướng.");
+        $_SESSION['error_msg'] = "Hoa don khong ton tai hoac da bi xoa.";
+        header("Location: tt_tao.php");
+        exit();
     }
 
-    $soHopDongGoc = $billXacUop['soHopDong'];
-    $tienKhachDaNap = (float)$billXacUop['soTienDaNop']; // Điểm cốt lõi Credit
+    // Precondition: Kiem tra trang thai hoa don truoc khi void
+    // Chi cho phep void khi trang thai la: ConNo, DaThuMotPhan, DaThu
+    $trangThaiHopLe = ['ConNo', 'DaThuMotPhan', 'DaThu'];
+    if (!in_array($billData['trangThai'], $trangThaiHopLe, true)) {
+        $pdo->rollBack();
+        $_SESSION['error_msg'] = "Hoa don o trang thai '" . htmlspecialchars($billData['trangThai'], ENT_QUOTES, 'UTF-8') . "', khong the void. Chi void duoc hoa don ConNo, DaThuMotPhan hoac DaThu.";
+        header("Location: tt_tao.php?soHopDong=" . urlencode($billData['soHopDong']));
+        exit();
+    }
 
+    $soHopDongGoc = $billData['soHopDong'];
+    $tienKhachDaNop = (float)$billData['soTienDaNop'];
 
-    // (a) XÉ BỎ HỒ SƠ CHÍNH - Biến Vạn Vật Thành Void (Hư Vô)
-    $stmtTrangThai = $pdo->prepare("UPDATE HOA_DON SET trangThai = 'Void' WHERE soHoaDon = ?");
-    $stmtTrangThai->execute([$soHoaDonVoid]);
+    // (a) Cap nhat trang thai hoa don thanh 'Void'
+    $stmtVoid = $pdo->prepare("UPDATE HOA_DON SET trangThai = 'Void' WHERE soHoaDon = ?");
+    $stmtVoid->execute([$soHoaDonVoid]);
 
-
-    // (b) NHẬT KÝ CHI TIẾT HOA DON VOID
+    // (b) Ghi nhan vao bang HOA_DON_VOID
     $stmtHistoryVoid = $pdo->prepare("
         INSERT INTO HOA_DON_VOID (soPhieu, maNV_Void, lyDoVoid, ngayVoid) 
         VALUES (?, ?, ?, NOW())
     ");
     $stmtHistoryVoid->execute([$soHoaDonVoid, $maNVThucThi, $lyDoVoid]);
 
+    // (c) Sinh Credit Note neu khach da nop tien > 0
+    // Credit note luu vao HOA_DON voi loaiHoaDon = 'CreditNote'
+    // de waterfall (tt_tao_submit) khong lay nham khi phan bo tien
+    if ($tienKhachDaNop > 0) {
+        // Convention C.5: Dung sinhMaNgauNhien thay cho date+rand
+        $crID = sinhMaNgauNhien('CR-' . date('Ym') . '-', 7);
+        $lyDoCreditNote = "Hoan tien tu void hoa don: {$soHoaDonVoid}";
+        $soTienAm = -$tienKhachDaNop;
+        $kyThanhToan = date('m/Y');
 
-    // (c) THUẬT TOÁN ĐẢO CHIỀU TÀI KHOẢN (CREDIT NOTE AUTOMATION GENERATOR)
-    // Rất Hiếm Hệ Thống Việt Nam Sinh Việc Này. Nếu Hóa Đơn Trị Giá 10Tr, Bạn thu cọc 2Tr rồi. Giờ Hủy cái Bill 10tr sai đó.
-    // Thì công ty đớp 2Tr của Khách luông à? Không! Tạo Lệnh Trả/Bù Trừ
-    if ($tienKhachDaNap > 0) {
-        $crID = 'CR-NOTE-' . date('ymd-His') . rand(100,999);
-        $lyDoBuTru = "Khách Hoàn Tín (Credit Note) Từ Việc Hạn Void Hóa Đơn Vô Hiệu Lệch Code: $soHoaDonVoid";
-        $crTienKienThiet_AmBaoToan = -$tienKhachDaNap;
-
-        /*
-           Mạch Máu Dòng Tiền (Waterfall Payment) Hệ Thống Ở File tt_tao_submit Của Tôi 
-           đã được lập trình ĐỂ HẤP THỤ Mọi Số TIỀN ÂM Tự Động Cộng dồn vào Quỹ Nộp của Khách!
-           Cắt Đặt: soTienConNo = $crTienKienThiet_AmBaoToan là Âm. Khi duyệt Thu tiền vòng tới KH xài được luông!
-        */
         $stmtCR = $pdo->prepare("
             INSERT INTO HOA_DON (
-                soHoaDon, soHopDong, lyDo, tongTien, soTienDaNop, soTienConNo, trangThai, kyThanhToan, maNV
+                soHoaDon, soHopDong, thang, nam,
+                lyDo, tongTien, soTienDaNop, soTienConNo,
+                trangThai, kyThanhToan, maNV, loaiHoaDon
             ) VALUES (
-                ?, ?, ?, ?, 0, ?, 'ConNo', ?, ?
+                ?, ?, ?, ?,
+                ?, ?, 0, ?,
+                'ConNo', ?, ?, 'CreditNote'
             )
         ");
         $stmtCR->execute([
-            $crID, 
-            $soHopDongGoc, 
-            $lyDoBuTru, 
-            $crTienKienThiet_AmBaoToan, // tongTien hinh thuc de bao cao (-2Tr)
-            $crTienKienThiet_AmBaoToan, // soTienConNo Mang Nước (-2Tr) 
-            date('m/Y'), 
+            $crID,
+            $soHopDongGoc,
+            (int)date('m'),
+            (int)date('Y'),
+            $lyDoCreditNote,
+            $soTienAm,       // tongTien am (VD: -2,000,000)
+            $soTienAm,       // soTienConNo am
+            $kyThanhToan,
             $maNVThucThi
         ]);
     }
 
-
-    // (d) LƯỚI QUÉT AUDIT TẦNG CUỐI CỦA THỊ PHẦN THANH TRA DB (AUDIT_LOG)
-    $stmtAudit = $pdo->prepare("
-        INSERT INTO AUDIT_LOG (hanhDong, bangBiTacDong, recordId, maNguoiDung, chiTiet, thoiGian) 
-        VALUES ('VOID_INVOICE', 'HOA_DON', ?, ?, ?, NOW())
-    ");
-    $thongTinDay = "Thủ Khổng Hủy File. Cấp Credit Tự sinh: " . ($tienKhachDaNap > 0 ? 'CóSinhCR' : 'KhôngSinh_DoBillChưaĐóngTiền');
-    $stmtAudit->execute([$soHoaDonVoid, $maNVThucThi, $thongTinDay . " | Note_KhoTàng: " . $lyDoVoid]);
-
-    // CUỘN TRÒN QUÁ TRÌNH PHÓNG TÊN LỬA VÀO VẠCH KÍ RỒI COMMIT Ổ ĐĨA!
     $pdo->commit();
 
-    // RÚT QUÂN HÒA BÌNH 
-    echo "<div style='background:#f4f7f9; padding:50px; font-family:sans-serif; text-align:center;'>";
-    echo "<h1 style='color:#2ecc71;'>✅ NGHIỆP VỤ VOID (TRIỆT TIÊU KHỐNG HÓA ĐƠN) THÀNH CÔNG VANG DỘI!</h1>";
-    echo "<h3>Biên Lai [ <span style='color:red;'>$soHoaDonVoid</span> ] Đã Được Khai Tử Khỏi Hành Trình Dòng Tiền Thác Nước Kế Toán.</h3>";
-    
-    if ($tienKhachDaNap > 0) {
-        echo "<div style='background:#e8f5e9; border:2px dashed #4caf50; padding:20px; color:#1b5e20; margin: 20px 0; font-weight:bold;'>";
-        echo "<i class='fa-solid fa-bell'></i> Kế Toán Máy Vừa Tự Động Phóng Tín Phiếu Hoàn Tiền (Credit Note) ".number_format($tienKhachDaNap)." đ dưới mã: <span style='color:red; font-size:1.2em;'>$crID</span><br/> Số tiền này sẽ chảy vô Ví Cấn Nợ Lần Kế Tiếp của Hợp Đồng Khách Hàng. DB Nằm Ngang Rất An Toàn!";
-        echo "</div>";
+    // Ghi audit log sau commit — dung helper ghiAuditLog() thay vi INSERT thu cong
+    $chiTietAudit = "Void hoa don {$soHoaDonVoid}, ly do: {$lyDoVoid}";
+    if ($tienKhachDaNop > 0) {
+        $chiTietAudit .= ", credit note: {$crID}, so tien hoan: " . number_format($tienKhachDaNop, 0) . " VND";
+    } else {
+        $chiTietAudit .= ", khong sinh credit note (khach chua nop tien)";
+    }
+    ghiAuditLog(
+        $pdo,
+        $maNVThucThi,
+        'VOID_INVOICE',
+        'HOA_DON',
+        $soHoaDonVoid,
+        $chiTietAudit
+    );
+
+    // Rotate CSRF token
+    if (function_exists('rotateCSRFToken')) {
+        rotateCSRFToken();
+    } else {
+        unset($_SESSION['csrf_token']);
     }
 
-    echo "<p>(Lưu ý: Mảng Frontend View List Hóa Đơn đang được build, bạn có thể quay lại trang Quản Trị Trung Tâm)</p>";
-    echo "<a href='../../index.php' style='padding: 10px 20px; background: #1e3a5f; color:#fff; text-decoration:none; border-radius:5px;'>Quay Lại Tảng Băng Quản Trị</a>";
-    echo "</div>";
+    // Flash message thanh cong va redirect
+    $msgSuccess = "Void hoa don [{$soHoaDonVoid}] thanh cong.";
+    if ($tienKhachDaNop > 0) {
+        $msgSuccess .= " Credit note [{$crID}] da duoc tao voi so tien hoan: " . number_format($tienKhachDaNop, 0) . " VND.";
+    }
+    $_SESSION['success_msg'] = $msgSuccess;
+    header("Location: tt_tao.php?soHopDong=" . urlencode($soHopDongGoc));
     exit();
 
 } catch (PDOException $e) {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    // [SEC] Không lộ $e->getMessage() ra HTML
-    error_log("tt_void_submit PDO error: " . $e->getMessage());
-    die("Xảy ra lỗi khi void hóa đơn. Dữ liệu đã được rollback an toàn. Vui lòng liên hệ quản trị viên.");
+    error_log("[tt_void_submit] PDO error: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Xay ra loi khi void hoa don. Du lieu da duoc rollback an toan. Vui long lien he quan tri vien.";
+    header("Location: tt_tao.php?soHopDong=" . urlencode($soHopDongGoc ?: ''));
+    exit();
 }
