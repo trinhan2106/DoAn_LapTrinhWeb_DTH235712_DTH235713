@@ -1,5 +1,12 @@
 <?php
 // modules/hop_dong/hd_ky_submit.php
+/**
+ * Xu ly ky hop dong (UC04): chuyen trangThai tu ChoDuyet (3) sang DangHieuLuc (1).
+ * - FOR UPDATE lock hop dong + phong truoc khi cap nhat.
+ * - Chi ky duoc khi trangThai = 3 (ChoDuyet).
+ * - Kiem tra phong con trong (trangThai = 1) truoc khi chuyen sang DangThue.
+ * - Convention C.2 (transaction/rollback), C.4 (output escaping).
+ */
 
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
@@ -11,68 +18,107 @@ require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 
 kiemTraSession();
-// Chỉ Admin và Quản lý nhà được ký hợp đồng
 kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
+// Kiem tra phuong thuc HTTP
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    die("Từ chối truy cập qua phương thức GET!");
+    header("Location: hd_hienthi.php");
+    exit();
 }
 
-// Bắt tường bảo mật
-$csrf_token = filter_input(INPUT_POST, 'csrf_token', FILTER_DEFAULT);
+// Validate CSRF
+$csrf_token = $_POST['csrf_token'] ?? '';
 if (!$csrf_token || !validateCSRFToken($csrf_token)) {
-    die("<h1>Lỗi Security chống Spam Form CSRF (Lỗi 403)</h1>");
+    $_SESSION['error_msg'] = "Phien lam viec het han. Vui long tai lai trang.";
+    header("Location: hd_hienthi.php");
+    exit();
 }
 
 $soHopDong = trim($_POST['soHopDong'] ?? '');
-if(empty($soHopDong)) {
-    die("Khuyết lỗi Tín hiệu DSN Hợp Đồng Truyền Tải. Backend không phân tích được Key.");
+if (empty($soHopDong)) {
+    $_SESSION['error_msg'] = "Thieu ma so hop dong.";
+    header("Location: hd_hienthi.php");
+    exit();
 }
 
+$maNV_KyHD = $_SESSION['user_id'] ?? null;
 $pdo = Database::getInstance()->getConnection();
 
 try {
-    // -------------------------------------------------------------------------
-    // BẮT ĐẦU TRANSACTIONS
-    // -------------------------------------------------------------------------
-    // Rủi ro UC04: Rất cao! Chỉ cần Update cái này lỗi, cái kia lủng, BĐS bị thất thoát status logic là sụp nguồn Data.
     $pdo->beginTransaction();
 
-    // LỆNH 1: Đẩy STATUS HỢP ĐỒNG mẹ lên 1 (Hieu Luc: DangHieuLuc)
-    $stmtHD = $pdo->prepare("UPDATE HOP_DONG SET trangThai = 1 WHERE soHopDong = :so");
-    $stmtHD->execute([':so' => $soHopDong]);
+    // 1. Lock hop dong va kiem tra trang thai hien tai
+    $stmtCheckHD = $pdo->prepare("SELECT trangThai FROM HOP_DONG WHERE soHopDong = ? FOR UPDATE");
+    $stmtCheckHD->execute([$soHopDong]);
+    $currentStatus = $stmtCheckHD->fetchColumn();
 
-    // Truy tìm Khối Tài Sản Liên đới (Các phòng thuộc về mâm hợp đồng này)
-    $stmtGetPh = $pdo->prepare("SELECT maPhong FROM CHI_TIET_HOP_DONG WHERE soHopDong = :so");
-    $stmtGetPh->execute([':so' => $soHopDong]);
-    $dsPhong = $stmtGetPh->fetchAll(PDO::FETCH_COLUMN); // Mảng array phẳng cột mã phòng
+    if ($currentStatus === false) {
+        $pdo->rollBack();
+        $_SESSION['error_msg'] = "Hop dong [{$soHopDong}] khong ton tai.";
+        header("Location: hd_hienthi.php");
+        exit();
+    }
+
+    if ((int)$currentStatus !== 3) {
+        $pdo->rollBack();
+        $_SESSION['error_msg'] = "Hop dong khong o trang thai Cho Duyet (trang thai hien tai: {$currentStatus}). Khong the ky.";
+        header("Location: hd_hienthi.php");
+        exit();
+    }
+
+    // 2. UPDATE hop dong: ChoDuyet (3) -> DangHieuLuc (1)
+    // Defense-in-depth: them AND trangThai = 3 trong WHERE
+    $stmtHD = $pdo->prepare("UPDATE HOP_DONG SET trangThai = 1 WHERE soHopDong = ? AND trangThai = 3");
+    $stmtHD->execute([$soHopDong]);
+
+    if ($stmtHD->rowCount() === 0) {
+        $pdo->rollBack();
+        $_SESSION['error_msg'] = "Khong the cap nhat trang thai hop dong. Co the da bi thay doi boi nguoi khac.";
+        header("Location: hd_hienthi.php");
+        exit();
+    }
+
+    // 3. Lay danh sach phong thuoc hop dong nay
+    $stmtGetPh = $pdo->prepare("SELECT maPhong FROM CHI_TIET_HOP_DONG WHERE soHopDong = ?");
+    $stmtGetPh->execute([$soHopDong]);
+    $dsPhong = $stmtGetPh->fetchAll(PDO::FETCH_COLUMN);
 
     if (count($dsPhong) > 0) {
-        
-        // LỆNH 2: Đẩy STATUS mảng CTHD (Trạng Thái Của Từng Phòng trên Giấy) lên 1 (Đang Thuê / DangThue)
-        $stmtCT = $pdo->prepare("UPDATE CHI_TIET_HOP_DONG SET trangThai = 1 WHERE soHopDong = :so");
-        $stmtCT->execute([':so' => $soHopDong]);
+        // Cap nhat trang thai CTHD sang DangThue (1)
+        $stmtCT = $pdo->prepare("UPDATE CHI_TIET_HOP_DONG SET trangThai = 1 WHERE soHopDong = ?");
+        $stmtCT->execute([$soHopDong]);
 
-        // LUỒNG DAO KHẨN: Rải vòng lặp quét trúng các BĐS thực thể và càn quét Bảng Lock
-        $stmtPhongStatus = $pdo->prepare("UPDATE PHONG SET trangThai = 2 WHERE maPhong = :maphong");
-        $stmtDeleteLock  = $pdo->prepare("DELETE FROM PHONG_LOCK WHERE maPhong = :maphong");
+        // Prepare cac statement dung trong vong lap
+        $stmtLockPhong   = $pdo->prepare("SELECT trangThai FROM PHONG WHERE maPhong = ? FOR UPDATE");
+        $stmtPhongStatus = $pdo->prepare("UPDATE PHONG SET trangThai = 2 WHERE maPhong = ?");
+        $stmtDeleteLock  = $pdo->prepare("DELETE FROM PHONG_LOCK WHERE maPhong = ?");
 
         foreach ($dsPhong as $maPhongItem) {
-            
-            // LỆNH 3: Bắn Cờ Hóa Vàng cho Phòng đó thuộc về Tình Trạng '2' (Đã Có Người Thầu / Da Thue)
-            $stmtPhongStatus->execute([':maphong' => $maPhongItem]);
-            
-            // LỆNH 4: Xóa triệt để Cờ Dọn Dẹp File `PHONG_LOCK`
-            // Không cho rác Lock bám lại dù đã chốt xong phòng thành công. Trải cỏ đẹp CSDL.
-            $stmtDeleteLock->execute([':maphong' => $maPhongItem]);
+            // Lock phong truoc khi cap nhat
+            $stmtLockPhong->execute([$maPhongItem]);
+            $phongTrangThai = (int)$stmtLockPhong->fetchColumn();
+
+            if ($phongTrangThai !== 1) {
+                // Phong khong con trong -> rollback
+                $pdo->rollBack();
+                $_SESSION['error_msg'] = "Phong {$maPhongItem} khong con trong (trang thai: {$phongTrangThai}). Khong the ky hop dong.";
+                header("Location: hd_hienthi.php");
+                exit();
+            }
+
+            // Chuyen phong sang DangThue (2)
+            $stmtPhongStatus->execute([$maPhongItem]);
+
+            // Xoa PHONG_LOCK (don dep)
+            $stmtDeleteLock->execute([$maPhongItem]);
         }
     }
 
-    // NẾU TẤT CẢ 4 LUỒNG UPDATE ĐỀU TRÔN TRU => GÕ BÚA COMMIT VÀO Ổ CỨNG MYSQL
     $pdo->commit();
 
-    // [AUDIT] Ghi log sau khi ký thành công
-    $maNV_KyHD = $_SESSION['user_id'] ?? null;
+    // --- Sau commit ---
+
+    // Ghi audit log
     $soPhongDuyet = count($dsPhong);
     ghiAuditLog(
         $pdo,
@@ -80,19 +126,26 @@ try {
         'SIGN_HD',
         'HOP_DONG',
         $soHopDong,
-        "Ký hợp đồng: ChoDuyet -> DangHieuLuc. Số phòng kích hoạt: {$soPhongDuyet}"
+        "Ky hop dong: ChoDuyet -> DangHieuLuc. So phong kich hoat: {$soPhongDuyet}"
     );
 
-    // Điều chuyển Request User về Màn hình PDF kèm Flag Toast
+    // Rotate CSRF token
+    if (function_exists('rotateCSRFToken')) {
+        rotateCSRFToken();
+    } else {
+        unset($_SESSION['csrf_token']);
+    }
+
+    $_SESSION['success_msg'] = "Ky hop dong [{$soHopDong}] thanh cong. {$soPhongDuyet} phong da duoc kich hoat.";
     header("Location: hd_ky.php?id=" . urlencode($soHopDong) . "&msg=signed");
     exit();
 
 } catch (PDOException $e) {
-    // Ăn Exceptions => Giải phóng Bác Sĩ Dọn Dẹp Rollback (Bảo vệ dữ liệu toàn phần ACiD)
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    // [SEC] Không lộ $e->getMessage() ra HTML
-    error_log("hd_ky_submit PDO error: " . $e->getMessage());
-    die("Xảy ra lỗi khi ký hợp đồng. Dữ liệu đã được rollback an toàn. Vui lòng liên hệ quản trị viên.");
+    error_log("[hd_ky_submit] PDO error: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Xay ra loi khi ky hop dong. Du lieu da duoc rollback an toan. Vui long lien he quan tri vien.";
+    header("Location: hd_hienthi.php");
+    exit();
 }
