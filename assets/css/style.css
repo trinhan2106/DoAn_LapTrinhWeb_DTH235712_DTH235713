@@ -6,28 +6,27 @@
  */
 
 :root {
-    /* Color Palette */
-    --color-primary: #1e3a5f;      /* Navy Blue */
-    --color-primary-dark: #152943;
-    --color-accent: #c9a66b;       /* Gold */
-    --color-accent-dark: #b18e54;
-    --color-background: #f4f7f9;   /* Light Sky Blue Gray */
-    --color-text: #1f2a44;         /* Deep Navy Text */
+    /* 4 Mã Màu Thương Hiệu Chính */
+    --color-primary: #1e3a5f;      /* Navy Blue - Chủ đạo */
+    --color-accent: #c9a66b;       /* Gold - Điểm nhấn */
+    --color-background: #f4f7f9;   /* Light Sky Blue Gray - Nền */
+    --color-text: #1f2a44;         /* Deep Navy - Văn bản */
+    
     --color-white: #ffffff;
     
-    /* Semantic Colors */
-    --color-success: #2dce89;      /* Refined Green */
-    --color-danger: #f5365c;       /* Refined Red / Debt */
-    --color-warning: #fb6340;      /* Refined Orange / Warning */
-    --color-info: #11cdef;
-    
+    /* Semantic Colors (dành cho badge trạng thái) */
+    --color-success-bg: #d4edda;
+    --color-success-text: #155724;
+    --color-danger-bg: #f8d7da;
+    --color-danger-text: #721c24;
+    --color-warning-bg: #fff3cd;
+    --color-warning-text: #e65c00; /* Màu cam */
+
     /* Shadows */
     --shadow-soft: 0 4px 15px rgba(0, 0, 0, 0.05);
-    --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.08);
     
     /* Transitions */
-    --transition-fast: all 0.2s ease-in-out;
-    --transition-base: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: all 0.3s ease-in-out;
 }
 
 /* --- Base Enhancements --- */
@@ -38,30 +37,33 @@ body {
     line-height: 1.6;
 }
 
-/* --- Block: Card --- */
+/* --- Block: Card (.card-brand) --- */
 .card-brand {
     background: var(--color-white);
-    border-radius: 12px;
+    border-radius: 8px; /* Bo góc 8px */
     border: none;
-    box-shadow: var(--shadow-soft);
+    box-shadow: var(--shadow-soft); /* Đổ bóng nhẹ */
     transition: var(--transition-base);
     overflow: hidden;
     margin-bottom: 1.5rem;
 }
 
-.card-brand:hover {
-    box-shadow: var(--shadow-medium);
-    transform: translateY(-2px);
+/* Để đảm bảo mật độ thẻ Card chiếm 70-80% màn hình, 
+   ta có thể dùng modifier này bọc quanh container chứa các card (VD: Form hoặc Detail) */
+.card-brand--optimal-width {
+    max-width: 80%;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .card-brand__header {
-    padding: 1.25rem 1.5rem;
+    padding: 1.2rem 1.5rem;
     background-color: transparent;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08); /* Border mảnh tách biệt header */
 }
 
 .card-brand__title {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 600;
     color: var(--color-primary);
     margin-bottom: 0;
@@ -77,130 +79,83 @@ body {
     border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-/* --- Block: Button Brand --- */
+/* --- Block: Button (.btn-brand) --- */
 .btn-brand {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0.6rem 1.5rem;
-    border-radius: 8px;
+    border-radius: 6px;
     font-weight: 600;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    transition: var(--transition-base);
-    border: 1px solid transparent;
+    font-size: 0.95rem;
     cursor: pointer;
     text-decoration: none;
-    gap: 0.5rem;
+    transition: var(--transition-base);
+    border: 1px solid transparent;
 }
 
+/* Modifier: Primary */
 .btn-brand--primary {
-    background-color: var(--color-primary);
-    color: var(--color-white);
+    background-color: var(--color-primary); /* Nền Navy */
+    color: var(--color-white);              /* Chữ trắng */
 }
 
+/* Hover: Làm sáng màu 10% */
 .btn-brand--primary:hover {
-    background-color: var(--color-primary-dark);
+    filter: brightness(1.1); 
     color: var(--color-white);
-    box-shadow: 0 4px 10px rgba(30, 58, 95, 0.25);
 }
 
+/* Modifier: Accent */
 .btn-brand--accent {
-    background-color: var(--color-accent);
-    color: var(--color-white);
+    background-color: var(--color-accent);  /* Nền Gold */
+    color: var(--color-text);               /* Sử dụng màu văn bản sâu để tương phản */
+    font-weight: 700;                       /* Chữ đậm */
 }
 
+/* Hover: Làm sáng màu 10% */
 .btn-brand--accent:hover {
-    background-color: var(--color-accent-dark);
-    color: var(--color-white);
-    box-shadow: 0 4px 10px rgba(201, 166, 107, 0.25);
+    filter: brightness(1.1); 
+    color: var(--color-text);
 }
 
-.btn-brand--outline-primary {
-    background-color: transparent;
-    border-color: var(--color-primary);
-    color: var(--color-primary);
-}
-
-.btn-brand--outline-primary:hover {
-    background-color: var(--color-primary);
-    color: var(--color-white);
-}
-
-/* --- Block: Badge --- */
+/* --- Block: Badge (.badge-brand) --- */
 .badge-brand {
     display: inline-block;
-    padding: 0.35em 0.8em;
+    padding: 0.4em 0.8em;
     font-size: 0.75rem;
     font-weight: 700;
-    line-height: 1;
+    border-radius: 50rem;
     text-align: center;
     white-space: nowrap;
     vertical-align: baseline;
-    border-radius: 50rem;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
+    letter-spacing: 0.03em;
 }
 
+/* Nền xanh lá nhạt, chữ xanh đậm */
 .badge-brand--success {
-    background-color: rgba(45, 206, 137, 0.15);
-    color: var(--color-success);
+    background-color: var(--color-success-bg);
+    color: var(--color-success-text);
 }
 
+/* Nền đỏ nhạt, chữ đỏ đậm (dùng cho công nợ/quá hạn/nợ) */
 .badge-brand--danger {
-    background-color: rgba(245, 54, 92, 0.15);
-    color: var(--color-danger);
+    background-color: var(--color-danger-bg);
+    color: var(--color-danger-text);
 }
 
+/* Nền vàng nhạt, chữ cam (dùng cho cảnh báo/chờ duyệt) */
 .badge-brand--warning {
-    background-color: rgba(251, 99, 64, 0.15);
-    color: var(--color-warning);
+    background-color: var(--color-warning-bg);
+    color: var(--color-warning-text);
 }
 
-/* Specific naming alias for convenience if needed */
-.badge-brand--debt {
-    background-color: rgba(245, 54, 92, 0.15);
-    color: var(--color-danger);
-}
-
-/* --- Typography Helpers --- */
+/* --- Typography Helpers & Theme Integration --- */
 .text-brand-primary { color: var(--color-primary) !important; }
 .text-brand-accent { color: var(--color-accent) !important; }
-.bg-brand-primary { background-color: var(--color-primary) !important; }
-.bg-brand-accent { background-color: var(--color-accent) !important; }
 
-/* Custom Hero Styles */
-.hero-brand {
-    position: relative;
-    padding: 100px 0;
-    background: linear-gradient(rgba(30, 58, 95, 0.85), rgba(30, 58, 95, 0.9)), 
-                url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
-    color: var(--color-white);
-    min-height: 500px;
-    display: flex;
-    align-items: center;
-}
-
-.footer-brand {
-    background-color: var(--color-primary-dark);
-    color: rgba(255, 255, 255, 0.7);
-    padding: 60px 0 20px;
-}
-
-.footer-brand h5 {
-    color: var(--color-white);
-    font-weight: 700;
-    margin-bottom: 1.5rem;
-}
-
-.footer-brand a {
-    color: rgba(255, 255, 255, 0.7);
-    text-decoration: none;
-    transition: var(--transition-fast);
-}
-
-.footer-brand a:hover {
-    color: var(--color-accent);
-    padding-left: 5px;
+/* Dashboard & Báo cáo Layout integration (Tương thích Dark Mode) */
+/* Cột trạng thái sử dụng chung Class ở mọi bảng trong DataTables */
+.status-column .badge-brand {
+    min-width: 90px; /* Đảm bảo các badge đồng đều về kích thước trên cột trạng thái */
 }
