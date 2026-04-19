@@ -1,236 +1,304 @@
 <?php
-// modules/phong/phong_sua.php
-require_once __DIR__ . '/../../config/constants.php';
-require_once __DIR__ . '/../../config/app.php';
-require_once __DIR__ . '/../../includes/common/db.php';
-require_once __DIR__ . '/../../includes/common/csrf.php';
+/**
+ * modules/phong/phong_sua.php
+ * Giao diện chỉnh sửa thông tin Phòng - IDOR Protection & Real-time Calc
+ */
+
+// 1. KHỞI TẠO & BẢO MẬT
 require_once __DIR__ . '/../../includes/common/auth.php';
+require_once __DIR__ . '/../../includes/common/db.php';
+require_once __DIR__ . '/../../includes/common/functions.php';
+require_once __DIR__ . '/../../includes/common/csrf.php';
 
+// Xác thực Session & Phân quyền
 kiemTraSession();
+kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
-// Lấy Mã Phòng truyền trên URL tham số
-$maPhong = trim($_GET['maPhong'] ?? '');
-
-// Kích hoạt chặn truy cập URL tay không
-if(empty($maPhong)) {
+// 2. CHỐNG IDOR & LẤY DỮ LIỆU CŨ PHỤC VỤ FORM
+$id = $_GET['id'] ?? '';
+if (empty($id)) {
+    $_SESSION['error_msg'] = "Mã phòng không hợp lệ.";
     header("Location: phong_hienthi.php");
     exit();
 }
 
-$pdo = Database::getInstance()->getConnection();
+$db = Database::getInstance()->getConnection();
 
-// FETCH 1: Lấy lại Dữ Liệu cũ của Phòng khớp vào HTML Input Form
-try {
-    $stmtPhong = $pdo->prepare("SELECT * FROM PHONG WHERE maPhong = :id AND deleted_at IS NULL");
-    $stmtPhong->execute([':id' => $maPhong]);
-    $phongData = $stmtPhong->fetch(PDO::FETCH_ASSOC);
+// Query xác minh bản ghi tồn tại và chưa bị xóa mềm
+$sqlCheck = "
+    SELECT p.*, t.maCaoOc, t.heSoGia 
+    FROM PHONG p 
+    JOIN TANG t ON p.maTang = t.maTang 
+    WHERE p.maPhong = ? AND p.deleted_at IS NULL
+";
+$stmtCheck = $db->prepare($sqlCheck);
+$stmtCheck->execute([$id]);
+$phong = $stmtCheck->fetch();
 
-    if (!$phongData) {
-        // Cố tình sửa URL maPhong ảo không tồn tại, hoặc phòng đã bị soft-delete
-        header("Location: phong_hienthi.php?err=notfound");
-        exit();
-    }
-} catch (Exception $e) {
-    die("Lỗi kết nối truy vấn dữ liệu phòng: " . $e->getMessage());
+if (!$phong) {
+    $_SESSION['error_msg'] = "Không tìm thấy phòng hoặc phòng đã bị xóa khỏi hệ thống.";
+    header("Location: phong_hienthi.php");
+    exit();
 }
 
-// FETCH 2: Lấy List Box Tầng giả lập để render lại <select>
-try {
-    $stmtTang = $pdo->prepare("SELECT maTang, tenTang, COALESCE(heSoGia, 1.0) as heSoGia FROM TANG WHERE deleted_at IS NULL ORDER BY tenTang ASC");
-    $stmtTang->execute();
-    $listTang = $stmtTang->fetchAll(PDO::FETCH_ASSOC);
-} catch (Exception $e) {
-    die("Lỗi lấy danh sách Tầng: " . $e->getMessage());
+// Lấy danh sách hình ảnh hiện tại của phòng
+$stmtImages = $db->prepare("SELECT id, urlHinhAnh, is_thumbnail FROM PHONG_HINH_ANH WHERE maPhong = ?");
+$stmtImages->execute([$id]);
+$currentImages = $stmtImages->fetchAll();
+
+// 3. LẤY DANH SÁCH CAO ỐC VÀ TẦNG PHỤC VỤ DROPDOWN
+$dsCaoOc = $db->query("SELECT maCaoOc, tenCaoOc FROM CAO_OC WHERE deleted_at IS NULL ORDER BY tenCaoOc")->fetchAll();
+$dsTangRaw = $db->query("SELECT maTang, tenTang, maCaoOc, heSoGia FROM TANG WHERE deleted_at IS NULL ORDER BY tenTang")->fetchAll();
+
+$dsTangJS = [];
+foreach ($dsTangRaw as $t) {
+    $dsTangJS[] = [
+        'maTang'   => $t['maTang'],
+        'tenTang'  => $t['tenTang'],
+        'maCaoOc'  => $t['maCaoOc'],
+        'heSoGia'  => (float)$t['heSoGia']
+    ];
 }
+
+$csrf_token = generateCSRFToken();
 ?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sửa Thông Tin Phòng</title>
-    <!-- Mốc thư viện Giao Diện Bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
+    <?php include __DIR__ . '/../../includes/admin/admin-header.php'; ?>
     <style>
-        :root {
-            --primary: #1e3a5f;
-            --accent: #c9a66b;
-            --bg-color: #f4f7f9;
-            --text-color: #1f2a44;
+        .form-card { max-width: 900px; margin: 0 auto; border-radius: 12px; overflow: hidden; }
+        .form-header { background-color: #1e3a5f; color: white; padding: 1.5rem; }
+        .btn-gold { 
+            background-color: #c9a66b; color: white; font-weight: 600; padding: 0.6rem 2.5rem; border: none; transition: 0.3s;
         }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 30px 15px;
+        .btn-gold:hover { background-color: #b5925a; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(201, 166, 107, 0.3); }
+        .calc-box {
+            background-color: #f8f9fa; border-left: 4px solid #c9a66b; padding: 1.5rem; border-radius: 8px;
         }
-
-        .form-card {
-            background-color: #fff;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            max-width: 900px;
-            margin: auto;
-            border-top: 5px solid var(--accent); /* Đổi viền Highlight Vàng để phân biệt module Sửa */
+        .readonly-val { font-size: 1.25rem; font-weight: 800; color: #1e3a5f; }
+        .form-label { font-weight: 600; color: #1e3a5f; }
+        .text-navy { color: #1e3a5f !important; }
+        
+        /* Gallery Styles */
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
+        .gallery-item { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; aspect-ratio: 1/1; }
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
+        .gallery-item:hover img { filter: brightness(0.7); }
+        .delete-overlay {
+            position: absolute; top: 0; right: 0; background: rgba(231, 76, 60, 0.9); color: white;
+            padding: 2px 8px; border-bottom-left-radius: 8px; font-size: 0.75rem; 
+            cursor: pointer; z-index: 5;
         }
-
-        .form-title {
-            color: var(--primary);
-            font-weight: 800;
-            border-bottom: 2px solid #f0f2f5;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
-        }
-
-        .form-label {
-            font-weight: 600;
-            color: var(--text-color);
-        }
-
-        .control-readonly {
-            background-color: #e9ecef;
-            border: 2px dashed #b02a37; /* Cảnh báo Đỏ vì khoá sửa */
-            color: #b02a37;
-            font-weight: 800;
-            font-size: 1.1rem;
-        }
-
-        .btn-submit {
-            background-color: var(--primary);
-            color: #fff;
-            font-weight: 700;
-            padding: 10px 25px;
-            transition: all 0.3s;
-        }
-
-        .btn-submit:hover {
-            background-color: var(--accent);
-            color: var(--text-color);
-            transform: translateY(-2px);
+        .delete-check { position: absolute; top: 8px; left: 8px; width: 18px; height: 18px; cursor: pointer; z-index: 10; }
+        .thumbnail-badge {
+            position: absolute; bottom: 0; left: 0; padding: 2px 8px; background: #c9a66b; color: white; 
+            font-size: 0.65rem; font-weight: bold; width: 100%; text-align: center;
         }
     </style>
 </head>
-<body>
+<body class="bg-light">
 
-<div class="container">
-    <div class="form-card">
-        <h4 class="form-title">
-            <i class="fa-solid fa-pen-to-square me-2"></i> CHỈNH SỬA VĂN PHÒNG: <?= htmlspecialchars($phongData['maPhong']) ?>
-        </h4>
+<div class="admin-layout">
+    <?php include __DIR__ . '/../../includes/admin/sidebar.php'; ?>
+    
+    <div class="admin-main-wrapper flex-grow-1">
+        <?php include __DIR__ . '/../../includes/admin/topbar.php'; ?>
+        <?php include __DIR__ . '/../../includes/admin/notifications.php'; ?>
+        
+        <main class="admin-main-content p-4">
+            <nav aria-label="breadcrumb" class="mb-4 d-flex justify-content-center">
+                <ol class="breadcrumb mb-0" style="width: 900px;">
+                    <li class="breadcrumb-item"><a href="<?= BASE_URL ?>admin_layout.php" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="phong_hienthi.php" class="text-decoration-none">Quản lý Phòng</a></li>
+                    <li class="breadcrumb-item active">Chỉnh sửa thông tin</li>
+                </ol>
+            </nav>
 
-        <form action="phong_sua_submit.php" method="POST">
-            <!-- Neo biến CSRF -->
-            <input type="hidden" name="csrf_token" value="<?= validateCSRFToken('') ? '' : generateCSRFToken() ?>">
-            
-            <!-- Trừu tượng hóa maPhong thật để đẩy qua POST, che giấu ko cho sửa ở View DSN -->
-            <input type="hidden" name="maPhong" value="<?= htmlspecialchars($phongData['maPhong']) ?>">
-
-            <!-- KHU VỰC 1: ĐỊNH DANH PHÒNG -->
-            <h6 class="text-secondary fw-bold mb-3 mt-2"><i class="fa-solid fa-tag me-1"></i> Định danh Văn Phòng</h6>
-            <div class="row g-4 mb-4 pb-4 border-bottom">
-                <div class="col-md-6">
-                    <label class="form-label">Mã Phòng Định Danh (Read Only)</label>
-                    <input type="text" class="form-control bg-light" value="<?= htmlspecialchars($phongData['maPhong']) ?>" disabled>
-                    <small class="text-danger">Nguyên tắc: Không được phép sửa mã định danh cấp 1.</small>
-                </div>
-                
-                <div class="col-md-6">
-                    <label class="form-label">Thuộc Vị Trí Tầng <span class="text-danger">*</span></label>
-                    <select class="form-select" name="maTang" id="frm_maTang" onchange="thuattoanTinhGiaTreoRealtime()" required>
-                        <option value="" data-hesogia="0">-- Chọn tầng tòa nhà --</option>
-                        <?php foreach($listTang as $tang): ?>
-                            <!-- Nếu maTang khớp DB, chèn keyword attribute `selected` -->
-                            <option value="<?= $tang['maTang'] ?>" 
-                                    data-hesogia="<?= $tang['heSoGia'] ?>"
-                                    <?= ($phongData['maTang'] === $tang['maTang']) ? 'selected' : '' ?> >
-                                Tầng: <?= htmlspecialchars($tang['tenTang']) ?> (Hệ số: <?= $tang['heSoGia'] ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label">Tên hiển thị phòng</label>
-                    <input type="text" class="form-control" name="tenPhong" value="<?= htmlspecialchars($phongData['tenPhong']) ?>" required>
-                </div>
-                
-                <div class="col-md-6">
-                    <label class="form-label">Trạng Thái Thực Tế</label>
-                    <select class="form-select" name="trangThai">
-                        <option value="1" <?= ($phongData['trangThai'] == 1) ? 'selected' : '' ?>>1. Phòng Trống</option>
-                        <option value="2" <?= ($phongData['trangThai'] == 2) ? 'selected' : '' ?>>2. Đã Cho Thuê</option>
-                        <option value="3" <?= ($phongData['trangThai'] == 3) ? 'selected' : '' ?>>3. Đang Bảo Trì / Sửa Chữa</option>
-                        <option value="4" <?= ($phongData['trangThai'] == 4) ? 'selected' : '' ?>>4. Bị Quản Trị Khóa</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- KHU VỰC 2: KHÔNG GIAN BÀI TRÍ & CHÍNH SÁCH GIÁ -->
-            <h6 class="text-secondary fw-bold mb-3 mt-2"><i class="fa-solid fa-coins me-1"></i> Không Gian & Trị Giá Realtime</h6>
-            <div class="row g-4 mb-3">
-                <div class="col-md-4">
-                    <label class="form-label">Diện tích (m²) <span class="text-danger">*</span></label>
-                    <!-- Tải dữ liệu vào View -->
-                    <input type="number" step="0.1" min="0" class="form-control" name="dienTich" id="frm_dienTich" 
-                           value="<?= htmlspecialchars($phongData['dienTich']) ?>" oninput="thuattoanTinhGiaTreoRealtime()">
-                </div>
-                
-                <div class="col-md-4">
-                    <label class="form-label">Chỗ Làm Việc Tối Đa</label>
-                    <input type="number" min="0" class="form-control" name="soChoLamViec" 
-                           value="<?= htmlspecialchars($phongData['soChoLamViec']) ?>">
-                </div>
-                
-                <div class="col-md-4">
-                    <label class="form-label">Đơn Giá M2 Tính Nhanh (VNĐ) <span class="text-danger">*</span></label>
-                    <input type="number" min="0" step="1000" class="form-control" name="donGiaM2" id="frm_donGiaM2" 
-                           value="<?= round($phongData['donGiaM2'], 0) ?>" oninput="thuattoanTinhGiaTreoRealtime()">
-                </div>
-            </div>
-
-            <!-- Dòng 3 (Render Giá Bị Bắt Buộc Tính Lại ReadOnly) -->
-            <div class="row g-4 mt-1 mb-5">
-                <div class="col-md-12">
-                    <label class="form-label"><i class="fa-solid fa-calculator text-muted me-1"></i> Giá Thuê Tổng Định Kỳ (Chỉ đọc) = [Đơn Giá] x [Diện Tích] x [Hệ Số Tầng]</label>
-                    <div class="input-group">
-                        <input type="number" class="form-control control-readonly" name="giaThue" id="frm_giaThue" 
-                               value="<?= round($phongData['giaThue'], 2) ?>" readonly>
-                        <span class="input-group-text fw-bold">VNĐ / THÁNG</span>
+            <div class="card form-card shadow-sm border-0">
+                <div class="form-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="h4 mb-0 fw-bold"><i class="bi bi-pencil-square me-2"></i>CẬP NHẬT PHÒNG</h2>
+                        <p class="mb-0 text-white-50 small mt-1">Sửa đổi thông số kỹ thuật và trạng thái của phòng.</p>
                     </div>
+                    <span class="badge bg-white text-navy px-3 py-2 fw-bold"><?= e($phong['maPhong']) ?></span>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <form action="phong_sua_submit.php" method="POST" id="formSuaPhong" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="<?= e($csrf_token) ?>">
+                        <input type="hidden" name="maPhong" value="<?= e($phong['maPhong']) ?>">
+
+                        <!-- Vị trí & Cơ bản -->
+                        <h5 class="text-navy fw-bold mb-4 border-bottom pb-2"><i class="bi bi-geo-alt me-2"></i>Vị Trí & Cơ Bản</h5>
+                        <div class="row g-4 mb-5">
+                            <div class="col-md-6">
+                                <label for="maCaoOc" class="form-label">Tòa nhà <span class="text-danger">*</span></label>
+                                <select id="maCaoOc" class="form-select py-2" required>
+                                    <option value="">-- Chọn tòa nhà --</option>
+                                    <?php foreach ($dsCaoOc as $co): ?>
+                                        <option value="<?= e($co['maCaoOc']) ?>" <?= ($co['maCaoOc'] == $phong['maCaoOc']) ? 'selected' : '' ?>>
+                                            <?= e($co['tenCaoOc']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="maTang" class="form-label">Tầng <span class="text-danger">*</span></label>
+                                <select name="maTang" id="maTang" class="form-select py-2" required>
+                                    <option value="">-- Chọn tầng --</option>
+                                    <!-- Sẽ được đổ bởi JS -->
+                                </select>
+                            </div>
+                            <div class="col-md-8">
+                                <label for="tenPhong" class="form-label">Tên Phòng <span class="text-danger">*</span></label>
+                                <input type="text" name="tenPhong" id="tenPhong" class="form-control py-2" value="<?= e($phong['tenPhong']) ?>" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="trangThai" class="form-label">Trạng thái hiện tại</label>
+                                <select name="trangThai" id="trangThai" class="form-select py-2">
+                                    <option value="1" <?= $phong['trangThai'] == 1 ? 'selected' : '' ?>>Trống</option>
+                                    <option value="2" <?= $phong['trangThai'] == 2 ? 'selected' : '' ?>>Đã thuê</option>
+                                    <option value="3" <?= $phong['trangThai'] == 3 ? 'selected' : '' ?>>Bảo trì</option>
+                                    <option value="4" <?= $phong['trangThai'] == 4 ? 'selected' : '' ?>>Đã khóa</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Thông số & Đơn giá -->
+                        <h5 class="text-navy fw-bold mb-4 border-bottom pb-2"><i class="bi bi-calculator me-2"></i>Thông Số & Đơn Giá</h5>
+                        <div class="row g-4 mb-5 p-4 bg-light rounded-3">
+                            <div class="col-md-4">
+                                <label for="dienTich" class="form-label">Diện tích (m²) <span class="text-danger">*</span></label>
+                                <input type="number" name="dienTich" id="dienTich" class="form-control py-2 calc-trigger" step="0.1" min="0.1" value="<?= e($phong['dienTich']) ?>" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="soChoLamViec" class="form-label">Số chỗ làm việc</label>
+                                <input type="number" name="soChoLamViec" id="soChoLamViec" class="form-control py-2" min="1" value="<?= e($phong['soChoLamViec']) ?>">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="donGiaM2" class="form-label">Đơn giá / m² <span class="text-danger">*</span></label>
+                                <input type="number" name="donGiaM2" id="donGiaM2" class="form-control py-2 calc-trigger" min="0" value="<?= e($phong['donGiaM2']) ?>" required>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="calc-box mt-2">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-7 border-md-end">
+                                            <div class="small text-muted text-uppercase fw-bold">Giá thuê hàng tháng (vnđ)</div>
+                                            <div id="giaThueDisplay" class="readonly-val"><?= number_format($phong['giaThue'], 0, ',', '.') ?></div>
+                                            <input type="hidden" name="giaThue" id="giaThue" value="<?= e($phong['giaThue']) ?>">
+                                        </div>
+                                        <div class="col-md-5 ps-md-4">
+                                            <div class="small text-muted">Hệ số tầng hiện tại: <span id="heSoDisplay" class="fw-bold text-navy"><?= number_format($phong['heSoGia'], 2) ?></span></div>
+                                            <div class="small text-muted mt-1">Giá thuê = Diện tích x Đơn giá x Hệ số</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quản lý Hình ảnh -->
+                        <h5 class="text-navy fw-bold mb-4 border-bottom pb-2"><i class="bi bi-images me-2"></i>Quản Lý Hình Ảnh</h5>
+                        <div class="mb-5">
+                            <label class="form-label d-block mb-3">Hình ảnh hiện tại (Tích chọn để xóa)</label>
+                            <?php if (empty($currentImages)): ?>
+                                <div class="alert alert-light border text-center py-4 rounded-3">
+                                    <i class="bi bi-image text-muted d-block h1"></i>
+                                    <span class="text-muted">Chưa có hình ảnh nào cho phòng này.</span>
+                                </div>
+                            <?php else: ?>
+                                <div class="gallery-grid mb-4">
+                                    <?php foreach ($currentImages as $img): ?>
+                                        <div class="gallery-item">
+                                            <input type="checkbox" name="delete_images[]" value="<?= e($img['id']) ?>" class="delete-check" title="Chọn để xóa">
+                                            <img src="<?= BASE_URL . e($img['urlHinhAnh']) ?>" alt="Room Image">
+                                            <?php if ($img['is_thumbnail']): ?>
+                                                <div class="thumbnail-badge">ẢNH ĐẠI DIỆN</div>
+                                            <?php endif; ?>
+                                            <div class="delete-overlay"><i class="bi bi-trash"></i></div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+
+                            <div class="mt-4 p-4 border rounded-3 bg-white">
+                                <label for="hinhAnh" class="form-label fw-bold"><i class="bi bi-cloud-upload me-2"></i>Thêm hình ảnh mới</label>
+                                <input type="file" name="hinhAnh[]" id="hinhAnh" class="form-control" multiple accept=".jpg,.jpeg,.png,.webp">
+                                <div class="form-text mt-2">Định dạng hỗ trợ: JPG, PNG, WEBP (Tối đa 2MB/file).</div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 pt-4 d-flex justify-content-end gap-2 border-top">
+                            <a href="phong_hienthi.php" class="btn btn-outline-secondary px-4 py-2">Hủy bỏ</a>
+                            <button type="submit" class="btn btn-gold px-5 py-2"><i class="bi bi-save me-2"></i>Cập nhật dữ liệu</button>
+                        </div>
+                    </form>
                 </div>
             </div>
-
-            <div class="d-flex justify-content-between">
-                <a href="phong_hienthi.php" class="btn btn-light border"><i class="fa-solid fa-xmark text-danger"></i> Hủy Bỏ</a>
-                <button type="submit" class="btn btn-submit"><i class="fa-solid fa-clock-rotate-left me-1"></i> Thực thi Lệnh Cập Nhật (Update)</button>
-            </div>
-        </form>
+        </main>
+        
+        <?php include __DIR__ . '/../../includes/admin/admin-footer.php'; ?>
     </div>
 </div>
 
 <script>
-    /**
-     * Tái ứng dụng thư viện thuật toán Real-time update Giá Thuê
-     */
-    function thuattoanTinhGiaTreoRealtime() {
-        const dienTichVal = parseFloat(document.getElementById('frm_dienTich').value) || 0;
-        const donGiaVal   = parseFloat(document.getElementById('frm_donGiaM2').value) || 0;
-        
-        const selectTangNode      = document.getElementById('frm_maTang');
-        const theOptionDangChon   = selectTangNode.options[selectTangNode.selectedIndex];
-        
-        let heSoGiaVal = 0;
-        if (theOptionDangChon) {
-            heSoGiaVal = parseFloat(theOptionDangChon.getAttribute('data-hesogia')) || 0;
-        }
+// Dữ liệu tầng truyền từ PHP
+const TANG_DATA = <?= json_encode($dsTangJS) ?>;
+const currentTangId = "<?= e($phong['maTang']) ?>";
 
-        const tinhTongTotal = donGiaVal * dienTichVal * heSoGiaVal;
-        document.getElementById('frm_giaThue').value = tinhTongTotal.toFixed(2);
+document.addEventListener('DOMContentLoaded', function() {
+    const selectCaoOc = document.getElementById('maCaoOc');
+    const selectTang = document.getElementById('maTang');
+    const inputDienTich = document.getElementById('dienTich');
+    const inputDonGia = document.getElementById('donGiaM2');
+    const inputGiaThue = document.getElementById('giaThue');
+    const displayGiaThue = document.getElementById('giaThueDisplay');
+    const displayHeSo = document.getElementById('heSoDisplay');
+
+    function updateTangList(maCO, selectedId = null) {
+        selectTang.innerHTML = '<option value="">-- Chọn tầng --</option>';
+        if (maCO) {
+            const listTang = TANG_DATA.filter(t => t.maCaoOc === maCO);
+            listTang.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.maTang;
+                opt.textContent = t.tenTang;
+                opt.dataset.heso = t.heSoGia;
+                if (selectedId && t.maTang === selectedId) opt.selected = true;
+                selectTang.appendChild(opt);
+            });
+            selectTang.disabled = false;
+        } else {
+            selectTang.disabled = true;
+        }
     }
+
+    function updatePrice() {
+        const option = selectTang.options[selectTang.selectedIndex];
+        const heSo = option ? (parseFloat(option.dataset.heso) || 1.0) : 1.0;
+        const dienTich = parseFloat(inputDienTich.value) || 0;
+        const donGia = parseFloat(inputDonGia.value) || 0;
+        
+        const total = Math.round(dienTich * donGia * heSo);
+        
+        inputGiaThue.value = total;
+        displayGiaThue.textContent = total.toLocaleString('vi-VN');
+        displayHeSo.textContent = heSo.toFixed(2);
+    }
+
+    // Initialize state
+    updateTangList(selectCaoOc.value, currentTangId);
+    
+    selectCaoOc.addEventListener('change', function() {
+        updateTangList(this.value);
+        updatePrice();
+    });
+
+    selectTang.addEventListener('change', updatePrice);
+    inputDienTich.addEventListener('input', updatePrice);
+    inputDonGia.addEventListener('input', updatePrice);
+});
 </script>
+
 </body>
 </html>

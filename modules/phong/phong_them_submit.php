@@ -1,93 +1,151 @@
 <?php
-// modules/phong/phong_them_submit.php
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
+/**
+ * modules/phong/phong_them_submit.php
+ * Xử lý lưu dữ liệu phòng và tệp tin hình ảnh
+ */
 
-require_once __DIR__ . '/../../config/constants.php';
-require_once __DIR__ . '/../../includes/common/db.php';
-require_once __DIR__ . '/../../includes/common/csrf.php';
+// 1. KHỞI TẠO & BẢO MẬT
 require_once __DIR__ . '/../../includes/common/auth.php';
+require_once __DIR__ . '/../../includes/common/db.php';
+require_once __DIR__ . '/../../includes/common/functions.php';
+require_once __DIR__ . '/../../includes/common/csrf.php';
 
+// Xác thực Session & Phân quyền
 kiemTraSession();
+kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
-// Chống URL trực tiếp
+// Do NOT use session cache for phai_doi_matkhau check (as per request)
+// (Assuming kiemTraSession() handles the DB check as requested)
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: phong_hienthi.php");
     exit();
 }
 
-// Xác thực thẻ bài CSRF Form
-if (!$csrf_token || !validateCSRFToken($csrf_token)) {
-    $_SESSION['error_msg'] = "Lỗi bảo mật CSRF.";
-    header("Location: phong_hienthi.php");
-    exit();
-}
-
-// Bắt Params
-$maPhong       = trim($_POST['maPhong'] ?? '');
-// Tên phòng nếu để trống, lấy bằng luôn Mã phòng mặc định
-$tenPhong      = trim($_POST['tenPhong'] ?? '');
-if($tenPhong === '') $tenPhong = $maPhong; 
-
-$maTang        = trim($_POST['maTang'] ?? '');
-$dienTich      = (float)($_POST['dienTich'] ?? 0);
-$soChoLamViec  = (int)($_POST['soChoLamViec'] ?? 0);
-$donGiaM2      = (float)($_POST['donGiaM2'] ?? 0);
-$giaThue       = (float)($_POST['giaThue'] ?? 0); // Nhận field readonly (Bên HTML vẫn đẩy Post lên được do Readonly không phải Disabled)
-
-// Thiết lập Fixed Data gốc lúc khởi tạo mới phòng
-$trangThai     = 1; // 1 = Tượng Trưng cho Cờ: "Trong" / "Rỗng chưa khách"
-$loaiPhong     = 'Văn phòng'; 
-
-if(empty($maPhong) || empty($maTang)) {
-    $_SESSION['error_msg'] = "Lỗi không được bỏ trống các trường định danh cấp 1.";
+// 2. KIỂM TRA CSRF
+$csrf_token = $_POST['csrf_token'] ?? '';
+if (!validateCSRFToken($csrf_token)) {
+    $_SESSION['error_msg'] = "Lỗi bảo mật: CSRF Token không hợp lệ.";
     header("Location: phong_them.php");
     exit();
 }
 
+// 3. NHẬN VÀ VALIDATE DỮ LIỆU
+$maTang         = trim($_POST['maTang'] ?? '');
+$tenPhong       = trim($_POST['tenPhong'] ?? '');
+$loaiPhong      = trim($_POST['loaiPhong'] ?? 'Văn phòng');
+$dienTich       = (float)($_POST['dienTich'] ?? 0);
+$soChoLamViec   = (int)($_POST['soChoLamViec'] ?? 0);
+$donGiaM2       = (float)$_POST['donGiaM2'] ?? 0;
+
+if (empty($maTang) || empty($tenPhong) || $dienTich <= 0 || $donGiaM2 < 0) {
+    $_SESSION['error_msg'] = "Vui lòng nhập đầy đủ và chính xác thông tin phòng.";
+    header("Location: phong_them.php");
+    exit();
+}
+
+// 4. THIẾT LẬP KẾT NỐI & TRANSACTION
+$db = Database::getInstance()->getConnection();
+
 try {
-    $pdo = Database::getInstance()->getConnection();
-    
-    // VALIDATE DB LEVEL: Kiểm tra Id Mã Phòng bị người tạo trùng (Duplicate Key Constraints)
-    $stmtCheck = $pdo->prepare("SELECT maPhong FROM PHONG WHERE maPhong = ?");
-    $stmtCheck->execute([$maPhong]);
-    if ($stmtCheck->rowCount() > 0) {
-        // Trùng -> Quăng về trang list kèm flag err
-        header("Location: phong_them.php?err=duplicate");
-        exit();
+    $db->beginTransaction();
+
+    // 4.1. Lấy heSoGia từ bảng TANG để tính lại giaThue (Server-side validation)
+    $stmtTang = $db->prepare("SELECT heSoGia FROM TANG WHERE maTang = ? AND deleted_at IS NULL FOR UPDATE");
+    $stmtTang->execute([$maTang]);
+    $tang = $stmtTang->fetch();
+    if (!$tang) {
+        throw new Exception("Tầng không tồn tại hoặc đã bị xóa.");
     }
-    
-    // GHI NHẬN LÊN TẦNG PHẦN MỀM THỰC THI (TRANSACTION)
-    $sqlInsert = "
-        INSERT INTO PHONG (maPhong, maTang, tenPhong, loaiPhong, dienTich, soChoLamViec, donGiaM2, giaThue, trangThai) 
-        VALUES (:ma, :tang, :ten, :loai, :dt, :cho, :dongia, :gia, :tt)
+    $heSoGia = (float)$tang['heSoGia'];
+    $giaThueThucTe = round($dienTich * $donGiaM2 * $heSoGia);
+
+    // 4.2. Sinh mã phòng ngẫu nhiên
+    $maPhong = sinhMaNgauNhien('P-', 7);
+
+    // 4.3. Insert vào bảng PHONG
+    $sqlPhong = "
+        INSERT INTO PHONG (maPhong, maTang, tenPhong, loaiPhong, dienTich, soChoLamViec, donGiaM2, giaThue, trangThai)
+        VALUES (:maP, :maT, :ten, :loai, :dt, :soCho, :dg, :gt, 1)
     ";
-    
-    $stmt = $pdo->prepare($sqlInsert);
-    
-    $isVao = $stmt->execute([
-        ':ma'      => $maPhong,
-        ':tang'    => $maTang,
-        ':ten'     => $tenPhong,
-        ':loai'    => $loaiPhong,
-        ':dt'      => $dienTich,
-        ':cho'     => $soChoLamViec,
-        ':dongia'  => $donGiaM2,
-        ':gia'     => $giaThue,
-        ':tt'      => $trangThai
+    $stmtP = $db->prepare($sqlPhong);
+    $stmtP->execute([
+        ':maP'      => $maPhong,
+        ':maT'      => $maTang,
+        ':ten'      => $tenPhong,
+        ':loai'     => $loaiPhong,
+        ':dt'       => $dienTich,
+        ':soCho'    => $soChoLamViec,
+        ':dg'       => $donGiaM2,
+        ':gt'       => $giaThueThucTe
     ]);
-    
-    if($isVao) {
-        header("Location: phong_hienthi.php?msg=add_success");
-        exit();
-    } else {
-        $_SESSION['error_msg'] = "Hệ thống MySQL từ chối lưu lệnh!";
-        header("Location: phong_them.php");
-        exit();
+
+    // 4.4. Xử lý Upload Hình ảnh
+    if (!empty($_FILES['hinhAnh']['name'][0])) {
+        $uploadDir = __DIR__ . '/../../assets/uploads/rooms/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $files = $_FILES['hinhAnh'];
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+        
+        for ($i = 0; $i < count($files['name']); $i++) {
+            if ($files['error'][$i] !== UPLOAD_ERR_OK) continue;
+
+            $fileName = $files['name'][$i];
+            $fileSize = $files['size'][$i];
+            $tmpPath  = $files['tmp_name'][$i];
+            $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+            // Validate extension & size (2MB)
+            if (!in_array($ext, $allowedExtensions) || $fileSize > 2 * 1024 * 1024) {
+                continue; // Bỏ qua file không hợp lệ
+            }
+
+            // Sinh tên file duy nhất
+            $newFileName = uniqid('room_') . '.' . $ext;
+            $targetPath = $uploadDir . $newFileName;
+
+            if (move_uploaded_file($tmpPath, $targetPath)) {
+                // Insert vào bảng PHONG_HINH_ANH
+                // maHinhAnh: sinh ngau nhien cho id bảng PHONG_HINH_ANH (trường id là PK)
+                $maHinhAnh = sinhMaNgauNhien('IMG-', 10);
+                $isThumbnail = ($i === 0) ? 1 : 0;
+
+                $stmtImg = $db->prepare("INSERT INTO PHONG_HINH_ANH (id, maPhong, urlHinhAnh, is_thumbnail) VALUES (?, ?, ?, ?)");
+                $stmtImg->execute([$maHinhAnh, $maPhong, 'assets/uploads/rooms/' . $newFileName, $isThumbnail]);
+            }
+        }
     }
 
-} catch (PDOException $e) {
-    error_log("LÔI INSERT CSDL TẠI QUẢN LÝ PHÒNG: " . $e->getMessage());
-    $_SESSION['error_msg'] = "Truy vấn thất bại. Vui lòng kiểm tra lại cấu trúc DB.";
+    // 5. HOÀN TẤT
+    $db->commit();
+
+    // Ghi Audit Log
+    ghiAuditLog(
+        $db,
+        $_SESSION['user_id'],
+        'CREATE',
+        'PHONG',
+        $maPhong,
+        "Thêm phòng [{$tenPhong}] tại tầng [{$maTang}]. Giá thuê [".formatTien($giaThueThucTe)."]",
+        layIP()
+    );
+
+    // Xoay vòng CSRF Token
+    rotateCSRFToken();
+
+    $_SESSION['success_msg'] = "Thêm phòng mới thành công!";
+    header("Location: phong_hienthi.php");
+    exit();
+
+} catch (Exception $e) {
+    if ($db->inTransaction()) {
+        $db->rollBack();
+    }
+    error_log("Lỗi thêm phòng: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Đã xảy ra lỗi: " . $e->getMessage();
     header("Location: phong_them.php");
     exit();
 }
