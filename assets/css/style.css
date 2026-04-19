@@ -1,0 +1,206 @@
+/* 
+ * PROJECT: Quản lý Cao ốc (Office Rental Management)
+ * BRANDING: Brand CSS System
+ * VERSION: 1.0.0
+ * METHODOLOGY: BEM (Block Element Modifier)
+ */
+
+:root {
+    /* Color Palette */
+    --color-primary: #1e3a5f;      /* Navy Blue */
+    --color-primary-dark: #152943;
+    --color-accent: #c9a66b;       /* Gold */
+    --color-accent-dark: #b18e54;
+    --color-background: #f4f7f9;   /* Light Sky Blue Gray */
+    --color-text: #1f2a44;         /* Deep Navy Text */
+    --color-white: #ffffff;
+    
+    /* Semantic Colors */
+    --color-success: #2dce89;      /* Refined Green */
+    --color-danger: #f5365c;       /* Refined Red / Debt */
+    --color-warning: #fb6340;      /* Refined Orange / Warning */
+    --color-info: #11cdef;
+    
+    /* Shadows */
+    --shadow-soft: 0 4px 15px rgba(0, 0, 0, 0.05);
+    --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.08);
+    
+    /* Transitions */
+    --transition-fast: all 0.2s ease-in-out;
+    --transition-base: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- Base Enhancements --- */
+body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+}
+
+/* --- Block: Card --- */
+.card-brand {
+    background: var(--color-white);
+    border-radius: 12px;
+    border: none;
+    box-shadow: var(--shadow-soft);
+    transition: var(--transition-base);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.card-brand:hover {
+    box-shadow: var(--shadow-medium);
+    transform: translateY(-2px);
+}
+
+.card-brand__header {
+    padding: 1.25rem 1.5rem;
+    background-color: transparent;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.card-brand__title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: 0;
+}
+
+.card-brand__body {
+    padding: 1.5rem;
+}
+
+.card-brand__footer {
+    padding: 1rem 1.5rem;
+    background-color: rgba(0, 0, 0, 0.02);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* --- Block: Button Brand --- */
+.btn-brand {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: var(--transition-base);
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    gap: 0.5rem;
+}
+
+.btn-brand--primary {
+    background-color: var(--color-primary);
+    color: var(--color-white);
+}
+
+.btn-brand--primary:hover {
+    background-color: var(--color-primary-dark);
+    color: var(--color-white);
+    box-shadow: 0 4px 10px rgba(30, 58, 95, 0.25);
+}
+
+.btn-brand--accent {
+    background-color: var(--color-accent);
+    color: var(--color-white);
+}
+
+.btn-brand--accent:hover {
+    background-color: var(--color-accent-dark);
+    color: var(--color-white);
+    box-shadow: 0 4px 10px rgba(201, 166, 107, 0.25);
+}
+
+.btn-brand--outline-primary {
+    background-color: transparent;
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.btn-brand--outline-primary:hover {
+    background-color: var(--color-primary);
+    color: var(--color-white);
+}
+
+/* --- Block: Badge --- */
+.badge-brand {
+    display: inline-block;
+    padding: 0.35em 0.8em;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 50rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.badge-brand--success {
+    background-color: rgba(45, 206, 137, 0.15);
+    color: var(--color-success);
+}
+
+.badge-brand--danger {
+    background-color: rgba(245, 54, 92, 0.15);
+    color: var(--color-danger);
+}
+
+.badge-brand--warning {
+    background-color: rgba(251, 99, 64, 0.15);
+    color: var(--color-warning);
+}
+
+/* Specific naming alias for convenience if needed */
+.badge-brand--debt {
+    background-color: rgba(245, 54, 92, 0.15);
+    color: var(--color-danger);
+}
+
+/* --- Typography Helpers --- */
+.text-brand-primary { color: var(--color-primary) !important; }
+.text-brand-accent { color: var(--color-accent) !important; }
+.bg-brand-primary { background-color: var(--color-primary) !important; }
+.bg-brand-accent { background-color: var(--color-accent) !important; }
+
+/* Custom Hero Styles */
+.hero-brand {
+    position: relative;
+    padding: 100px 0;
+    background: linear-gradient(rgba(30, 58, 95, 0.85), rgba(30, 58, 95, 0.9)), 
+                url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
+    color: var(--color-white);
+    min-height: 500px;
+    display: flex;
+    align-items: center;
+}
+
+.footer-brand {
+    background-color: var(--color-primary-dark);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 60px 0 20px;
+}
+
+.footer-brand h5 {
+    color: var(--color-white);
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+
+.footer-brand a {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    transition: var(--transition-fast);
+}
+
+.footer-brand a:hover {
+    color: var(--color-accent);
+    padding-left: 5px;
+}
