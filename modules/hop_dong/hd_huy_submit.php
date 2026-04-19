@@ -1,10 +1,16 @@
 <?php
 // modules/hop_dong/hd_huy_submit.php
 /**
- * ĐẠI LỆNH TRANSACTION PDO: PHÁ HỦY TOÀN PHẦN CĂN CƠ BĐS UC11 & GIẢI BIẾN CAO ỐC CẢ ĐẾ YẾU 
+ * Xu ly huy hop dong toan phan (UC11).
+ * - FOR UPDATE lock hop dong, chi huy khi trangThai = 1 (DangHieuLuc).
+ * - Kiem tra cong no truoc khi huy.
+ * - Xu ly tien coc: chuyen trangThai -> 2 (ChoXuLy/DaHoan).
+ * - Khong nested try/catch. Dung ngayHuy, lyDoHuy tu FIX-01.
+ * - Convention C.2 (transaction/rollback).
  */
 
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
+
 require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../../config/roles.php';
 require_once __DIR__ . '/../../includes/common/db.php';
@@ -13,101 +19,133 @@ require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 
 kiemTraSession();
-// Chỉ Admin và Quản lý nhà được hủy hợp đồng (nghiệp vụ rủi ro cao)
 kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Khóa Trạm Request GET");
-
-// Shield Security CSRF Level 1
-$csrf_token = filter_input(INPUT_POST, 'csrf_token', FILTER_DEFAULT);
-if (!$csrf_token || !validateCSRFToken($csrf_token)) {
-    die("<h1>Lỗi Security Form: CSRF Token Phai Nhạt. Không Xác Thực Được ID.</h1>");
+// Kiem tra phuong thuc HTTP
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: hd_hienthi.php");
+    exit();
 }
 
-$soHD = trim($_POST['soHopDong'] ?? '');
+// Validate CSRF
+$csrf_token = $_POST['csrf_token'] ?? '';
+if (!$csrf_token || !validateCSRFToken($csrf_token)) {
+    $_SESSION['error_msg'] = "Phien lam viec het han. Vui long tai lai trang.";
+    header("Location: hd_hienthi.php");
+    exit();
+}
+
+$soHD    = trim($_POST['soHopDong'] ?? '');
 $ngayHuy = trim($_POST['ngayHuy'] ?? date('Y-m-d'));
 $lyDoHuy = trim($_POST['lyDoHuy'] ?? '');
 
 if (empty($soHD) || empty($lyDoHuy) || empty($ngayHuy)) {
-    die("Dữ Trữ Đầu Vào Vang Hồi Cảnh Báo: Bị Khuyết Trống Lý Do Hoặc ID BĐS.");
+    $_SESSION['error_msg'] = "Du lieu khong hop le. Ma hop dong va ly do huy la bat buoc.";
+    header("Location: hd_hienthi.php");
+    exit();
 }
 
+$maNV_Huy = $_SESSION['user_id'] ?? null;
 $pdo = Database::getInstance()->getConnection();
 
 try {
-    // --------------------------------------------------------------------------------------------------------
-    // CƠ CHẾ PDO CHỊU TẢI TRANSACTION (RB-11.2 - Sứ Mệnh Giải Phóng Đinh Ba Nhọn Của Thần Neptune)
-    // --------------------------------------------------------------------------------------------------------
-    // Đẳng cấp Enterprise Backend quy định mọi logic update >= 3 bảng có chung Node Khóa (Foreign key) 
-    // phải đặt trong rổ Bọc Lõi Transaction In-Memory. Nếu có 1 vết xước, rollback lại toàn diện.
     $pdo->beginTransaction();
 
-    // KIỂM SOÁT LAYER 2 (defense in depth): kiểm tra nợ lần nữa ở backend
-    // phòng trường hợp user bypass form bằng Postman/curl.
-    // [BUG FIX] Trước đây đoạn này bọc try/catch nuốt exception -> nếu query fail,
-    // hệ thống vẫn cho hủy dù còn nợ. Giờ để PDOException bubble lên catch ngoài
-    // và rollback toàn bộ transaction.
-    $stmtDebt = $pdo->prepare("SELECT COALESCE(SUM(soTienConNo), 0) AS no FROM HOA_DON WHERE soHopDong = ?");
-    $stmtDebt->execute([$soHD]);
-    if ((float)$stmtDebt->fetchColumn() > 0) {
+    // 1. Lock hop dong va kiem tra trang thai hien tai
+    $stmtCheckHD = $pdo->prepare("SELECT trangThai FROM HOP_DONG WHERE soHopDong = ? FOR UPDATE");
+    $stmtCheckHD->execute([$soHD]);
+    $currentStatus = $stmtCheckHD->fetchColumn();
+
+    if ($currentStatus === false) {
         $pdo->rollBack();
-        die("Không thể hủy hợp đồng: Hợp đồng này còn công nợ chưa thanh toán. Vui lòng xử lý công nợ trước khi hủy.");
+        $_SESSION['error_msg'] = "Hop dong [{$soHD}] khong ton tai.";
+        header("Location: hd_hienthi.php");
+        exit();
     }
 
-
-    // MŨI NHỌN 1: TẤN CÔNG BẢNG CHA [HOP_DONG]
-    // Trạng thái thẻ biến thành 2 (Tức DaHuy/ThanhLy)
-    // Cập nhật Alter tự động các cột Lý do Hủy vào (Cần bảo đảm Database Version mới có cột ngày huy)
-    // Tôi bọc Try/Catch riêng để lỡ DB 1.5 thiếu DateHuy thì ko làm sập nhánh 2 và 3 nha.
-    try {
-        $stmtHDD = $pdo->prepare("UPDATE HOP_DONG SET trangThai = 2, ngayHuy = ?, lyDoHuy = ? WHERE soHopDong = ?");
-        $stmtHDD->execute([$ngayHuy, $lyDoHuy, $soHD]);
-    } catch (PDOException $ex1) {
-        // Fallback Pass: Khách Hàng chưa Alter bảng HOP_DONG thêm 2 cột ngayHuy lyDoHuy
-        // Vẫn ép Update State được để duy trì Hệ logic OOP
-        $stmtHopDongNhe = $pdo->prepare("UPDATE HOP_DONG SET trangThai = 2 WHERE soHopDong = ?");
-        $stmtHopDongNhe->execute([$soHD]);
+    // Chi cho phep huy khi trangThai = 1 (DangHieuLuc) hoac 3 (ChoDuyet)
+    if (!in_array((int)$currentStatus, [1, 3], true)) {
+        $pdo->rollBack();
+        $_SESSION['error_msg'] = "Hop dong khong o trang thai co the huy (trang thai hien tai: {$currentStatus}). Chi huy duoc hop dong dang hieu luc hoac cho duyet.";
+        header("Location: hd_hienthi.php");
+        exit();
     }
 
+    // 2. Kiem tra cong no: khong cho huy neu con no chua thanh toan
+    $stmtDebt = $pdo->prepare("
+        SELECT COALESCE(SUM(soTienConNo), 0) 
+        FROM HOA_DON 
+        WHERE soHopDong = ? AND trangThai IN ('ConNo', 'DaThuMotPhan') AND loaiHoaDon = 'Chinh'
+    ");
+    $stmtDebt->execute([$soHD]);
+    $tongNo = (float)$stmtDebt->fetchColumn();
 
-    // MŨI NHỌN 2: THÁN PHIẾN CẦU TÓC GỠ THẺ TRẠNG THÁI [CHI_TIET_HOP_DONG] CHẾT THEO CHA
-    // Đảo toàn bộ chi tiết cờ trạng thái về 0 (Đã ngưng hoạt động Data / DaKetThuc)
-    $stmtUpCT = $pdo->prepare("UPDATE CHI_TIET_HOP_DONG SET trangThai = 0 WHERE soHopDong = ?");
-    $stmtUpCT->execute([$soHD]);
+    if ($tongNo > 0) {
+        $pdo->rollBack();
+        $_SESSION['error_msg'] = "Khong the huy hop dong: con cong no " . number_format($tongNo, 0) . " VND chua thanh toan. Vui long xu ly cong no truoc.";
+        header("Location: hd_hienthi.php");
+        exit();
+    }
 
+    // 3. UPDATE HOP_DONG: chuyen trangThai = 2 (DaHuy), ghi ngayHuy va lyDoHuy
+    // Khong nested try/catch — ngayHuy/lyDoHuy da co san tu FIX-01
+    $stmtHD = $pdo->prepare("
+        UPDATE HOP_DONG 
+        SET trangThai = 2, ngayHuy = ?, lyDoHuy = ? 
+        WHERE soHopDong = ? AND trangThai IN (1, 3)
+    ");
+    $stmtHD->execute([$ngayHuy, $lyDoHuy, $soHD]);
 
-    // MŨI NHỌN 3: LUỒNG MASS-UPDATE TRẢ TỰ DO VỀ CỘI NGUỒN CHO [PHONG] MẶT BẰNG THUÊ BẤT ĐỘNG SẢN 
-    // Sử dụng Cú Pháp IN Lồng Sub-query cực đoan bứt dây 100 căn Hộ ngay lập tức (Status = 1: Trống / Available)
-    $stmtUpPh = $pdo->prepare("
-        UPDATE PHONG 
-        SET trangThai = 1 
+    if ($stmtHD->rowCount() === 0) {
+        $pdo->rollBack();
+        $_SESSION['error_msg'] = "Khong the cap nhat trang thai hop dong. Co the da bi thay doi boi nguoi khac.";
+        header("Location: hd_hienthi.php");
+        exit();
+    }
+
+    // 4. UPDATE CHI_TIET_HOP_DONG: tat ca phong -> trangThai = 0 (DaKetThuc)
+    $stmtCT = $pdo->prepare("UPDATE CHI_TIET_HOP_DONG SET trangThai = 0 WHERE soHopDong = ?");
+    $stmtCT->execute([$soHD]);
+
+    // 5. Tra phong ve trang thai Trong (1) va don dep PHONG_LOCK
+    $stmtPH = $pdo->prepare("
+        UPDATE PHONG SET trangThai = 1 
         WHERE maPhong IN (SELECT maPhong FROM CHI_TIET_HOP_DONG WHERE soHopDong = ?)
     ");
-    $stmtUpPh->execute([$soHD]);
+    $stmtPH->execute([$soHD]);
 
-    // Cũng không quên dọn rác bảo mật File Phòng bị Freeze Cache Lock (Đợt trước)
-    $stmtUnLock = $pdo->prepare("
+    $stmtUnlock = $pdo->prepare("
         DELETE FROM PHONG_LOCK 
         WHERE maPhong IN (SELECT maPhong FROM CHI_TIET_HOP_DONG WHERE soHopDong = ?)
     ");
-    $stmtUnLock->execute([$soHD]);
+    $stmtUnlock->execute([$soHD]);
 
+    // 6. Xu ly tien coc: chuyen trangThai sang 2 (ChoXuLy/DaHoan) de ke toan xu ly sau
+    $stmtCoc = $pdo->prepare("UPDATE TIEN_COC SET trangThai = 2 WHERE soHopDong = ? AND trangThai = 1");
+    $stmtCoc->execute([$soHD]);
 
-    // NGHỊ QUYẾT BẢO TỒN TÀI SẢN HOÀN TẤT TRỌN VẸN.
     $pdo->commit();
 
-    // [AUDIT] Ghi log sau khi hủy thành công
-    $maNV_Huy = $_SESSION['user_id'] ?? null;
+    // --- Sau commit ---
+
+    // Ghi audit log
     ghiAuditLog(
         $pdo,
         $maNV_Huy,
         'CANCEL_HD',
         'HOP_DONG',
         $soHD,
-        "Hủy hợp đồng ngày {$ngayHuy}. Lý do: {$lyDoHuy}"
+        "Huy hop dong ngay {$ngayHuy}. Ly do: {$lyDoHuy}"
     );
 
-    // RÚT RA BÊN NGOÀI
+    // Rotate CSRF token
+    if (function_exists('rotateCSRFToken')) {
+        rotateCSRFToken();
+    } else {
+        unset($_SESSION['csrf_token']);
+    }
+
+    $_SESSION['success_msg'] = "Huy hop dong [{$soHD}] thanh cong.";
     header("Location: hd_hienthi.php?msg=huy_toan_phan_thanh_cong");
     exit();
 
@@ -115,7 +153,8 @@ try {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    // [SEC] Không lộ $e->getMessage() ra HTML
-    error_log("hd_huy_submit PDO error: " . $e->getMessage());
-    die("Xảy ra lỗi khi hủy hợp đồng. Dữ liệu đã được rollback an toàn. Vui lòng liên hệ quản trị viên.");
+    error_log("[hd_huy_submit] PDO error: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Xay ra loi khi huy hop dong. Du lieu da duoc rollback an toan. Vui long lien he quan tri vien.";
+    header("Location: hd_hienthi.php");
+    exit();
 }
