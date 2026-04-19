@@ -13,74 +13,89 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-// 2. Mock Data (Giả lập dữ liệu từ CSDL)
-$mockRooms = [
-    [
-        'maPhong'   => 'P301',
-        'ten'       => 'Emerald Suite 301',
-        'tang'      => '3',
-        'gia'       => 18500000,
-        'dienTich'  => 75,
-        'choNgoi'   => 12,
-        'hinhAnh'   => 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80',
-        'trangThai' => 'Trống'
-    ],
-    [
-        'maPhong'   => 'P205',
-        'ten'       => 'Business Center 205',
-        'tang'      => '2',
-        'gia'       => 12000000,
-        'dienTich'  => 45,
-        'choNgoi'   => 8,
-        'hinhAnh'   => 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=600&q=80',
-        'trangThai' => 'Trống'
-    ],
-    [
-        'maPhong'   => 'P102',
-        'ten'       => 'Ruby Executive 102',
-        'tang'      => '1',
-        'gia'       => 25000000,
-        'dienTich'  => 110,
-        'choNgoi'   => 20,
-        'hinhAnh'   => 'https://images.unsplash.com/photo-1416339134316-0e91dc9ded92?auto=format&fit=crop&w=600&q=80',
-        'trangThai' => 'Trống'
-    ],
-    [
-        'maPhong'   => 'P408',
-        'ten'       => 'Penthouse Office 408',
-        'tang'      => '4',
-        'gia'       => 45000000,
-        'dienTich'  => 200,
-        'choNgoi'   => 35,
-        'hinhAnh'   => 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=600&q=80',
-        'trangThai' => 'Trống'
-    ],
-    [
-        'maPhong'   => 'P001',
-        'ten'       => 'Grand Lobby 001',
-        'tang'      => 'Trệt',
-        'gia'       => 35000000,
-        'dienTich'  => 150,
-        'choNgoi'   => 25,
-        'hinhAnh'   => 'https://images.unsplash.com/photo-1568992687947-868a62a9f521?auto=format&fit=crop&w=600&q=80',
-        'trangThai' => 'Trống'
-    ],
-    [
-        'maPhong'   => 'P305',
-        'ten'       => 'Creative Zone 305',
-        'tang'      => '3',
-        'gia'       => 9500000,
-        'dienTich'  => 35,
-        'choNgoi'   => 5,
-        'hinhAnh'   => 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=600&q=80',
-        'trangThai' => 'Trống'
-    ]
-];
+// 2. Kết nối Database
+require_once 'includes/common/db.php';
+$pdo = Database::getInstance()->getConnection();
 
 // 3. Xử lý logic lọc (Filter state)
 $f_tang = $_GET['tang'] ?? '';
 $f_gia  = $_GET['khoangGia'] ?? '';
-$f_cho  = $_GET['sucChua'] ?? '';
+$f_loai = $_GET['loaiPhong'] ?? '';
+
+// Tính toán phân trang
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) $page = 1;
+$limit = 6;
+$offset = ($page - 1) * $limit;
+
+// Xây dựng điều kiện WHERE
+$whereConditions = ["p.trangThai = 1", "p.deleted_at IS NULL"];
+$params = [];
+
+if (!empty($f_tang)) {
+    // Dùng LIKE để hỗ trợ cả trường hợp CSDL lưu 'Tầng 1' hay '1'
+    $whereConditions[] = "t.tenTang LIKE :tang";
+    $params[':tang'] = "%$f_tang%";
+}
+
+if (!empty($f_gia) && is_numeric($f_gia)) {
+    $whereConditions[] = "p.giaThue <= :gia";
+    $params[':gia'] = $f_gia;
+}
+
+if (!empty($f_loai)) {
+    $whereConditions[] = "p.loaiPhong = :loai";
+    $params[':loai'] = $f_loai;
+}
+
+$whereSQL = implode(' AND ', $whereConditions);
+
+// Đếm tổng số bản ghi và tính tổng số trang
+$total_records = 0;
+$total_pages = 1;
+try {
+    if (isset($pdo)) {
+        $countSql = "SELECT COUNT(*) FROM PHONG p JOIN TANG t ON p.maTang = t.maTang WHERE " . $whereSQL;
+        $countStmt = $pdo->prepare($countSql);
+        foreach ($params as $key => $val) {
+            $countStmt->bindValue($key, $val);
+        }
+        $countStmt->execute();
+        $total_records = $countStmt->fetchColumn();
+        $total_pages = ceil($total_records / $limit);
+        if ($total_pages < 1) $total_pages = 1;
+    }
+} catch (PDOException $e) {
+    error_log("Database count error: " . $e->getMessage());
+}
+
+// Truy vấn lấy dữ liệu theo offset và limit
+$rooms = [];
+try {
+    if (isset($pdo)) {
+        $sql = "SELECT p.*, t.tenTang AS tang,
+                       (SELECT urlHinhAnh FROM PHONG_HINH_ANH pha WHERE pha.maPhong = p.maPhong ORDER BY pha.is_thumbnail DESC LIMIT 1) AS hinhAnh
+                FROM PHONG p JOIN TANG t ON p.maTang = t.maTang WHERE " . $whereSQL . " LIMIT :limit OFFSET :offset";
+        $stmt = $pdo->prepare($sql);
+        
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        
+        $stmt->execute();
+        $rooms = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+} catch (PDOException $e) {
+    error_log("Database query error: " . $e->getMessage());
+}
+
+// Giữ lại tham số url hiện tại cho thẻ chuyển trang
+$query_params = $_GET;
+unset($query_params['page']);
+$query_string = http_build_query($query_params);
+$query_string = $query_string ? '&' . $query_string : '';
 
 // 4. Nhúng Header & Navbar
 include_once 'includes/public/header.php';
@@ -116,24 +131,38 @@ include_once 'includes/public/navbar.php';
     }
 
     .card-brand__img-wrapper {
-        height: 220px;
         overflow: hidden;
         position: relative;
     }
 
+    /* Đảm bảo ảnh không bị méo và tỷ lệ quy chuẩn */
     .card-brand__img-wrapper img {
         width: 100%;
-        height: 100%;
         object-fit: cover;
+        aspect-ratio: 16/9;
         transition: transform 0.5s ease;
     }
 
     .card-brand:hover .card-brand__img-wrapper img {
         transform: scale(1.08);
     }
+    
+    /* Giao diện nút nhấn brand */
+    .btn-brand-primary {
+        background-color: #1e3a5f;
+        color: #ffffff;
+        transition: all 0.3s ease;
+        border: none;
+    }
+    
+    .btn-brand-primary:hover {
+        background-color: #152943;
+        color: #ffffff;
+    }
 
+    /* Giao diện thanh phân trang */
     .pagination .page-link {
-        color: var(--color-primary);
+        color: #1e3a5f;
         border: none;
         margin: 0 3px;
         border-radius: 6px !important;
@@ -141,8 +170,8 @@ include_once 'includes/public/navbar.php';
     }
 
     .pagination .page-item.active .page-link {
-        background-color: var(--color-accent);
-        color: var(--color-text);
+        background-color: #c9a66b;
+        color: #1f2a44;
         box-shadow: 0 4px 10px rgba(201, 166, 107, 0.3);
     }
 </style>
@@ -166,8 +195,8 @@ include_once 'includes/public/navbar.php';
         <aside class="col-12 col-lg-3">
             <div class="filter-sidebar">
                 <div class="card card-brand p-4 shadow-sm">
-                    <h5 class="fw-bold text-brand-primary mb-4 border-bottom pb-3">
-                        <i class="fa-solid fa-sliders me-2 text-brand-accent"></i>Bộ Lọc Tìm Kiếm
+                    <h5 class="fw-bold mb-4 border-bottom pb-3" style="color: #1e3a5f;">
+                        <i class="fa-solid fa-sliders me-2" style="color: #c9a66b;"></i>Bộ Lọc Tìm Kiếm
                     </h5>
                     
                     <form action="phong_trong.php" method="GET">
@@ -176,9 +205,9 @@ include_once 'includes/public/navbar.php';
                             <label for="tang" class="form-label small fw-bold text-muted text-uppercase">Tầng</label>
                             <select name="tang" id="tang" class="form-select border-0 bg-light shadow-none py-2 px-3">
                                 <option value="">Tất cả tầng</option>
-                                <option value="Trệt" <?php echo ($f_tang == 'Trệt') ? 'selected' : ''; ?>>Trệt</option>
-                                <?php for($i=1; $i<=5; $i++): ?>
-                                    <option value="<?php echo $i; ?>" <?php echo ($f_tang == $i) ? 'selected' : ''; ?>>Tầng <?php echo $i; ?></option>
+                                <option value="Trệt" <?php echo ($f_tang === 'Trệt') ? 'selected' : ''; ?>>Trệt</option>
+                                <?php for($i=1; $i<=10; $i++): ?>
+                                    <option value="<?php echo $i; ?>" <?php echo ($f_tang == $i && $f_tang !== 'Trệt') ? 'selected' : ''; ?>>Tầng <?php echo $i; ?></option>
                                 <?php endfor; ?>
                             </select>
                         </div>
@@ -192,20 +221,19 @@ include_once 'includes/public/navbar.php';
                                    value="<?php echo htmlspecialchars($f_gia); ?>">
                         </div>
 
-                        <!-- Capacity Filter -->
+                        <!-- Type Filter -->
                         <div class="mb-4">
-                            <label for="sucChua" class="form-label small fw-bold text-muted text-uppercase">Số chỗ làm việc</label>
-                            <select name="sucChua" id="sucChua" class="form-select border-0 bg-light shadow-none py-2 px-3">
-                                <option value="">Chọn số chỗ</option>
-                                <option value="5" <?php echo ($f_cho == '5') ? 'selected' : ''; ?>>Dưới 5 chỗ</option>
-                                <option value="10" <?php echo ($f_cho == '10') ? 'selected' : ''; ?>>5 - 10 chỗ</option>
-                                <option value="20" <?php echo ($f_cho == '20') ? 'selected' : ''; ?>>10 - 20 chỗ</option>
-                                <option value="50" <?php echo ($f_cho == '50') ? 'selected' : ''; ?>>Trên 20 chỗ</option>
+                            <label for="loaiPhong" class="form-label small fw-bold text-muted text-uppercase">Loại phòng</label>
+                            <select name="loaiPhong" id="loaiPhong" class="form-select border-0 bg-light shadow-none py-2 px-3">
+                                <option value="">Chọn loại phòng</option>
+                                <option value="Văn phòng riêng" <?php echo ($f_loai == 'Văn phòng riêng') ? 'selected' : ''; ?>>Văn phòng riêng</option>
+                                <option value="Mặt bằng kinh doanh" <?php echo ($f_loai == 'Mặt bằng kinh doanh') ? 'selected' : ''; ?>>Mặt bằng kinh doanh</option>
+                                <option value="Văn phòng ảo" <?php echo ($f_loai == 'Văn phòng ảo') ? 'selected' : ''; ?>>Văn phòng ảo</option>
                             </select>
                         </div>
 
                         <!-- Submit Button -->
-                        <button type="submit" class="btn btn-brand--accent w-100 py-2 fw-bold text-uppercase shadow-sm">
+                        <button type="submit" class="btn w-100 py-2 fw-bold text-uppercase shadow-sm" style="background-color: #c9a66b; color: #1f2a44; border: none;">
                             <i class="fa-solid fa-magnifying-glass me-2"></i>Lọc ngay
                         </button>
                         
@@ -216,10 +244,10 @@ include_once 'includes/public/navbar.php';
                 </div>
 
                 <!-- Assistance Card -->
-                <div class="card card-brand bg-brand-primary mt-4 p-4 text-white border-0" style="background-color: var(--color-primary);">
-                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-headset me-2 text-brand-accent"></i>Cần hỗ trợ tư vấn?</h6>
+                <div class="card card-brand mt-4 p-4 text-white border-0" style="background-color: #1e3a5f;">
+                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-headset me-2" style="color: #c9a66b;"></i>Cần hỗ trợ tư vấn?</h6>
                     <p class="small opacity-75 mb-3">Đội ngũ chuyên gia của chúng tôi luôn sẵn sàng hỗ trợ bạn tìm được văn phòng ưng ý nhất.</p>
-                    <a href="tel:0123456789" class="btn btn-brand--accent btn-sm w-100 py-2 fw-bold">Gọi: 0123 456 789</a>
+                    <a href="tel:0123456789" class="btn w-100 py-2 fw-bold" style="background-color: #c9a66b; color: #1f2a44;">Gọi: 0123 456 789</a>
                 </div>
             </div>
         </aside>
@@ -227,88 +255,115 @@ include_once 'includes/public/navbar.php';
         <!-- == MAIN CONTENT (9/12) == -->
         <main class="col-12 col-lg-9">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <p class="mb-0 text-muted">Hiển thị <span class="fw-bold text-brand-primary">6</span> kết quả phù hợp</p>
+                <p class="mb-0 text-muted">Hiển thị <span class="fw-bold" style="color: #1e3a5f;"><?php echo $total_records; ?></span> kết quả phù hợp</p>
                 <div class="d-none d-md-block">
-                    <select class="form-select form-select-sm border-0 bg-light shadow-none">
-                        <option>Mới nhất</option>
-                        <option>Giá thấp đến cao</option>
-                        <option>Giá cao đến thấp</option>
-                        <option>Diện tích tăng dần</option>
-                    </select>
+                    <!-- Khu vực chèn dropdown sắp xếp sau này -->
                 </div>
             </div>
 
             <!-- Room Grid -->
             <div class="row g-4">
-                <?php foreach ($mockRooms as $room): ?>
-                    <div class="col-12 col-md-6 col-xl-4">
-                        <div class="card card-brand h-100 rounded-3">
-                            <div class="card-brand__img-wrapper">
-                                <img src="<?php echo htmlspecialchars($room['hinhAnh']); ?>" 
-                                     alt="<?php echo htmlspecialchars($room['ten']); ?>">
-                                <span class="position-absolute top-0 start-0 m-3 badge badge-brand--success shadow-sm">
-                                    <i class="fa-solid fa-check-circle me-1"></i> <?php echo htmlspecialchars($room['trangThai']); ?>
-                                </span>
-                            </div>
-                            
-                            <div class="card-body p-4 bg-white">
-                                <h5 class="card-title fw-bold text-brand-primary mb-2 line-clamp-1">
-                                    <?php echo htmlspecialchars($room['ten']); ?>
-                                </h5>
-                                <p class="small text-muted mb-3">
-                                    <i class="fa-solid fa-location-dot me-1 text-brand-accent"></i> 
-                                    Tầng <?php echo htmlspecialchars($room['tang']); ?> • Mã: <?php echo htmlspecialchars($room['maPhong']); ?>
-                                </p>
-                                
-                                <div class="row g-2 mb-4">
-                                    <div class="col-6">
-                                        <div class="bg-light p-2 rounded-2 text-center">
-                                            <span class="d-block small text-muted mb-1"><i class="fa-solid fa-clone"></i> Diện tích</span>
-                                            <span class="fw-bold text-brand-primary small"><?php echo htmlspecialchars($room['dienTich']); ?> m²</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="bg-light p-2 rounded-2 text-center">
-                                            <span class="d-block small text-muted mb-1"><i class="fa-solid fa-person-shelter"></i> Sức chứa</span>
-                                            <span class="fw-bold text-brand-primary small"><?php echo htmlspecialchars($room['choNgoi']); ?> chỗ</span>
-                                        </div>
-                                    </div>
+                <?php if (!empty($rooms)): ?>
+                    <?php foreach ($rooms as $room): ?>
+                        <?php 
+                            // Xử lý placeholder ảnh
+                            $hinhAnh = !empty($room['hinhAnh']) ? $room['hinhAnh'] : 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80'; 
+                        ?>
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <div class="card card-brand h-100 rounded-3">
+                                <div class="card-brand__img-wrapper">
+                                    <img src="<?php echo htmlspecialchars($hinhAnh); ?>" 
+                                         alt="<?php echo htmlspecialchars($room['tenPhong']); ?>">
+                                    <span class="position-absolute top-0 start-0 m-3 badge shadow-sm" style="background-color: #28a745; color: white;">
+                                        <i class="fa-solid fa-check-circle me-1"></i> <?php echo $room['trangThai'] == 1 ? 'Phòng Trống' : 'Khác'; ?>
+                                    </span>
                                 </div>
+                                
+                                <div class="card-body p-4 bg-white">
+                                    <h5 class="card-title fw-bold mb-2 text-truncate" style="color: #1e3a5f;" title="<?php echo htmlspecialchars($room['tenPhong']); ?>">
+                                        <?php echo htmlspecialchars($room['tenPhong']); ?>
+                                    </h5>
+                                    <p class="small text-muted mb-3">
+                                        <i class="fa-solid fa-location-dot me-1" style="color: #c9a66b;"></i> 
+                                        <?php echo htmlspecialchars($room['tang']); ?> • Mã: <?php echo htmlspecialchars($room['maPhong']); ?>
+                                    </p>
+                                    
+                                    <div class="row g-2 mb-4">
+                                        <div class="col-6">
+                                            <div class="bg-light p-2 rounded-2 text-center h-100 d-flex flex-column justify-content-center">
+                                                <span class="d-block small text-muted mb-1"><i class="fa-solid fa-clone"></i> Diện tích</span>
+                                                <span class="fw-bold small" style="color: #1e3a5f;"><?php echo htmlspecialchars($room['dienTich']); ?> m²</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="bg-light p-2 rounded-2 text-center h-100 d-flex flex-column justify-content-center">
+                                                <span class="d-block small text-muted mb-1"><i class="fa-solid fa-tag"></i> Loại phòng</span>
+                                                <span class="fw-bold small text-truncate d-block w-100" style="color: #1e3a5f;" title="<?php echo htmlspecialchars($room['loaiPhong']); ?>">
+                                                    <?php echo htmlspecialchars($room['loaiPhong']); ?>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <div>
-                                        <span class="d-block small text-muted lh-1 mb-1">Giá thuê từ</span>
-                                        <span class="fw-bold fs-5 text-brand-accent"><?php echo number_format($room['gia'], 0, ',', '.'); ?> đ</span>
-                                        <span class="small text-muted">/tháng</span>
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div>
+                                            <span class="d-block small text-muted lh-1 mb-1">Giá thuê từ</span>
+                                            <span class="fw-bold fs-5" style="color: #c9a66b;"><?php echo number_format($room['giaThue'], 0, ',', '.'); ?> đ</span>
+                                            <span class="small text-muted">/tháng</span>
+                                        </div>
                                     </div>
-                                </div>
-                                
-                                <div class="border-top pt-3">
-                                    <a href="chi_tiet_phong.php?maPhong=<?php echo urlencode($room['maPhong']); ?>" 
-                                       class="btn btn-brand--primary w-100 py-2 rounded-2 fw-semibold">
-                                        Xem Chi Tiết <i class="fa-solid fa-arrow-right-long ms-2"></i>
-                                    </a>
+                                    
+                                    <div class="border-top pt-3 mt-auto">
+                                        <a href="chi_tiet_phong.php?maPhong=<?php echo urlencode($room['maPhong']); ?>" 
+                                           class="btn btn-brand-primary w-100 py-2 rounded-2 fw-semibold">
+                                            Xem Chi Tiết <i class="fa-solid fa-arrow-right-long ms-2"></i>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="col-12 text-center py-5">
+                        <i class="fa-regular fa-folder-open text-muted mb-3" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted">Không tìm thấy phòng nào phù hợp.</h5>
+                        <p class="text-muted"><a href="phong_trong.php" class="text-decoration-none">Nhấn vào đây để xóa bộ lọc</a></p>
                     </div>
-                <?php endforeach; ?>
+                <?php endif; ?>
             </div>
 
             <!-- Pagination -->
-            <nav class="mt-5 pb-4" aria-label="Room navigation">
+            <?php if ($total_pages > 1): ?>
+            <nav class="mt-5 pb-4" aria-label="Phân trang danh sách phòng">
                 <ul class="pagination justify-content-center">
+                    <?php if ($page > 1): ?>
+                    <li class="page-item">
+                        <a class="page-link shadow-none px-3" href="?page=<?php echo $page - 1 . $query_string; ?>">Trước</a>
+                    </li>
+                    <?php else: ?>
                     <li class="page-item disabled">
                         <a class="page-link shadow-none px-3" href="#" tabindex="-1" aria-disabled="true">Trước</a>
                     </li>
-                    <li class="page-item active"><a class="page-link shadow-none px-3" href="#">1</a></li>
-                    <li class="page-item"><a class="page-link shadow-none px-3" href="#">2</a></li>
-                    <li class="page-item"><a class="page-link shadow-none px-3" href="#">3</a></li>
-                    <li class="page-item">
-                        <a class="page-link shadow-none px-3" href="#">Sau</a>
+                    <?php endif; ?>
+
+                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                    <li class="page-item <?php echo ($i == $page) ? 'active' : ''; ?>">
+                        <a class="page-link shadow-none px-3" href="?page=<?php echo $i . $query_string; ?>"><?php echo $i; ?></a>
                     </li>
+                    <?php endfor; ?>
+
+                    <?php if ($page < $total_pages): ?>
+                    <li class="page-item">
+                        <a class="page-link shadow-none px-3" href="?page=<?php echo $page + 1 . $query_string; ?>">Sau</a>
+                    </li>
+                    <?php else: ?>
+                    <li class="page-item disabled">
+                        <a class="page-link shadow-none px-3" href="#" tabindex="-1" aria-disabled="true">Sau</a>
+                    </li>
+                    <?php endif; ?>
                 </ul>
             </nav>
+            <?php endif; ?>
         </main>
     </div>
 </div>

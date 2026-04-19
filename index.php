@@ -9,19 +9,21 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-// Include file kết nối CSDL (biến $conn)
-require_once 'config/database.php';
+// Include file kết nối CSDL (biến \$pdo)
+require_once 'includes/common/db.php';
+$pdo = Database::getInstance()->getConnection();
 
 // Thực thi truy vấn lấy 3 phòng nổi bật
 $featuredRooms = [];
 try {
-    if (isset($conn)) {
-        $sql = "SELECT p.maPhong, p.tenPhong, p.loaiPhong, p.dienTich, p.giaThue, p.trangThai, p.hinhAnh, t.tenTang AS tang 
+    if (isset($pdo)) {
+        $sql = "SELECT p.maPhong, p.tenPhong, p.loaiPhong, p.dienTich, p.giaThue, p.trangThai, t.tenTang AS tang,
+                       (SELECT urlHinhAnh FROM PHONG_HINH_ANH pha WHERE pha.maPhong = p.maPhong ORDER BY pha.is_thumbnail DESC LIMIT 1) AS hinhAnh
                 FROM PHONG p 
                 JOIN TANG t ON p.maTang = t.maTang 
                 WHERE p.deleted_at IS NULL 
                 LIMIT 3";
-        $stmt = $conn->prepare($sql);
+        $stmt = $pdo->prepare($sql);
         $stmt->execute();
         $featuredRooms = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -281,13 +283,13 @@ include_once 'includes/public/navbar.php';
                         <!-- XSS protection for Display -->
                         <img src="<?php echo htmlspecialchars($hinhAnh); ?>" class="card-img-top w-100" alt="<?php echo htmlspecialchars($room['tenPhong']); ?>">
                         
-                        <?php if ($room['trangThai'] === 'Trống'): ?>
+                        <?php if ($room['trangThai'] == 1): ?>
                             <span class="position-absolute top-0 start-0 m-3 badge badge-brand--success shadow-sm">
-                                <i class="fa-solid fa-check-circle me-1"></i> <?php echo htmlspecialchars($room['trangThai']); ?>
+                                <i class="fa-solid fa-check-circle me-1"></i> Phòng Trống
                             </span>
                         <?php else: ?>
                             <span class="position-absolute top-0 start-0 m-3 badge bg-secondary shadow-sm">
-                                <i class="fa-solid fa-lock me-1"></i> <?php echo htmlspecialchars($room['trangThai']); ?>
+                                <i class="fa-solid fa-lock me-1"></i> Đã Có Khách
                             </span>
                         <?php endif; ?>
                     </div>
