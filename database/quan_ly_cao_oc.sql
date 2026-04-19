@@ -88,7 +88,9 @@ CREATE TABLE HOP_DONG (
     ngayBatDau DATE,
     ngayKetThuc DATE,
     tienTienCoc DECIMAL(15,2) DEFAULT 0.00,
-    trangThai TINYINT DEFAULT 1 COMMENT '1: Hieu luc, 0: Ket thuc, 2: Huy',
+    trangThai TINYINT DEFAULT 1 COMMENT '1: Hieu luc, 0: Ket thuc, 2: Huy, 3: ChoDuyet',
+    ngayHuy DATE NULL,
+    lyDoHuy TEXT NULL,
     deleted_at DATETIME DEFAULT NULL,
     CONSTRAINT fk_hop_dong_kh FOREIGN KEY (maKH) REFERENCES KHACH_HANG(maKH),
     CONSTRAINT fk_hop_dong_nv FOREIGN KEY (maNV) REFERENCES NHAN_VIEN(maNV)
@@ -135,17 +137,23 @@ CREATE TABLE CHI_TIET_GIA_HAN (
 
 -- 10. Bảng HOA_DON
 CREATE TABLE HOA_DON (
-    maHoaDon VARCHAR(50) PRIMARY KEY,
+    soHoaDon VARCHAR(50) PRIMARY KEY,
     soHopDong VARCHAR(50) NOT NULL,
     thang INT NOT NULL,
     nam INT NOT NULL,
     tongTien DECIMAL(15,2) DEFAULT 0.00,
     soTienDaNop DECIMAL(15,2) DEFAULT 0.00,
     soTienConNo DECIMAL(15,2) DEFAULT 0.00,
-    trangThai TINYINT DEFAULT 0 COMMENT '0: Chua thanh toan, 1: Da thanh toan 1 phan, 2: Thanh toan du, 3: Bi Huy',
+    trangThai VARCHAR(20) NOT NULL DEFAULT 'ConNo' COMMENT 'ConNo | DaThuMotPhan | DaThu | Void | Huy',
+    kyThanhToan VARCHAR(20) NOT NULL COMMENT 'Dinh dang MM/YYYY',
+    lyDo TEXT NULL,
+    maNV VARCHAR(50) NULL,
+    loaiHoaDon VARCHAR(20) DEFAULT 'Chinh' COMMENT 'Chinh | CreditNote',
     ngayLap DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     deleted_at DATETIME DEFAULT NULL,
-    CONSTRAINT fk_hoa_don_hd FOREIGN KEY (soHopDong) REFERENCES HOP_DONG(soHopDong)
+    CONSTRAINT fk_hoa_don_hd FOREIGN KEY (soHopDong) REFERENCES HOP_DONG(soHopDong),
+    CONSTRAINT fk_hd_nv FOREIGN KEY (maNV) REFERENCES NHAN_VIEN(maNV)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -240,10 +248,10 @@ CREATE TABLE HOA_DON_VOID (
 id INT AUTO_INCREMENT PRIMARY KEY,
 soPhieu VARCHAR(50) NOT NULL,
 lyDoVoid TEXT NOT NULL,
-maNV_Void VARCHAR(50) NOT NULL, -- Đã thêm NOT NULL
+maNV_Void VARCHAR(50) NOT NULL,
 ngayVoid DATETIME DEFAULT CURRENT_TIMESTAMP,
-CONSTRAINT fk_hdvoid_hd FOREIGN KEY (soPhieu) REFERENCES HOA_DON(maHoaDon) ON DELETE CASCADE, -- Đã thêm CASCADE
-CONSTRAINT fk_hdvoid_nv FOREIGN KEY (maNV_Void) REFERENCES NHAN_VIEN(maNV) ON DELETE CASCADE -- Đã thêm CASCADE
+CONSTRAINT fk_hdvoid_hd FOREIGN KEY (soPhieu) REFERENCES HOA_DON(soHoaDon) ON DELETE CASCADE,
+CONSTRAINT fk_hdvoid_nv FOREIGN KEY (maNV_Void) REFERENCES NHAN_VIEN(maNV) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -278,7 +286,7 @@ CREATE TABLE TRANH_CHAP_HOA_DON (
     noiDung TEXT NOT NULL,
     trangThai TINYINT DEFAULT 0 COMMENT '0: Moi tao, 1: Dang xu ly, 2: Da giai quyet',
     ngayTao DATETIME DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_tranhchap_hd FOREIGN KEY (maHoaDon) REFERENCES HOA_DON(maHoaDon)
+    CONSTRAINT fk_tranhchap_hd FOREIGN KEY (maHoaDon) REFERENCES HOA_DON(soHoaDon)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -349,6 +357,31 @@ CREATE TABLE MAINTENANCE_STATUS_LOG (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_maintenacne_log_req FOREIGN KEY (request_id) REFERENCES MAINTENANCE_REQUEST(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 27. Bảng PHIEU_THU (Ledger giao dịch thanh toán)
+CREATE TABLE PHIEU_THU (
+    soPhieuThu VARCHAR(50) PRIMARY KEY,
+    ngayThu DATETIME DEFAULT CURRENT_TIMESTAMP,
+    tongTienThu DECIMAL(15,2) NOT NULL,
+    phuongThuc VARCHAR(30) NOT NULL COMMENT 'TienMat | ChuyenKhoan | Vi',
+    maGiaoDich VARCHAR(100) NULL,
+    maNV VARCHAR(50) NOT NULL,
+    ghiChu TEXT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_pt_nv FOREIGN KEY (maNV) REFERENCES NHAN_VIEN(maNV)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- 28. Bảng PHIEU_THU_CHI_TIET (Mapping waterfall phân bổ tiền vào hóa đơn)
+CREATE TABLE PHIEU_THU_CHI_TIET (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    soPhieuThu VARCHAR(50) NOT NULL,
+    soHoaDon VARCHAR(50) NOT NULL,
+    soTienPhanBo DECIMAL(15,2) NOT NULL,
+    CONSTRAINT fk_ptct_pt FOREIGN KEY (soPhieuThu) REFERENCES PHIEU_THU(soPhieuThu),
+    CONSTRAINT fk_ptct_hd FOREIGN KEY (soHoaDon) REFERENCES HOA_DON(soHoaDon)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- ==========================================================
 -- PHẦN 3: DỮ LIỆU KHỞI TẠO (SEED DATA)
