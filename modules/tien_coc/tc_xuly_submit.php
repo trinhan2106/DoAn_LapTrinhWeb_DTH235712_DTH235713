@@ -59,11 +59,11 @@ $pdo = Database::getInstance()->getConnection();
 try {
     $pdo->beginTransaction();
 
-    // UPDATE tien coc: chi cho phep khi trangThai = 1 (Dang giu) hoac 2 (Cho xu ly)
+    // UPDATE tien coc: chi cho phep khi trangThai = 1 (Dang giu) hoac 4 (Cho xu ly)
     $stmtUpdate = $pdo->prepare("
         UPDATE TIEN_COC 
         SET trangThai = ? 
-        WHERE maTienCoc = ? AND trangThai IN (1, 2)
+        WHERE maTienCoc = ? AND trangThai IN (1, 4)
     ");
     $stmtUpdate->execute([$actionStatus, $maTienCoc]);
 

@@ -238,7 +238,7 @@ CREATE TABLE TIEN_COC (
     ngayNop DATETIME DEFAULT CURRENT_TIMESTAMP,
     phuongThuc VARCHAR(50),
     nguoiThu VARCHAR(20),
-    trangThai TINYINT DEFAULT 1 COMMENT '1: Da thu, 2: Da hoan, 3: Tich thu',
+    trangThai TINYINT DEFAULT 1 COMMENT '1: Da thu, 2: Da hoan, 3: Tich thu, 4: ChoXuLy (HD da huy)',
     CONSTRAINT fk_tiencoc_hd FOREIGN KEY (soHopDong) REFERENCES HOP_DONG(soHopDong),
     CONSTRAINT fk_tiencoc_nv FOREIGN KEY (nguoiThu) REFERENCES NHAN_VIEN(maNV)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

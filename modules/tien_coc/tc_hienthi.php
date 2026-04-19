@@ -32,6 +32,7 @@ function renderBadge($stt) {
         case 1: return '<span class="badge bg-success"><i class="fa-solid fa-vault me-1"></i>Đã Thu (Đang Giữ)</span>';
         case 2: return '<span class="badge bg-primary"><i class="fa-solid fa-hand-holding-dollar me-1"></i>Đã Hoàn Khách</span>';
         case 3: return '<span class="badge bg-danger"><i class="fa-solid fa-gavel me-1"></i>Bị Tịch Thu</span>';
+        case 4: return '<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>Chờ Xử Lý (HĐ đã hủy)</span>';
         default: return '<span class="badge bg-secondary">Không Rõ</span>';
     }
 }
@@ -102,7 +103,7 @@ function renderBadge($stt) {
                             <td><i class="fa-regular fa-clock me-1 text-muted"></i><?= date('d/m/Y H:i', strtotime($tc['ngayNop'])) ?></td>
                             <td class="text-center"><?= renderBadge((int)$tc['trangThai']) ?></td>
                             <td class="text-center">
-                                <?php if($tc['trangThai'] == 1): ?>
+                                <?php if(in_array((int)$tc['trangThai'], [1, 4], true)): ?>
                                     <a href="tc_xuly.php?id=<?= urlencode($tc['maTienCoc']) ?>" class="btn btn-warning btn-sm fw-bold shadow-sm">
                                         <i class="fa-solid fa-scale-balanced me-1"></i>Xử lý Cọc
                                     </a>
