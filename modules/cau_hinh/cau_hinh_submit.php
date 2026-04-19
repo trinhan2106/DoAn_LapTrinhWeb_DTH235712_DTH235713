@@ -14,12 +14,11 @@ require_once __DIR__ . '/../../includes/common/functions.php';
 
 // Kiểm duyệt Phiên & Quyền
 kiemTraSession();
-if ((int)($_SESSION['user_role'] ?? $_SESSION['role_id'] ?? 4) !== ROLE_ADMIN) {
-    die("Access Denied: Unauthorized request.");
-}
+kiemTraRole([ROLE_ADMIN]);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    die("Method Not Allowed.");
+    header("Location: index.php");
+    exit();
 }
 
 // Xác thực Token CSRF
@@ -70,7 +69,7 @@ try {
         $pdo->rollBack();
     }
     error_log("Configuration Update PDO Error: " . $e->getMessage());
-    $_SESSION['error_msg'] = "Sự cố cập nhật CSDL: " . $e->getMessage();
+    $_SESSION['error_msg'] = "Sự cố cập nhật CSDL. Vui lòng kiểm tra lại.";
     header("Location: index.php");
     exit();
 }

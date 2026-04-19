@@ -13,11 +13,12 @@ require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 
 kiemTraSession();
-if ((int)($_SESSION['user_role'] ?? 0) !== ROLE_KHACH_HANG) {
-    die("Access Denied.");
-}
+kiemTraRole([ROLE_KHACH_HANG]);
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Method Not Allowed.");
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: yc_them.php");
+    exit();
+}
 
 $csrf = filter_input(INPUT_POST, 'csrf_token', FILTER_DEFAULT);
 if (!$csrf || !validateCSRFToken($csrf)) {

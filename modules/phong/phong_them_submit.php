@@ -16,9 +16,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // Xác thực thẻ bài CSRF Form
-$csrf_token = filter_input(INPUT_POST, 'csrf_token', FILTER_DEFAULT);
 if (!$csrf_token || !validateCSRFToken($csrf_token)) {
-    die("<h1>403 Lỗi bảo mật CSRF</h1>");
+    $_SESSION['error_msg'] = "Lỗi bảo mật CSRF.";
+    header("Location: phong_hienthi.php");
+    exit();
 }
 
 // Bắt Params
@@ -37,9 +38,10 @@ $giaThue       = (float)($_POST['giaThue'] ?? 0); // Nhận field readonly (Bên
 $trangThai     = 1; // 1 = Tượng Trưng cho Cờ: "Trong" / "Rỗng chưa khách"
 $loaiPhong     = 'Văn phòng'; 
 
-// Validate Logic Backend
 if(empty($maPhong) || empty($maTang)) {
-    die("Lỗi không được bỏ trống các trường định danh cấp 1.");
+    $_SESSION['error_msg'] = "Lỗi không được bỏ trống các trường định danh cấp 1.";
+    header("Location: phong_them.php");
+    exit();
 }
 
 try {
@@ -78,11 +80,14 @@ try {
         header("Location: phong_hienthi.php?msg=add_success");
         exit();
     } else {
-        die("Hệ thống MySQL từ chối lưu lệnh!");
+        $_SESSION['error_msg'] = "Hệ thống MySQL từ chối lưu lệnh!";
+        header("Location: phong_them.php");
+        exit();
     }
 
 } catch (PDOException $e) {
-    // Crash bắt ngẫu nhiên Catch, báo log Server Error
     error_log("LÔI INSERT CSDL TẠI QUẢN LÝ PHÒNG: " . $e->getMessage());
-    die("Truy vấn thất bại Exception: " . $e->getMessage() . " (Vui lòng kiểm tra lại cấu trúc DB Data Types đã Add Column đủ chưa)");
+    $_SESSION['error_msg'] = "Truy vấn thất bại. Vui lòng kiểm tra lại cấu trúc DB.";
+    header("Location: phong_them.php");
+    exit();
 }

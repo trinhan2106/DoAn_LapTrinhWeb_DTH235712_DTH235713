@@ -15,9 +15,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // Bắt rào CSRF
-$csrf_token = filter_input(INPUT_POST, 'csrf_token', FILTER_DEFAULT);
 if (!$csrf_token || !validateCSRFToken($csrf_token)) {
-    die("<h1>Lỗi bảo vệ Anti-CSRF</h1>");
+    $_SESSION['error_msg'] = "Lỗi bảo vệ Anti-CSRF.";
+    header("Location: phong_hienthi.php");
+    exit();
 }
 
 // Xử lý Lọc Dữ Liệu Raw POST
@@ -34,7 +35,9 @@ $giaThue       = (float)($_POST['giaThue'] ?? 0);
 
 // Double check Input Rỗng
 if(empty($maPhong) || empty($maTang)) {
-    die("Khuyết lỗi DSN Tham Chiếu. Vui lòng thử lại!");
+    $_SESSION['error_msg'] = "Khuyết lỗi DSN Tham Chiếu. Vui lòng thử lại!";
+    header("Location: phong_sua.php?id=" . urlencode($maPhong));
+    exit();
 }
 
 try {
@@ -67,13 +70,17 @@ try {
     
     if($res) {
         // Có thể chèn Flash Session ở đây nếu cần báo Message Box sang file HT
-        header("Location: phong_hienthi.php?msg=add_success"); // Tái sử dụng Msg cho Form View
+        header("Location: phong_hienthi.php?msg=edit_success"); // Tái sử dụng Msg cho Form View
         exit();
     } else {
-        die("Hệ thống từ chối quyền UPDATE vào CSDL!");
+        $_SESSION['error_msg'] = "Hệ thống từ chối quyền UPDATE vào CSDL!";
+        header("Location: phong_sua.php?id=" . urlencode($maPhong));
+        exit();
     }
 
 } catch (PDOException $e) {
     error_log("LÔI UPDATE CSDL ADMIN PHÒNG CỐT LÕI: " . $e->getMessage());
-    die("Sụp đổ Database: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Sụp đổ Database, vui lòng thử lại sau.";
+    header("Location: phong_sua.php?id=" . urlencode($maPhong));
+    exit();
 }

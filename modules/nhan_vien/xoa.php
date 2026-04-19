@@ -5,17 +5,19 @@
  */
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../../config/constants.php';
+require_once __DIR__ . '/../../config/roles.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 
 kiemTraSession();
-if ((int)($_SESSION['user_role'] ?? $_SESSION['role_id'] ?? 4) !== ROLE_ADMIN) {
-    die("BLOCK: Access Denied. Việc khai trừ nhân sự yêu cầu Quản Trị Hệ Thống!");
-}
+kiemTraRole([ROLE_ADMIN]);
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Hành động chỉ đón nhận POST Method (CSRF).");
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: index.php");
+    exit();
+}
 
 $csrf = filter_input(INPUT_POST, 'csrf_token', FILTER_DEFAULT);
 if (!$csrf || !validateCSRFToken($csrf)) {

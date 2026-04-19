@@ -2,16 +2,19 @@
 // modules/nhan_vien/them_submit.php
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../../config/constants.php';
+require_once __DIR__ . '/../../config/roles.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
-require_once __DIR__ . '/../../includes/common/functions.php'; // Chứa ghiAuditLog
+require_once __DIR__ . '/../../includes/common/functions.php';
 
 kiemTraSession();
-if ((int)($_SESSION['user_role'] ?? $_SESSION['role_id'] ?? 4) !== ROLE_ADMIN) {
-    die("BLOCK: Access Denied.");
+kiemTraRole([ROLE_ADMIN]);
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: index.php");
+    exit();
 }
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Must POST");
 
 $csrf = filter_input(INPUT_POST, 'csrf_token', FILTER_DEFAULT);
 if (!$csrf || !validateCSRFToken($csrf)) {
@@ -67,7 +70,8 @@ try {
     exit();
 
 } catch (PDOException $e) {
-    $_SESSION['error_msg'] = "Lỗi lõi CSDL: " . $e->getMessage();
+    error_log("[them_submit] PDO error: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Xay ra loi khi them nhan vien. Vui long thu lai.";
     header("Location: them.php");
     exit();
 }

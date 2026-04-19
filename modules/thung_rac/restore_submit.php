@@ -9,16 +9,16 @@ require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
+require_once __DIR__ . '/../../config/roles.php';
 
 kiemTraSession();
 
-// Chống Hack Quyền Truy Cập Lõi
-$role = (int)($_SESSION['user_role'] ?? 4);
-if (!in_array($role, [1, 2])) {
-    die("Blocked: SQL Injection / Permission Escalation Attack Detected.");
-}
+kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Trạm GET bị niêm phong tại đây.");
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: index.php");
+    exit();
+}
 
 // Validate Cổng CSRF 
 $csrf_token = filter_input(INPUT_POST, 'csrf_token', FILTER_DEFAULT);
@@ -77,7 +77,7 @@ try {
         $pdo->rollBack();
     }
     error_log("Lỗi System Rollback khi Restore Phòng: " . $e->getMessage());
-    $_SESSION['error_msg'] = "Mã Lỗi Hệ Thoái: Không gỡ được File - " . $e->getMessage();
+    $_SESSION['error_msg'] = "Mã Lỗi Hệ Thống: Không thể hồi sinh phòng.";
     header("Location: index.php");
     exit();
 }
