@@ -1,7 +1,7 @@
 <?php
 /**
- * modules/cao_oc/them.php
- * Giao diện thêm mới Cao ốc - Thiết kế đồng nhất hệ thống
+ * modules/tang/them.php
+ * Giao diện thêm mới Tầng
  */
 
 // 1. KHỞI TẠO & BẢO MẬT
@@ -13,6 +13,11 @@ require_once __DIR__ . '/../../includes/common/csrf.php';
 // Xác thực Session & Phân quyền
 kiemTraSession();
 kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
+
+// Kết nối CSDL để lấy danh sách Cao ốc phục vụ dropdown
+$db = Database::getInstance()->getConnection();
+$sqlCaoOc = "SELECT maCaoOc, tenCaoOc FROM CAO_OC WHERE deleted_at IS NULL ORDER BY tenCaoOc ASC";
+$dsCaoOc = $db->query($sqlCaoOc)->fetchAll();
 
 // Tạo CSRF Token cho form
 $csrf_token = generateCSRFToken();
@@ -51,7 +56,7 @@ $csrf_token = generateCSRFToken();
             color: #1e3a5f;
             margin-bottom: 0.5rem;
         }
-        .form-control:focus {
+        .form-control:focus, .form-select:focus {
             border-color: #c9a66b;
             box-shadow: 0 0 0 0.25rem rgba(201, 166, 107, 0.15);
         }
@@ -67,48 +72,51 @@ $csrf_token = generateCSRFToken();
         <?php include __DIR__ . '/../../includes/admin/notifications.php'; ?>
         
         <main class="admin-main-content p-4">
-            <!-- Breadcrumbs -->
-            <nav aria-label="breadcrumb" class="mb-4 d-flex justify-content-center">
-                <ol class="breadcrumb mb-0" style="width: 800px;">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="<?= BASE_URL ?>admin_layout.php" class="text-decoration-none">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="index.php" class="text-decoration-none">Quản lý Cao ốc</a></li>
-                    <li class="breadcrumb-item active">Thêm cao ốc mới</li>
+                    <li class="breadcrumb-item"><a href="index.php" class="text-decoration-none">Quản lý Tầng</a></li>
+                    <li class="breadcrumb-item active">Thêm mới</li>
                 </ol>
             </nav>
 
             <div class="card form-card shadow-sm border-0">
                 <div class="form-header">
                     <h2 class="h4 mb-0 fw-bold">
-                        <i class="bi bi-plus-circle me-2"></i>THÊM CAO ỐC MỚI
+                        <i class="bi bi-plus-circle me-2"></i>THÊM TẦNG MỚI
                     </h2>
-                    <p class="mb-0 text-white-50 small mt-1">Khởi tạo dữ liệu tòa nhà mới vào hệ thống vận hành.</p>
+                    <p class="mb-0 text-white-50 small mt-1">Vui lòng điền đầy đủ thông tin để khởi tạo tầng mới cho tòa nhà.</p>
                 </div>
                 <div class="card-body p-4 p-md-5">
-                    <form action="them_submit.php" method="POST">
+                    <form action="them_submit.php" method="POST" id="formThemTang">
                         <!-- CSRF Protection -->
                         <input type="hidden" name="csrf_token" value="<?= e($csrf_token) ?>">
 
                         <div class="row g-4">
-                            <!-- Tên Cao ốc -->
+                            <!-- Chọn Cao ốc -->
                             <div class="col-md-12">
-                                <label for="tenCaoOc" class="form-label">Tên Cao ốc <span class="text-danger">*</span></label>
-                                <input type="text" name="tenCaoOc" id="tenCaoOc" class="form-control py-2" 
-                                       placeholder="Ví dụ: SAPPHIRE Tower - Khối A" required autofocus>
+                                <label for="maCaoOc" class="form-label">Tòa nhà (Cao ốc) <span class="text-danger">*</span></label>
+                                <select name="maCaoOc" id="maCaoOc" class="form-select py-2" required>
+                                    <option value="">-- Chọn tòa nhà --</option>
+                                    <?php foreach ($dsCaoOc as $co): ?>
+                                        <option value="<?= e($co['maCaoOc']) ?>"><?= e($co['tenCaoOc']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div class="form-text">Chọn tòa nhà mà tầng này thuộc về.</div>
                             </div>
 
-                            <!-- Địa chỉ -->
-                            <div class="col-md-12">
-                                <label for="diaChi" class="form-label">Địa chỉ <span class="text-danger">*</span></label>
-                                <textarea name="diaChi" id="diaChi" class="form-control py-2" rows="3" 
-                                          placeholder="Số... Đường... Phường... Quận..." required></textarea>
+                            <!-- Tên Tầng -->
+                            <div class="col-md-8">
+                                <label for="tenTang" class="form-label">Tên Tầng <span class="text-danger">*</span></label>
+                                <input type="text" name="tenTang" id="tenTang" class="form-control py-2" placeholder="Ví dụ: Tầng 5, Tầng Trệt, Rooftop..." required>
                             </div>
 
-                            <!-- Số tầng -->
-                            <div class="col-md-6">
-                                <label for="soTang" class="form-label">Số tầng <span class="text-danger">*</span></label>
-                                <input type="number" name="soTang" id="soTang" class="form-control py-2" 
-                                       min="1" max="250" value="1" required>
-                                <div class="form-text">Tổng số tầng khai thác của tòa nhà.</div>
+                            <!-- Hệ số giá -->
+                            <div class="col-md-4">
+                                <label for="heSoGia" class="form-label">Hệ số giá <span class="text-danger">*</span></label>
+                                <input type="number" name="heSoGia" id="heSoGia" class="form-control py-2" step="0.01" min="0.01" value="1.00" required>
+                                <div class="form-text">Hệ số nhân đơn giá (mặc định 1.00).</div>
                             </div>
 
                             <div class="col-12 mt-5 border-top pt-4">
@@ -130,6 +138,17 @@ $csrf_token = generateCSRFToken();
         <?php include __DIR__ . '/../../includes/admin/admin-footer.php'; ?>
     </div>
 </div>
+
+<script>
+// Validation đơn giản phía client
+document.getElementById('formThemTang').addEventListener('submit', function(e) {
+    const heSoGia = document.getElementById('heSoGia').value;
+    if (parseFloat(heSoGia) <= 0) {
+        alert('Hệ số giá phải lớn hơn 0.');
+        e.preventDefault();
+    }
+});
+</script>
 
 </body>
 </html>

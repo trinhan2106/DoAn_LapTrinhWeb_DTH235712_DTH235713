@@ -1,7 +1,7 @@
 <?php
 /**
- * modules/cao_oc/sua.php
- * Giao diện chỉnh sửa Cao ốc - Thiết kế đồng bộ
+ * modules/tang/sua.php
+ * Giao diện chỉnh sửa thông tin Tầng
  */
 
 // 1. KHỞI TẠO & BẢO MẬT
@@ -17,23 +17,27 @@ kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 // 2. LẤY DỮ LIỆU CŨ PHỤC VỤ FORM
 $id = $_GET['id'] ?? '';
 if (empty($id)) {
-    $_SESSION['error_msg'] = "Mã cao ốc không hợp lệ.";
+    $_SESSION['error_msg'] = "Mã tầng không hợp lệ.";
     header("Location: index.php");
     exit();
 }
 
 $db = Database::getInstance()->getConnection();
 
-// Lấy thông tin Cao ốc hiện tại
-$stmt = $db->prepare("SELECT * FROM CAO_OC WHERE maCaoOc = ? AND deleted_at IS NULL");
+// Lấy thông tin Tầng hiện tại
+$stmt = $db->prepare("SELECT * FROM TANG WHERE maTang = ? AND deleted_at IS NULL");
 $stmt->execute([$id]);
-$caoOc = $stmt->fetch();
+$tang = $stmt->fetch();
 
-if (!$caoOc) {
-    $_SESSION['error_msg'] = "Không tìm thấy dữ liệu cao ốc hoặc đã bị xóa.";
+if (!$tang) {
+    $_SESSION['error_msg'] = "Không tìm thấy dữ liệu tầng hoặc tầng đã bị xóa.";
     header("Location: index.php");
     exit();
 }
+
+// Lấy danh sách Cao ốc phục vụ dropdown
+$sqlCaoOc = "SELECT maCaoOc, tenCaoOc FROM CAO_OC WHERE deleted_at IS NULL ORDER BY tenCaoOc ASC";
+$dsCaoOc = $db->query($sqlCaoOc)->fetchAll();
 
 // Tạo CSRF Token cho form
 $csrf_token = generateCSRFToken();
@@ -72,7 +76,7 @@ $csrf_token = generateCSRFToken();
             color: #1e3a5f;
             margin-bottom: 0.5rem;
         }
-        .form-control:focus {
+        .form-control:focus, .form-select:focus {
             border-color: #c9a66b;
             box-shadow: 0 0 0 0.25rem rgba(201, 166, 107, 0.15);
         }
@@ -88,12 +92,12 @@ $csrf_token = generateCSRFToken();
         <?php include __DIR__ . '/../../includes/admin/notifications.php'; ?>
         
         <main class="admin-main-content p-4">
-            <!-- Breadcrumbs -->
-            <nav aria-label="breadcrumb" class="mb-4 d-flex justify-content-center">
-                <ol class="breadcrumb mb-0" style="width: 800px;">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="<?= BASE_URL ?>admin_layout.php" class="text-decoration-none">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="index.php" class="text-decoration-none">Quản lý Cao ốc</a></li>
-                    <li class="breadcrumb-item active">Cập nhật cao ốc</li>
+                    <li class="breadcrumb-item"><a href="index.php" class="text-decoration-none">Quản lý Tầng</a></li>
+                    <li class="breadcrumb-item active">Chỉnh sửa tầng</li>
                 </ol>
             </nav>
 
@@ -101,38 +105,43 @@ $csrf_token = generateCSRFToken();
                 <div class="form-header d-flex justify-content-between align-items-center">
                     <div>
                         <h2 class="h4 mb-0 fw-bold">
-                            <i class="bi bi-pencil-square me-2"></i>CẬP NHẬT CAO ỐC
+                            <i class="bi bi-pencil-square me-2"></i>CHỈNH SỬA TẦNG
                         </h2>
-                        <p class="mb-0 text-white-50 small mt-1">Sửa đổi thông tin chi tiết của tòa nhà.</p>
+                        <p class="mb-0 text-white-50 small mt-1">Sửa đổi thông tin tầng [<?= e($tang['maTang']) ?>]</p>
                     </div>
-                    <span class="badge bg-white text-navy px-3 py-2 fw-bold"><?= e($caoOc['maCaoOc']) ?></span>
+                    <span class="badge bg-white text-navy px-3 py-2 fw-bold"><?= e($tang['maTang']) ?></span>
                 </div>
                 <div class="card-body p-4 p-md-5">
-                    <form action="sua_submit.php" method="POST">
+                    <form action="sua_submit.php" method="POST" id="formSuaTang">
                         <!-- Hidden ID & CSRF -->
-                        <input type="hidden" name="maCaoOc" value="<?= e($caoOc['maCaoOc']) ?>">
+                        <input type="hidden" name="maTang" value="<?= e($tang['maTang']) ?>">
                         <input type="hidden" name="csrf_token" value="<?= e($csrf_token) ?>">
 
                         <div class="row g-4">
-                            <!-- Tên Cao ốc -->
+                            <!-- Chọn Cao ốc -->
                             <div class="col-md-12">
-                                <label for="tenCaoOc" class="form-label">Tên Cao ốc <span class="text-danger">*</span></label>
-                                <input type="text" name="tenCaoOc" id="tenCaoOc" class="form-control py-2" 
-                                       value="<?= e($caoOc['tenCaoOc']) ?>" required>
+                                <label for="maCaoOc" class="form-label">Tòa nhà (Cao ốc) <span class="text-danger">*</span></label>
+                                <select name="maCaoOc" id="maCaoOc" class="form-select py-2" required>
+                                    <option value="">-- Chọn tòa nhà --</option>
+                                    <?php foreach ($dsCaoOc as $co): ?>
+                                        <option value="<?= e($co['maCaoOc']) ?>" <?= ($co['maCaoOc'] == $tang['maCaoOc']) ? 'selected' : '' ?>>
+                                            <?= e($co['tenCaoOc']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
 
-                            <!-- Địa chỉ -->
-                            <div class="col-md-12">
-                                <label for="diaChi" class="form-label">Địa chỉ <span class="text-danger">*</span></label>
-                                <textarea name="diaChi" id="diaChi" class="form-control py-2" rows="3" required><?= e($caoOc['diaChi']) ?></textarea>
+                            <!-- Tên Tầng -->
+                            <div class="col-md-8">
+                                <label for="tenTang" class="form-label">Tên Tầng <span class="text-danger">*</span></label>
+                                <input type="text" name="tenTang" id="tenTang" class="form-control py-2" value="<?= e($tang['tenTang']) ?>" required>
                             </div>
 
-                            <!-- Số tầng -->
-                            <div class="col-md-6">
-                                <label for="soTang" class="form-label">Số tầng <span class="text-danger">*</span></label>
-                                <input type="number" name="soTang" id="soTang" class="form-control py-2" 
-                                       min="1" max="250" value="<?= e($caoOc['soTang']) ?>" required>
-                                <div class="form-text">Số tầng hiện tại của tòa nhà.</div>
+                            <!-- Hệ số giá -->
+                            <div class="col-md-4">
+                                <label for="heSoGia" class="form-label">Hệ số giá <span class="text-danger">*</span></label>
+                                <input type="number" name="heSoGia" id="heSoGia" class="form-control py-2" step="0.01" min="0.01" value="<?= e($tang['heSoGia']) ?>" required>
+                                <div class="form-text">Hệ số nhân đơn giá cho toàn tầng.</div>
                             </div>
 
                             <div class="col-12 mt-5 border-top pt-4">
@@ -154,6 +163,16 @@ $csrf_token = generateCSRFToken();
         <?php include __DIR__ . '/../../includes/admin/admin-footer.php'; ?>
     </div>
 </div>
+
+<script>
+document.getElementById('formSuaTang').addEventListener('submit', function(e) {
+    const heSoGia = document.getElementById('heSoGia').value;
+    if (parseFloat(heSoGia) <= 0) {
+        alert('Hệ số giá phải lớn hơn 0.');
+        e.preventDefault();
+    }
+});
+</script>
 
 </body>
 </html>

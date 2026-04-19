@@ -1,7 +1,7 @@
 <?php
 /**
- * modules/cao_oc/index.php
- * Trang danh sách Cao ốc - Thiết kế đồng bộ với module Tầng
+ * modules/tang/index.php
+ * Trang danh sách các Tầng trong hệ thống
  */
 
 // 1. KHỞI TẠO & BẢO MẬT
@@ -9,29 +9,24 @@ require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 
-// Xác thực Session & Role
+// Xác thực Session & Phân quyền (Admin=1, Quản lý nhà=2 mới được truy cập)
 kiemTraSession();
 kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
 // Kết nối CSDL
 $db = Database::getInstance()->getConnection();
 
-// Truy vấn danh sách cao ốc kèm số lượng phòng hiện có (chưa xóa)
-$sql = " 
-    SELECT 
-        c.maCaoOc, 
-        c.tenCaoOc, 
-        c.diaChi, 
-        c.soTang,
-        (SELECT COUNT(*) 
-         FROM TANG t 
-         JOIN PHONG p ON t.maTang = p.maTang 
-         WHERE t.maCaoOc = c.maCaoOc AND p.deleted_at IS NULL AND t.deleted_at IS NULL) as tongSoPhong
-    FROM CAO_OC c
-    WHERE c.deleted_at IS NULL
-    ORDER BY c.tenCaoOc ASC
+// Truy vấn danh sách tầng (JOIN với CAO_OC để lấy tên tòa nhà)
+// Chỉ lấy các bản ghi chưa bị xóa mềm (deleted_at IS NULL)
+$sql = "
+    SELECT t.maTang, t.tenTang, t.heSoGia, c.tenCaoOc, c.maCaoOc
+    FROM TANG t
+    JOIN CAO_OC c ON t.maCaoOc = c.maCaoOc
+    WHERE t.deleted_at IS NULL AND c.deleted_at IS NULL
+    ORDER BY c.tenCaoOc ASC, t.tenTang ASC
 ";
-$dsCaoOc = $db->query($sql)->fetchAll();
+$stmt = $db->query($sql);
+$dsTang = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -72,70 +67,67 @@ $dsCaoOc = $db->query($sql)->fetchAll();
         .action-link--edit:hover { background-color: rgba(30, 58, 95, 0.1); }
         .action-link--delete { color: #e74c3c; }
         .action-link--delete:hover { background-color: rgba(231, 76, 60, 0.1); }
-        
-        .card-main {
-            width: 90%; /* Mật độ cao */
-            margin: 0 auto;
-        }
     </style>
 </head>
 <body class="bg-light">
 
 <div class="admin-layout">
+    <!-- Nạp Sidebar -->
     <?php include __DIR__ . '/../../includes/admin/sidebar.php'; ?>
     
     <div class="admin-main-wrapper flex-grow-1">
+        <!-- Nạp Topbar -->
         <?php include __DIR__ . '/../../includes/admin/topbar.php'; ?>
+        <!-- Nạp Notifications -->
         <?php include __DIR__ . '/../../includes/admin/notifications.php'; ?>
         
         <main class="admin-main-content p-4">
-            <!-- Breadcrumbs -->
-            <nav aria-label="breadcrumb" class="mb-4 card-main">
+            <nav aria-label="breadcrumb" class="mb-4">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="<?= BASE_URL ?>admin_layout.php" class="text-decoration-none">Dashboard</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Quản lý Cao ốc</li>
+                    <li class="breadcrumb-item active" aria-current="page">Quản lý Tầng</li>
                 </ol>
             </nav>
 
-            <div class="card shadow-sm border-0 card-main">
+            <div class="card shadow-sm border-0">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h2 class="h4 mb-0 text-navy fw-bold">
-                        <i class="bi bi-buildings me-2"></i>DANH SÁCH CAO ỐC
+                        <i class="bi bi-layers me-2"></i>DANH SÁCH TẦNG
                     </h2>
                     <a href="them.php" class="btn btn-gold shadow-sm px-4">
-                        <i class="bi bi-plus-circle me-2"></i>Thêm Cao Ốc Mới
+                        <i class="bi bi-plus-circle me-2"></i>Thêm Tầng Mới
                     </a>
                 </div>
                 <div class="card-body p-4">
                     <div class="table-responsive">
-                        <table id="tblCaoOc" class="table table-hover align-middle table-navy">
+                        <table id="tblTang" class="table table-hover align-middle table-navy">
                             <thead>
                                 <tr>
-                                    <th width="120">Mã</th>
-                                    <th>Tên Cao ốc</th>
-                                    <th>Địa chỉ</th>
-                                    <th width="100" class="text-center">Số tầng</th>
-                                    <th width="100" class="text-center">Phòng</th>
+                                    <th width="120">Mã Tầng</th>
+                                    <th>Tên Tầng</th>
+                                    <th>Tòa Nhà (Cao ốc)</th>
+                                    <th width="150">Hệ số giá</th>
                                     <th width="150" class="text-center">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($dsCaoOc as $co): ?>
+                                <?php foreach ($dsTang as $tang): ?>
                                     <tr>
-                                        <td class="fw-bold text-navy"><?= e($co['maCaoOc']) ?></td>
-                                        <td class="fw-semibold"><?= e($co['tenCaoOc']) ?></td>
-                                        <td><small class="text-muted"><?= e($co['diaChi']) ?></small></td>
-                                        <td class="text-center"><?= e($co['soTang']) ?></td>
-                                        <td class="text-center">
-                                            <span class="badge bg-light text-navy border border-navy-subtle px-3">
-                                                <?= (int)$co['tongSoPhong'] ?>
+                                        <td class="fw-bold"><?= e($tang['maTang']) ?></td>
+                                        <td><?= e($tang['tenTang']) ?></td>
+                                        <td>
+                                            <span class="badge bg-light text-navy border border-navy-subtle">
+                                                <i class="bi bi-building me-1"></i><?= e($tang['tenCaoOc']) ?>
                                             </span>
                                         </td>
+                                        <td>
+                                            <span class="fw-semibold"><?= number_format($tang['heSoGia'], 2) ?></span>
+                                        </td>
                                         <td class="text-center">
-                                            <a href="sua.php?id=<?= e($co['maCaoOc']) ?>" class="action-link action-link--edit me-1" title="Sửa">
+                                            <a href="sua.php?id=<?= e($tang['maTang']) ?>" class="action-link action-link--edit me-2" title="Chỉnh sửa">
                                                 <i class="bi bi-pencil-square"></i> Sửa
                                             </a>
-                                            <a href="javascript:void(0)" onclick="xacNhanXoa('<?= e($co['maCaoOc']) ?>', '<?= e($co['tenCaoOc']) ?>')" class="action-link action-link--delete" title="Xóa">
+                                            <a href="javascript:void(0)" onclick="xacNhanXoa('<?= e($tang['maTang']) ?>', '<?= e($tang['tenTang']) ?>')" class="action-link action-link--delete" title="Xóa">
                                                 <i class="bi bi-trash"></i> Xóa
                                             </a>
                                         </td>
@@ -148,6 +140,7 @@ $dsCaoOc = $db->query($sql)->fetchAll();
             </div>
         </main>
         
+        <!-- Nạp Footer -->
         <?php include __DIR__ . '/../../includes/admin/admin-footer.php'; ?>
     </div>
 </div>
@@ -160,37 +153,40 @@ $dsCaoOc = $db->query($sql)->fetchAll();
                 <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>Xác nhận xóa</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4 text-center">
-                <p class="mb-0">Bạn có chắc chắn muốn xóa cao ốc <strong id="deleteBuildingName" class="text-danger"></strong>?</p>
-                <p class="text-muted small mt-2">Hành động này sẽ thực hiện "Xóa mềm" bản ghi. Các dữ liệu liên quan sẽ tạm thời bị ẩn khỏi danh sách vận hành.</p>
+            <div class="modal-body p-4">
+                Bạn có chắc chắn muốn xóa tầng <strong id="deleteFloorName"></strong>? 
+                <br><small class="text-muted">Hành động này sẽ thực hiện xóa mềm bản ghi khỏi hệ thống.</small>
             </div>
-            <div class="modal-footer bg-light border-top-0">
-                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Hủy</button>
-                <a id="btnConfirmDelete" href="#" class="btn btn-danger px-4 fw-bold">Xác nhận xóa</a>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <a id="btnConfirmDelete" href="#" class="btn btn-danger px-4">Xác nhận xóa</a>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Scripts -->
+<!-- DataTables & Scripts -->
 <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
 $(document).ready(function() {
-    $('#tblCaoOc').DataTable({
+    $('#tblTang').DataTable({
         "language": {
             "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/vi.json"
         },
-        "order": [[1, "asc"]],
-        "pageLength": 10
+        "order": [[2, "asc"], [1, "asc"]], // Sắp xếp theo tòa nhà rồi đến tên tầng
+        "pageLength": 10,
+        "dom": "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+               "<'row'<'col-sm-12'tr>>" +
+               "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
     });
 });
 
-function xacNhanXoa(ma, ten) {
-    document.getElementById('deleteBuildingName').innerText = ten;
-    document.getElementById('btnConfirmDelete').href = 'xoa.php?id=' + encodeURIComponent(ma);
+function xacNhanXoa(maTang, tenTang) {
+    document.getElementById('deleteFloorName').innerText = tenTang;
+    document.getElementById('btnConfirmDelete').href = 'xoa.php?id=' + maTang;
     var myModal = new bootstrap.Modal(document.getElementById('deleteModal'));
     myModal.show();
 }
