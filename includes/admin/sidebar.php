@@ -8,48 +8,47 @@
     <div class="offcanvas-body p-0 pt-3">
         <ul class="nav flex-column w-100 admin-sidebar__nav">
             <li class="nav-item">
-                <!-- Sửa active tùy theo trang hiện tại (có thể xử lý bằng PHP sau) -->
-                <a class="nav-link text-white active" href="admin_layout.php">
+                <a class="nav-link text-white active" href="<?= BASE_URL ?>admin_layout.php">
                     <i class="bi bi-speedometer2 me-2"></i> Dashboard (Tổng quan)
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white" href="quan_ly_cao_oc.php">
+                <a class="nav-link text-white" href="<?= BASE_URL ?>quan_ly_cao_oc.php">
                     <i class="bi bi-building me-2"></i> Quản lý Cao ốc
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white" href="tang.php">
+                <a class="nav-link text-white" href="<?= BASE_URL ?>tang.php">
                     <i class="bi bi-layers me-2"></i> Tầng
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white" href="phong.php">
+                <a class="nav-link text-white" href="<?= BASE_URL ?>phong.php">
                     <i class="bi bi-door-open me-2"></i> Phòng
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white" href="khach_hang.php">
+                <a class="nav-link text-white" href="<?= BASE_URL ?>khach_hang.php">
                     <i class="bi bi-people me-2"></i> Khách hàng
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white" href="tai_khoan_khach_thue.php">
+                <a class="nav-link text-white" href="<?= BASE_URL ?>tai_khoan_khach_thue.php">
                     <i class="bi bi-person-badge me-2"></i> Tài khoản khách thuê
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white" href="hop_dong.php">
+                <a class="nav-link text-white" href="<?= BASE_URL ?>hop_dong.php">
                     <i class="bi bi-file-earmark-text me-2"></i> Hợp đồng
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white" href="hoa_don.php">
+                <a class="nav-link text-white" href="<?= BASE_URL ?>hoa_don.php">
                     <i class="bi bi-receipt me-2"></i> Hóa đơn
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white" href="tien_coc.php">
+                <a class="nav-link text-white" href="<?= BASE_URL ?>tien_coc.php">
                     <i class="bi bi-cash-stack me-2"></i> Tiền cọc (Tien Coc)
                 </a>
             </li>

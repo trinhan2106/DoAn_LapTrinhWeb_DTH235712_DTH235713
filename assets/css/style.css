@@ -154,6 +154,20 @@ body {
 .text-brand-primary { color: var(--color-primary) !important; }
 .text-brand-accent { color: var(--color-accent) !important; }
 
+/* Background Brand Utilities */
+.bg-brand-primary { background-color: var(--color-primary) !important; }
+.bg-brand-accent { background-color: var(--color-accent) !important; }
+
+/* Button Brand Utility (Single dash support for backward compatibility/consistency) */
+.btn-brand-primary { 
+    background-color: var(--color-primary) !important; 
+    color: var(--color-white) !important;
+    border: none;
+}
+.btn-brand-primary:hover {
+    filter: brightness(1.1);
+}
+
 /* Dashboard & Báo cáo Layout integration (Tương thích Dark Mode) */
 /* Cột trạng thái sử dụng chung Class ở mọi bảng trong DataTables */
 .status-column .badge-brand {

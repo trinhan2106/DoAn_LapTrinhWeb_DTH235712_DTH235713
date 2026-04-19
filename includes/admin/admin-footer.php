@@ -15,4 +15,4 @@
 
 <!-- Dark Mode Toggle Script (Native Code) -->
 <!-- Main JS Hub (bao gồm Dark Mode Toggle) -->
-<script src="assets/js/main.js"></script>
+<script src="<?= BASE_URL ?>assets/js/main.js"></script>

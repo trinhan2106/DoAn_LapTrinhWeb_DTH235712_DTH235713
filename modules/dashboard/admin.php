@@ -1,379 +1,430 @@
 <?php
 // Tích hợp Core PHP hệ thống (Lùi để móc nối)
 require_once __DIR__ . '/../../includes/common/auth.php';
+require_once __DIR__ . '/../../includes/common/db.php';
+require_once __DIR__ . '/../../includes/common/functions.php';
 
 // Kiểm tra quyền Session (Bắt buộc phải qua cửa Verify Đăng nhập)
+// Lưu ý FIX-03: Hàm này sẽ tự động kiểm tra flag phai_doi_matkhau từ DB để buộc user đổi mật khẩu nếu cần
 kiemTraSession();
+
+// Khởi tạo kết nối CSDL chuẩn Singleton PDO
+$db = Database::getInstance()->getConnection();
+
+// ==========================================
+// 1. TRUY VẤN DỮ LIỆU KPI (Chuẩn Schema)
+// ==========================================
+
+// Tổng diện tích & Tỷ lệ lấp đầy
+$stmt = $db->prepare("SELECT 
+    COUNT(*) as total_rooms,
+    SUM(CASE WHEN trangThai = 2 THEN 1 ELSE 0 END) as rented_rooms,
+    SUM(dienTich) as total_area
+FROM PHONG WHERE deleted_at IS NULL");
+$stmt->execute();
+$roomStats = $stmt->fetch();
+
+$totalRooms = $roomStats['total_rooms'] ?: 0;
+$rentedRooms = $roomStats['rented_rooms'] ?: 0;
+$totalArea = $roomStats['total_area'] ?: 0;
+$occupancyRate = ($totalRooms > 0) ? round(($rentedRooms / $totalRooms) * 100, 1) : 0;
+
+// Doanh thu dự kiến tháng hiện tại
+// kyThanhToan có định dạng MM/YYYY
+$currentMonthYear = date('m/Y');
+$stmt = $db->prepare("SELECT SUM(tongTien) as projected_revenue 
+FROM HOA_DON 
+WHERE kyThanhToan = :currentMonthYear 
+AND deleted_at IS NULL AND trangThai != 'Huy' AND trangThai != 'Void'");
+$stmt->execute([':currentMonthYear' => $currentMonthYear]);
+$projectedRevenue = $stmt->fetch()['projected_revenue'] ?: 0;
+
+// Tổng nợ quá hạn
+$stmt = $db->prepare("SELECT SUM(soTienConNo) as total_debt 
+FROM HOA_DON 
+WHERE trangThai = 'ConNo' AND deleted_at IS NULL");
+$stmt->execute();
+$totalDebt = $stmt->fetch()['total_debt'] ?: 0;
+
+// ==========================================
+// 2. TRUY VẤN DỮ LIỆU BIỂU ĐỒ DOANH THU
+// ==========================================
+// Lấy 6 tháng gần nhất (sắp xếp tăng dần theo thời gian)
+$sqlChart = "
+    SELECT kyThanhToan, SUM(tongTien) as total_revenue
+    FROM HOA_DON
+    WHERE STR_TO_DATE(CONCAT('01/', kyThanhToan), '%d/%m/%Y') >= DATE_SUB(DATE_FORMAT(CURRENT_DATE(), '%Y-%m-01'), INTERVAL 6 MONTH)
+      AND deleted_at IS NULL AND trangThai != 'Huy' AND trangThai != 'Void'
+    GROUP BY kyThanhToan
+    ORDER BY STR_TO_DATE(CONCAT('01/', kyThanhToan), '%d/%m/%Y') ASC
+";
+$stmt = $db->prepare($sqlChart);
+$stmt->execute();
+$chartData = $stmt->fetchAll();
+
+$chartLabels = [];
+$chartValues = [];
+foreach ($chartData as $row) {
+    $chartLabels[] = 'T' . $row['kyThanhToan'];
+    $chartValues[] = (float) $row['total_revenue'];
+}
+
+// ==========================================
+// 3. HỢP ĐỒNG SẮP HẾT HẠN (30 Ngày Tới)
+// ==========================================
+// Gọi "ngayKetThuc" là "ngayHetHanCuoiCung" như theo logic CSDL
+$sqlExpiring = "
+    SELECT HD.soHopDong, KH.tenKH, HD.ngayKetThuc as ngayHetHanCuoiCung, P.maPhong
+    FROM HOP_DONG HD
+    JOIN KHACH_HANG KH ON HD.maKH = KH.maKH
+    LEFT JOIN CHI_TIET_HOP_DONG CTHD ON HD.soHopDong = CTHD.soHopDong
+    LEFT JOIN PHONG P ON CTHD.maPhong = P.maPhong
+    WHERE HD.ngayKetThuc BETWEEN CURRENT_DATE() AND DATE_ADD(CURRENT_DATE(), INTERVAL 30 DAY)
+      AND HD.deleted_at IS NULL 
+      AND HD.trangThai = 1
+    ORDER BY HD.ngayKetThuc ASC
+    LIMIT 10
+";
+$stmt = $db->prepare($sqlExpiring);
+$stmt->execute();
+$expiringContracts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// ==========================================
+// 4. BẢN ĐỒ MẶT BẰNG PHÒNG
+// ==========================================
+$sqlRooms = "
+    SELECT P.maPhong, P.giaThue, P.trangThai, T.tenTang
+    FROM PHONG P
+    JOIN TANG T ON P.maTang = T.maTang
+    WHERE P.deleted_at IS NULL
+    ORDER BY T.tenTang ASC, P.maPhong ASC
+";
+$stmt = $db->prepare($sqlRooms);
+$stmt->execute();
+$roomsRaw = $stmt->fetchAll();
+
+$roomsByFloor = [];
+foreach ($roomsRaw as $r) {
+    $roomsByFloor[$r['tenTang']][] = $r;
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Q-Admin - Dashboard Báo Cáo</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
+    <?php include __DIR__ . '/../../includes/admin/admin-header.php'; ?>
     <style>
-        /* =========================================
-           CUSTOM BRAND CSS PROPERTIES
-           ========================================= */
-        :root {
-            --primary: #1e3a5f;      /* Xanh navy (Sidebar) */
-            --accent: #c9a66b;       /* Vàng gold (Hover/Highlight) */
-            --bg-color: #f4f7f9;     /* Màu nền Website */
-            --text-color: #1f2a44;   /* Chữ */
-            --danger-color: #e74c3c; /* Đỏ cảnh báo nợ */
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            overflow-x: hidden; /* Chặn cuộn ngang do flex */
-        }
-
-        /* -------------------------------------
-           LAYOUT BỐ CỤC CHÍNH (SIDEBAR + MAIN)
-           ------------------------------------- */
-        .wrapper {
-            display: flex;
-            width: 100%;
-            align-items: stretch;
-            min-height: 100vh;
-        }
-
-        /* KHU VỰC: SIDEBAR BÊN TRÁI */
-        #sidebar {
-            min-width: 260px;
-            max-width: 260px;
-            background-color: var(--primary);
-            color: #fff;
-            transition: all 0.3s;
-            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
-            z-index: 1000;
-        }
-
-        #sidebar .sidebar-header {
-            padding: 25px 20px;
-            background: rgba(0,0,0,0.2);
-            text-align: center;
-            font-weight: 800;
-            font-size: 1.2rem;
-            letter-spacing: 1px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        #sidebar ul.components {
-            padding: 20px 0;
-        }
-
-        #sidebar ul li a {
-            padding: 15px 25px;
-            font-size: 1.05rem;
-            display: block;
-            color: #dce1e6; /* Trắng xám dịu mắt */
-            text-decoration: none;
-            transition: 0.3s ease;
-            font-weight: 500;
-        }
-
-        #sidebar ul li a:hover, #sidebar ul li.active > a {
-            color: var(--primary);
-            background: var(--accent); /* Đổi màu Vàng Gold khi Hover */
-        }
-
-        #sidebar ul li a i {
-            margin-right: 12px;
-            width: 20px;
-            text-align: center;
-        }
-        
-        .sidebar-footer {
-            margin-top: auto;
-            padding: 20px;
-            text-align: center;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-
-        /* KHU VỰC: MAIN CONTENT (BÊN PHẢI) */
-        #content {
-            width: 100%;
-            padding: 25px 40px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* HEADER BOX Ở TRÊN CÙNG MAIN CONTENT */
-        .top-navbar {
-            background: #fff;
-            padding: 15px 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        /* -------------------------------------
-           KHU VỰC HÀNG 1: 4 THẺ KPI CARDS
-           ------------------------------------- */
         .kpi-card {
-            background-color: #fff;
+            border-left: 5px solid var(--color-primary);
             border-radius: 12px;
-            padding: 20px 25px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            border-left: 5px solid var(--primary); /* Line viền Primary */
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: transform 0.2s;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+        }
+        .kpi-card.is-danger {
+            border-left-color: var(--color-danger);
+        }
+        .kpi-icon {
+            font-size: 2.8rem;
+            color: rgba(30, 58, 95, 0.1); 
+        }
+        [data-bs-theme="dark"] .kpi-icon {
+            color: rgba(255, 255, 255, 0.1); 
+        }
+        .kpi-card.is-danger .kpi-icon {
+            color: rgba(231, 76, 60, 0.15); 
         }
         
-        .kpi-card:hover {
-            transform: translateY(-3px);
-        }
-
-        .kpi-card.is-danger {
-            border-left-color: var(--danger-color); /* Thẻ cảnh báo Nợ viền đỏ */
-        }
-
-        .kpi-info p {
-            margin: 0;
-            color: #6c757d;
-            font-size: 0.95rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .kpi-info h3 {
-            margin: 8px 0 0;
-            font-weight: 800;
-            font-size: 1.8rem;
-            color: var(--text-color);
-        }
-
-        .kpi-card.is-danger .kpi-info h3 {
-            color: var(--danger-color); /* Đổi màu text thành Đỏ */
-        }
-
-        .kpi-icon {
-            font-size: 2.5rem;
-            color: rgba(30, 58, 95, 0.2); /* Icon in chìm */
-        }
-
-        .kpi-card.is-danger .kpi-icon {
-            color: rgba(231, 76, 60, 0.2);
-        }
-
-        /* -------------------------------------
-           KHU VỰC HÀNG 2: CHART & TABLE
-           ------------------------------------- */
-        .content-box {
-            background-color: #fff;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            height: 100%;
-        }
-
-        .box-title {
-            color: var(--primary);
-            font-weight: 800;
-            margin-bottom: 20px;
-            font-size: 1.15rem;
-            text-transform: uppercase;
-            border-bottom: 2px solid #f0f2f5;
-            padding-bottom: 12px;
-        }
-
-        /* Custom Table Bootstrap */
-        .table-custom thead {
-            background-color: #f8f9fa;
-        }
-        .table-custom th {
-            color: var(--primary);
+        .room-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 60px;
+            border-radius: 8px;
             font-weight: 700;
-            border-bottom: none;
+            color: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            cursor: pointer;
         }
-        .table-custom td {
-            vertical-align: middle;
-            color: var(--text-color);
+        .room-box:hover {
+            transform: scale(1.05);
         }
+        
+        /* BEM Modifier cho Badge Brand */
+        .badge-brand--success { background-color: #2ecc71 !important; color: #fff; } 
+        .badge-brand--danger { background-color: #e74c3c !important; color: #fff; } 
+        .badge-brand--warning { background-color: #f39c12 !important; color: #fff; }
     </style>
 </head>
-<body>
+<body class="bg-light">
 
-<div class="wrapper">
-    <!-- SIDEBAR LEFT -->
-    <nav id="sidebar">
-        <div class="sidebar-header">
-            <i class="fa-solid fa-hotel me-2 text-warning"></i> BLUE SKY QLN
-        </div>
-
-        <ul class="list-unstyled components d-flex flex-column" style="height: 100%">
-            <!-- Gắn link routing PHP sau này vào href -->
-            <li class="active">
-                <a href="#"><i class="fa-solid fa-chart-pie"></i> Tổng Quan (Dash)</a>
-            </li>
-            <li>
-                <a href="#"><i class="fa-solid fa-building"></i> Quản Lý Phòng</a>
-            </li>
-            <li>
-                <a href="#"><i class="fa-solid fa-users"></i> Khách Hàng</a>
-            </li>
-            <li>
-                <a href="#"><i class="fa-solid fa-file-contract"></i> Hợp Đồng</a>
-            </li>
-            <li>
-                <a href="#"><i class="fa-solid fa-file-invoice-dollar"></i> Hóa Đơn & Thu Phí</a>
-            </li>
-            <li>
-                <a href="#"><i class="fa-solid fa-screwdriver-wrench"></i> Bảo Trì Kỹ Thuật</a>
-            </li>
-            
-            <li class="sidebar-footer">
-                <a href="../../dangxuat.php" class="btn btn-outline-light w-100 rounded-pill">
-                    <i class="fa-solid fa-power-off"></i> Đăng xuất
-                </a>
-            </li>
-        </ul>
-    </nav>
-
-    <!-- MAIN CONTENT RIGHT -->
-    <div id="content">
-
-        <!-- TOP NAVBAR TOOLBAR -->
-        <div class="top-navbar">
-            <div class="text-muted fw-bold">
-                <i class="fa-regular fa-calendar me-2"></i> <?= date('d/m/Y') ?>
-            </div>
-            <div class="user-profile fw-bold text-primary">
-                <!-- Data đổ từ $_SESSION ra -->
-                <i class="fa-solid fa-circle-user fs-4 align-middle me-2"></i> 
-                Xin chào, <?= htmlspecialchars($_SESSION['HoVaTen'] ?? 'Admin') ?>
-            </div>
-        </div>
-
-        <!-- HÀNG 1: 4 THẺ KPI (ĐỔ PHP CÂU FETCH COUNT SUM VÀO ĐÂY) -->
-        <div class="row g-4 mb-4">
-            <!-- Thẻ 1: Rooms -->
-            <div class="col-md-3">
-                <div class="kpi-card">
-                    <div class="kpi-info">
-                        <p>Tổng Số Phòng</p>
-                        <h3>142</h3>
-                    </div>
-                    <i class="fa-solid fa-door-open kpi-icon"></i>
+<div class="admin-layout">
+    <?php include __DIR__ . '/../../includes/admin/sidebar.php'; ?>
+    
+    <div class="admin-main-wrapper flex-grow-1">
+        <?php include __DIR__ . '/../../includes/admin/topbar.php'; ?>
+        <?php include __DIR__ . '/../../includes/admin/notifications.php'; ?>
+        
+        <main class="admin-main-content p-4">
+            <!-- HEADER DASHBOARD UX 3-Click Rule -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="h4 text-brand-primary fw-bold mb-0">
+                    <i class="bi bi-speedometer2 me-2"></i> Dashboard Tổng Quan
+                </h2>
+                <div class="d-flex gap-2">
+                    <a href="../hop_dong/hd_them.php" class="btn btn-brand-primary shadow-sm text-white">
+                        <i class="bi bi-plus-circle me-1"></i> Lập hợp đồng mới
+                    </a>
+                    <a href="#" class="btn btn-outline-secondary shadow-sm">
+                        <i class="bi bi-bar-chart-fill me-1"></i> Xem báo cáo
+                    </a>
                 </div>
             </div>
 
-            <!-- Thẻ 2: Occupancy -->
-            <div class="col-md-3">
-                <div class="kpi-card">
-                    <div class="kpi-info">
-                        <p>Tỷ lệ lấp đầy</p>
-                        <h3>85.5%</h3>
+            <!-- HÀNG 1: 4 KPI CARDS -->
+            <div class="row g-4 mb-4">
+                
+                <div class="col-md-6 col-xl-3">
+                    <div class="card kpi-card shadow-sm h-100 border-0">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.8rem;">Tổng Diện Tích</p>
+                                <h3 class="fw-bold mb-0 text-brand-primary"><?php echo formatTien($totalArea); ?> m²</h3>
+                            </div>
+                            <i class="bi bi-arrows-fullscreen kpi-icon"></i>
+                        </div>
                     </div>
-                    <i class="fa-solid fa-chart-line kpi-icon"></i>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="card kpi-card shadow-sm h-100 border-0">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.8rem;">Tỷ Lệ Lấp Đầy</p>
+                                <h3 class="fw-bold mb-0 text-brand-primary"><?php echo e($occupancyRate); ?>%</h3>
+                                <small class="text-muted"><?php echo e($rentedRooms); ?>/<?php echo e($totalRooms); ?> phòng</small>
+                            </div>
+                            <i class="bi bi-buildings-fill kpi-icon"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="card kpi-card shadow-sm h-100 border-0">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.8rem;">Doanh Thu Tháng Này</p>
+                                <h3 class="fw-bold mb-0 text-brand-primary"><?php echo formatTien($projectedRevenue); ?> ₫</h3>
+                            </div>
+                            <i class="bi bi-safe-fill kpi-icon"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="card kpi-card is-danger shadow-sm h-100 border-0">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.8rem;">Tổng Nợ Quá Hạn</p>
+                                <h3 class="fw-bold mb-0 text-danger"><?php echo formatTien($totalDebt); ?> ₫</h3>
+                            </div>
+                            <i class="bi bi-exclamation-triangle-fill kpi-icon"></i>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- HÀNG 2: BIỂU ĐỒ & HỢP ĐỒNG SẮP HẾT HẠN -->
+            <div class="row g-4 mb-4">
+                
+                <!-- Chart.js Doanh Thu -->
+                <div class="col-lg-8">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white border-bottom border-light p-3">
+                            <h5 class="m-0 fw-bold text-brand-primary">
+                                <i class="bi bi-graph-up me-2 text-warning"></i> Doanh thu 6 tháng gần nhất
+                            </h5>
+                        </div>
+                        <div class="card-body d-flex flex-column justify-content-center">
+                            <?php if (empty($chartValues)): ?>
+                                <div class="text-center text-muted py-5">
+                                    <i class="bi bi-bar-chart text-secondary opacity-50 mb-3" style="font-size: 4rem;"></i>
+                                    <p>Chưa có dữ liệu thanh toán trong 6 tháng qua.</p>
+                                </div>
+                            <?php else: ?>
+                                <div style="height: 350px;">
+                                    <canvas id="revenueChart"></canvas>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hợp đồng sắp hết hạn -->
+                <div class="col-lg-4">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white border-bottom border-light p-3">
+                            <h5 class="m-0 fw-bold text-danger">
+                                <i class="bi bi-stopwatch-fill me-2"></i> Hợp đồng sắp hết hẹn (30 ngày)
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush">
+                                <?php if (count($expiringContracts) > 0): ?>
+                                    <?php foreach ($expiringContracts as $contract): ?>
+                                        <li class="list-group-item p-3 border-light list-group-item-action">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 class="mb-1 fw-bold text-brand-primary"><?php echo e($contract['tenKH']); ?></h6>
+                                                    <span class="badge bg-secondary">HĐ: <?php echo e($contract['soHopDong']); ?></span>
+                                                    <span class="badge bg-info text-dark">P: <?php echo e($contract['maPhong'] ?? 'N/A'); ?></span>
+                                                </div>
+                                                <div class="text-end">
+                                                    <small class="text-muted d-block">Đáo hạn cuối</small>
+                                                    <strong class="text-danger">
+                                                        <?php echo date('d/m/Y', strtotime($contract['ngayHetHanCuoiCung'])); ?>
+                                                    </strong>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <li class="list-group-item p-5 text-center text-muted">
+                                        <i class="bi bi-check-circle-fill text-success fs-3 mb-2 d-block"></i>
+                                        Không có hợp đồng nào đáo hạn.
+                                    </li>
+                                <?php endif; ?>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+
+            <!-- HÀNG 3: BẢN ĐỒ MẶT BẰNG PHÒNG -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white border-bottom border-light p-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <h5 class="m-0 fw-bold text-brand-primary">
+                        <i class="bi bi-grid-3x3-gap-fill me-2 text-warning"></i> Sơ Đồ Mặt Bằng Khai Thác
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <span class="badge badge-brand--success px-3 py-2"><i class="bi bi-door-open me-1"></i> Trống</span>
+                        <span class="badge badge-brand--danger px-3 py-2"><i class="bi bi-people-fill me-1"></i> Đang thuê</span>
+                        <span class="badge badge-brand--warning px-3 py-2"><i class="bi bi-tools me-1"></i> Bảo trì</span>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <?php if (empty($roomsByFloor)): ?>
+                        <div class="text-center text-muted py-4">Chưa có thông tin phòng trên hệ thống.</div>
+                    <?php else: ?>
+                        <?php foreach ($roomsByFloor as $floorName => $floorRooms): ?>
+                            <div class="mb-4">
+                                <h6 class="text-uppercase fw-bold text-muted mb-3 border-bottom pb-2">
+                                    <i class="bi bi-layers text-brand-accent me-1"></i> <?php echo e($floorName); ?>
+                                </h6>
+                                <div class="row g-3">
+                                    <?php foreach ($floorRooms as $room): 
+                                        // 1: Trống, 2: Đang thuê, 3: Bảo trì (Hoặc theo chuẩn CSS required)
+                                        $bgClass = 'badge-brand--success';
+                                        $icon = 'bi-door-open';
+                                        
+                                        if ($room['trangThai'] == 2) {
+                                            $bgClass = 'badge-brand--danger';
+                                            $icon = 'bi-check-circle';
+                                        } else if ($room['trangThai'] == 3) {
+                                            $bgClass = 'badge-brand--warning';
+                                            $icon = 'bi-tools';
+                                        }
+                                    ?>
+                                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                                            <div class="room-box <?php echo $bgClass; ?>" 
+                                                 title="Phòng: <?php echo e($room['maPhong']); ?> &#10;Giá Thuê: <?php echo formatTien($room['giaThue']); ?> đ">
+                                                <i class="bi <?php echo $icon; ?> me-2 d-none d-md-inline"></i> 
+                                                <?php echo e($room['maPhong']); ?>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
 
-            <!-- Thẻ 3: Revenue -->
-            <div class="col-md-3">
-                <div class="kpi-card">
-                    <div class="kpi-info">
-                        <p>Dự kiến tháng này</p>
-                        <h3>2,450T</h3>
-                    </div>
-                    <i class="fa-solid fa-money-bill-trend-up kpi-icon"></i>
-                </div>
-            </div>
+        </main>
+        
+        <?php include __DIR__ . '/../../includes/admin/admin-footer.php'; ?>
+    </div>
+</div>
 
-            <!-- Thẻ 4: Debt (Danger) -->
-            <div class="col-md-3">
-                <div class="kpi-card is-danger">
-                    <div class="kpi-info">
-                        <p>Tổng nợ quá hạn</p>
-                        <h3>345T</h3>
-                    </div>
-                    <i class="fa-solid fa-triangle-exclamation kpi-icon"></i>
-                </div>
-            </div>
-        </div>
+<!-- Kịch bản Javascript Chart.js -->
+<?php if (!empty($chartValues)): ?>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var ctx = document.getElementById('revenueChart').getContext('2d');
+    
+    // PHP đẩy data xuống Array JS
+    var labels = <?php echo json_encode($chartLabels); ?>;
+    var dataValues = <?php echo json_encode($chartValues); ?>;
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Tổng Doanh Thu (VNĐ)',
+                data: dataValues,
+                backgroundColor: '#1e3a5f', /* Màu Navy - Primary */
+                hoverBackgroundColor: '#c9a66b', /* Màu Gold Highlight */
+                borderRadius: 4,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            if (value >= 1000000) {
+                                return (value / 1000000) + ' Tr';
+                            }
+                            return value.toLocaleString('vi-VN');
+                        }
+                    },
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                },
+                x: {
+                    grid: { display: false }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(30, 58, 95, 0.9)',
+                    titleFont: { size: 14 },
+                    bodyFont: { size: 14 },
+                    padding: 12,
+                    callbacks: {
+                        label: function(context) {
+                            var value = context.parsed.y;
+                            return 'Doanh Thu: ' + value.toLocaleString('vi-VN') + ' ₫';
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+<?php endif; ?>
 
-        <!-- HÀNG 2: CHART VÀ TABLE -->
-        <div class="row g-4">
-            <!-- CỘT TRÁI (8): CHART THỐNG KÊ -->
-            <div class="col-md-8">
-                <div class="content-box">
-                    <h5 class="box-title"><i class="fa-solid fa-chart-column me-2"></i>BIỂU ĐỒ DOANH THU & LỢI NHUẬN (2026)</h5>
-                    <!-- Canvas Box. Chừa chỗ JS nhúng Chart.js vẽ tại đây -->
-                    <div style="height: 350px; display: flex; align-items: center; justify-content: center; border: 2px dashed #dce1e6; border-radius: 8px;">
-                        <canvas id="revenueChart"></canvas>
-                        <p class="text-muted"><i class="fa-solid fa-chart-pie me-2"></i>Khu vực tích hợp Chart.js Backend Data</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CỘT PHẢI (4): TABLE CẢNH BÁO -->
-            <div class="col-md-4">
-                <div class="content-box">
-                    <h5 class="box-title text-danger"><i class="fa-solid fa-clock-rotate-left me-2"></i>SẮP HẾT HẠN HỢP ĐỒNG</h5>
-                    
-                    <div class="table-responsive">
-                        <table class="table table-hover table-custom align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Khách Hàng</th>
-                                    <th>Phòng</th>
-                                    <th>Ngày KT</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Điền vòng lặp Code lấy DB tại đây -->
-                                <tr>
-                                    <td class="fw-bold">Cty Phúc Vinh</td>
-                                    <td><span class="badge bg-secondary">P302</span></td>
-                                    <td class="text-danger fw-bold">12/05/26</td>
-                                </tr>
-                                <tr>
-                                    <td class="fw-bold">Tech Asia JSC</td>
-                                    <td><span class="badge bg-secondary">P105</span></td>
-                                    <td class="text-danger fw-bold">25/05/26</td>
-                                </tr>
-                                <tr>
-                                    <td class="fw-bold">Lê Trọng Tấn</td>
-                                    <td><span class="badge bg-secondary">P401</span></td>
-                                    <td class="text-warning fw-bold">10/06/26</td>
-                                </tr>
-                                <tr>
-                                    <td class="fw-bold">Tập đoàn Alpha</td>
-                                    <td><span class="badge bg-secondary">P603</span></td>
-                                    <td class="text-warning fw-bold">18/06/26</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="text-center mt-3">
-                        <a href="#" class="btn btn-sm btn-outline-primary w-100">Xem tất cả hợp đồng <i class="fa-solid fa-arrow-right"></i></a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div> <!-- End Main Content -->
-</div> <!-- End Wrapper -->
-
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- Chèn link JS cho Chart.js CDN ở đây nếu cần -->
-<!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
-<!-- Viết đoạn Fetch Data để Draw lên #revenueChart -->
 </body>
 </html>
