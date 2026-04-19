@@ -23,6 +23,10 @@ include_once 'includes/public/navbar.php';
         </div>
     </section>
 
+    <div class="container mt-4">
+        <?php include_once 'includes/admin/notifications.php'; ?>
+    </div>
+
     <!-- Phần Giới Thiệu (About Us) -->
     <section class="about-section py-5 my-5">
         <div class="container">
@@ -56,7 +60,7 @@ include_once 'includes/public/navbar.php';
                             <span>Ứng dụng công nghệ phần mềm vào quy trình vận hành.</span>
                         </li>
                     </ul>
-                    <a href="#contact" class="btn btn-brand--accent btn-lg px-5 rounded-pill shadow-sm text-white border-0" style="background-color: #c9a66b;">Tìm hiểu thêm</a>
+                    <a href="#contact" class="btn btn-brand--accent btn-lg px-5 rounded-pill shadow-sm border-0">Tìm hiểu thêm</a>
                 </div>
             </div>
         </div>
@@ -112,27 +116,39 @@ include_once 'includes/public/navbar.php';
                     <!-- Form Liên Hệ -->
                     <div class="contact-form bg-white p-4 p-md-5 shadow-sm card-brand" style="border-radius: 8px;">
                         <h4 class="fw-bold mb-4" style="color: #1e3a5f;">Gửi Tin Nhắn</h4>
-                        <form action="lien_he_submit.php" method="POST">
+                        <form action="lien_he_submit.php" method="POST" class="needs-validation" novalidate>
                             <!-- Chống CSRF -->
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                             
                             <div class="mb-3">
                                 <label for="fullname" class="form-label fw-semibold">Họ và Tên</label>
-                                <input type="text" class="form-control form-control-lg bg-light border-0" id="fullname" name="fullname" placeholder="Nhập họ tên của bạn" required>
+                                <div class="has-validation">
+                                    <input type="text" class="form-control form-control-lg bg-light border-0" id="fullname" name="fullname" placeholder="Nhập họ tên của bạn" required>
+                                    <div class="invalid-feedback">Vui lòng nhập họ và tên hợp lệ.</div>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label for="email" class="form-label fw-semibold">Email Liên Hệ</label>
-                                <input type="email" class="form-control form-control-lg bg-light border-0" id="email" name="email" placeholder="name@example.com" required>
+                                <div class="has-validation">
+                                    <input type="email" class="form-control form-control-lg bg-light border-0" id="email" name="email" placeholder="name@example.com" required>
+                                    <div class="invalid-feedback">Vui lòng nhập định dạng email hợp lệ.</div>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label for="subject" class="form-label fw-semibold">Tiêu Đề</label>
-                                <input type="text" class="form-control form-control-lg bg-light border-0" id="subject" name="subject" placeholder="Bạn cần hỗ trợ vấn đề gì?" required>
+                                <div class="has-validation">
+                                    <input type="text" class="form-control form-control-lg bg-light border-0" id="subject" name="subject" placeholder="Bạn cần hỗ trợ vấn đề gì?" required>
+                                    <div class="invalid-feedback">Vui lòng nhập tiêu đề.</div>
+                                </div>
                             </div>
                             <div class="mb-4">
                                 <label for="message" class="form-label fw-semibold">Nội Dung Tin Nhắn</label>
-                                <textarea class="form-control form-control-lg bg-light border-0" id="message" name="message" rows="4" placeholder="Nhập nội dung chi tiết..." required></textarea>
+                                <div class="has-validation">
+                                    <textarea class="form-control form-control-lg bg-light border-0" id="message" name="message" rows="4" placeholder="Nhập nội dung chi tiết..." required></textarea>
+                                    <div class="invalid-feedback">Vui lòng nhập nội dung chi tiết tin nhắn.</div>
+                                </div>
                             </div>
-                            <button type="submit" class="btn btn-brand--accent w-100 py-3 fw-bold rounded-3 border-0 text-white" style="background-color: #c9a66b; transition: all 0.3s ease;">GỬI NGAY <i class="bi bi-send-fill ms-2"></i></button>
+                            <button type="submit" class="btn btn-brand--accent w-100 py-3 fw-bold rounded-3 border-0" style="transition: all 0.3s ease;">GỬI NGAY <i class="bi bi-send-fill ms-2"></i></button>
                         </form>
                     </div>
                 </div>
@@ -142,7 +158,7 @@ include_once 'includes/public/navbar.php';
                     <div class="map-wrapper h-100 overflow-hidden card-brand shadow-sm" style="border-radius: 8px;">
                         <!-- Embed Google Maps -->
                         <iframe 
-                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.4602324217316!2d106.697415414749!3d10.77601946214571!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f40a3b49e59%3A0xa1bd14e483a602db!2sIndependence%20Palace!5e0!3m2!1sen!2s!4v1689234567890!5m2!1sen!2s" 
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.460232421115!2d106.69876791533446!3d10.776019462145888!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f40a3b49e59%3A0xa1bd14e483a6028c!2zUXXhuq1uIDEsIFRow6BuaCBwaOG7kSBI4buTIENow60gTWluaCwgVmnhu4d0IE5hbQ!5e0!3m2!1svi!2s!4v1620000000000!5m2!1svi!2s" 
                             width="100%" 
                             height="100%" 
                             style="border:0; min-height: 600px;" 
@@ -176,11 +192,34 @@ include_once 'includes/public/navbar.php';
 .card-brand:hover {
     box-shadow: 0 15px 35px rgba(0,0,0,0.12);
 }
+.btn-brand--accent { 
+    background-color: #c9a66b; 
+    color: #1e3a5f !important; 
+    font-weight: 700; 
+    border: none; 
+}
 .btn-brand--accent:hover {
     background-color: #b5955f !important;
+    color: #ffffff !important;
     transform: translateY(-2px);
     box-shadow: 0 6px 15px rgba(201, 166, 107, 0.4);
 }
 </style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+      'use strict'
+      var forms = document.querySelectorAll('.needs-validation')
+      Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+          if (!form.checkValidity()) {
+            event.preventDefault()
+            event.stopPropagation()
+          }
+          form.classList.add('was-validated')
+        }, false)
+      })
+    });
+</script>
 
 <?php include_once 'includes/public/footer.php'; ?>
