@@ -1,8 +1,14 @@
 <?php
 // modules/thanh_toan/tt_tao_submit.php
 /**
- * LÕI THẦN KINH XỬ LÝ (TASK 6.2 - UC06 BÙ TRỪ KẾ TOÁN)
- * Chứa Cốt Lõi FOR UPDATE & WATERFALL PAYMENT & EMAIL FIRE
+ * Xu ly thu tien UC06: Waterfall Payment + Phieu Thu + Email bien lai.
+ * - Validate so tien > 0.
+ * - SELECT ... FOR UPDATE chong Race Condition.
+ * - INSERT PHIEU_THU truoc khi chia tien waterfall.
+ * - Moi lan UPDATE HOA_DON, INSERT PHIEU_THU_CHI_TIET tuong ung.
+ * - Query thong tin KH de gui mail SAU COMMIT (giam lock time).
+ * - Escape moi bien trong email template (Convention C.4).
+ * - Thay die() bang flash + redirect (Convention C.2).
  */
 
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
@@ -14,41 +20,63 @@ require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 
 kiemTraSession();
-// Chỉ Admin và Kế toán được tạo giao dịch thanh toán
 kiemTraRole([ROLE_ADMIN, ROLE_KE_TOAN]);
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Truy Cập Block Bởi Framework.");
-
-// CSRF Thẩm định cấp 10
-$csrf_token = filter_input(INPUT_POST, 'csrf_token', FILTER_DEFAULT);
-if (!$csrf_token || !validateCSRFToken($csrf_token)) {
-    die("<h1>Lỗi 403 Anti-CSRF - Bảo vệ Ví Điện tử.</h1>");
+// Kiem tra phuong thuc HTTP
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: tt_tao.php");
+    exit();
 }
 
-$soHopDong = trim($_POST['soHopDong'] ?? '');
-$soTienDaNop_POST = (float)($_POST['soTienDaNop_POST'] ?? 0);
-$phuongThucM = trim($_POST['phuongThucM'] ?? 'Chuyen_Khoan');
-$maNV_HienHanh = $_SESSION['user_id'] ?? null;
+// Validate CSRF token
+$csrf_token = $_POST['csrf_token'] ?? '';
+if (!$csrf_token || !validateCSRFToken($csrf_token)) {
+    $_SESSION['error_msg'] = "Phien lam viec het han. Vui long tai lai trang.";
+    header("Location: tt_tao.php");
+    exit();
+}
 
-if (empty($soHopDong) || $soTienDaNop_POST < 0 || !$maNV_HienHanh) {
-    die("Data Giao Diện Đầu Vào Cố Tình Phá Vỡ Rules (Số âm hoặc vô cực Hợp đồng). Block Node Kế Toán Ngay!");
+// Doc va validate input
+$soHopDong      = trim($_POST['soHopDong'] ?? '');
+$soTienDaNop_POST = (float)($_POST['soTienDaNop_POST'] ?? 0);
+$phuongThucM    = trim($_POST['phuongThucM'] ?? 'ChuyenKhoan');
+$maGiaoDich     = trim($_POST['maGiaoDich'] ?? '');
+$maNV_HienHanh  = $_SESSION['user_id'] ?? null;
+
+// Validate: so tien phai > 0 (khong chap nhan 0 dong)
+if (empty($soHopDong) || $soTienDaNop_POST <= 0 || !$maNV_HienHanh) {
+    $_SESSION['error_msg'] = "Du lieu khong hop le. So tien thu phai lon hon 0, ma hop dong khong duoc trong.";
+    header("Location: tt_tao.php?soHopDong=" . urlencode($soHopDong));
+    exit();
+}
+
+// Validate phuong thuc thanh toan
+$phuongThucHopLe = ['TienMat', 'ChuyenKhoan', 'Vi'];
+if (!in_array($phuongThucM, $phuongThucHopLe, true)) {
+    $_SESSION['error_msg'] = "Phuong thuc thanh toan khong hop le.";
+    header("Location: tt_tao.php?soHopDong=" . urlencode($soHopDong));
+    exit();
+}
+
+// Validate do dai maGiaoDich
+if (strlen($maGiaoDich) > 100) {
+    $_SESSION['error_msg'] = "Ma giao dich vuot qua 100 ky tu.";
+    header("Location: tt_tao.php?soHopDong=" . urlencode($soHopDong));
+    exit();
 }
 
 $pdo = Database::getInstance()->getConnection();
+$soPhieuThu = ''; // Luu de dung cho audit log va email
 
 try {
-    // ----------------------------------------------------------------------------------
-    // RENDER LÁ CHẮN TRANSACTION CẤP KẾ TÓAN DOANH NGHIỆP ACiD
-    // ----------------------------------------------------------------------------------
     $pdo->beginTransaction();
 
-    // CHIÊU THỨC RB-06.2 CAO CẤP: (SELECT ... FOR UPDATE)
-    // Tình huống Rủi Ro Bóng Tối: Chi nhánh 1 đang nhập thu tiền phòng này, chi nhánh 2 vô tình ấn thu tiền 
-    // trên máy tính khác ở cùng 1 phần nghìn giây. Nếu không xài lệnh này, cả 2 sẽ báo thu vào 1 bill -> Khách mất tiền DB!
-    // -> Khóa vĩnh cửu CỤM Data Hóa Đơn Thuộc Hợp Động Này Tới Ngây Khi PDO Chết Hoặc Commit.
+    // SELECT ... FOR UPDATE: Khoa cac hoa don con no cua hop dong nay
+    // Chi lay loaiHoaDon = 'Chinh' de tranh can tru nham CreditNote
     $stmtLock = $pdo->prepare("
-        SELECT * FROM HOA_DON 
-        WHERE soHopDong = ? AND trangThai = 'ConNo'
+        SELECT soHoaDon, soTienConNo, soTienDaNop, tongTien 
+        FROM HOA_DON 
+        WHERE soHopDong = ? AND trangThai = 'ConNo' AND loaiHoaDon = 'Chinh'
         ORDER BY kyThanhToan ASC, created_at ASC 
         FOR UPDATE
     ");
@@ -57,76 +85,126 @@ try {
 
     if (!$listHD_PhaiChiu) {
         $pdo->rollBack();
-        die("Chặn Trễ Mạng: Hợp đồng của đối tác này Vừa Mới Được Ai Đó (Admin Khác) thanh toán sạch sẽ trước bạn vài ly giây Rán Rệp. Không Còn Số Dư!");
+        $_SESSION['error_msg'] = "Khong con hoa don nao can thu cho hop dong nay. Co the da duoc xu ly boi nhan vien khac.";
+        header("Location: tt_tao.php?soHopDong=" . urlencode($soHopDong));
+        exit();
     }
 
-    // THUẬT TOÁN ĐIỀU ĐẠN THÁC NƯỚC (WATERFALL PAYMENT ROUTING ACiD)
-    // Concept: Khách nạp 1 cục 10 triệu. Hệ thống tự động bốc 10 triệu đó chảy từ trên xuống dưới đi trừ sạch từng Bill lẻ 1 triệu, 2 triệu (Từ bill cũ đến hóa đơn điện mới nhất). Tràn ra thì dồn vào bill cuối tạo Credit.
-    $tienLuuChuyenHanhTrinh = $soTienDaNop_POST;
-    
-    // Yêu Cầu (RB-06.3): UPDATE bảng HOA_DON. Set soTienDaNop, soTienConNo mới. Đổi trangThai thành 'DaThu'. Ghi nhận maNV
-    $stmtTrangThaiHoaDon = $pdo->prepare("
+    // Sinh soPhieuThu va INSERT PHIEU_THU truoc khi chia tien waterfall
+    $soPhieuThu = sinhMaNgauNhien('PT-' . date('Ym') . '-', 6);
+    $stmtPT = $pdo->prepare("
+        INSERT INTO PHIEU_THU (soPhieuThu, ngayThu, tongTienThu, phuongThuc, maGiaoDich, maNV, ghiChu)
+        VALUES (?, NOW(), ?, ?, ?, ?, NULL)
+    ");
+    $stmtPT->execute([
+        $soPhieuThu,
+        $soTienDaNop_POST,
+        $phuongThucM,
+        !empty($maGiaoDich) ? $maGiaoDich : null,
+        $maNV_HienHanh
+    ]);
+
+    // Prepare cac statement dung trong vong lap
+    $stmtUpdateHD = $pdo->prepare("
         UPDATE HOA_DON 
-        SET soTienDaNop = soTienDaNop + :chiecKhauDaNap, 
-            soTienConNo = :noMoiTruTaiBuc, 
-            trangThai = :statusMoi, 
-            maNV = :nvKeToanNhapLieu 
-        WHERE soHoaDon = :maBillChotHinh
+        SET soTienDaNop = soTienDaNop + :phanBo, 
+            soTienConNo = :noMoi, 
+            trangThai = :trangThaiMoi, 
+            maNV = :maNV 
+        WHERE soHoaDon = :soHoaDon
     ");
 
-    foreach ($listHD_PhaiChiu as $hdKiemToan) {
-        if ($tienLuuChuyenHanhTrinh <= 0) {
-            // Đã Chia Đều Hết Sạch Sẽ Quỹ Tiền Khách Đưa Nhưng Vẫn Đang Còn Bill Ở Trạm Dưới 
-            // -> Break Vòng Lặp. Các Thẻ Bill Còn Lại Để Tự Nhiên.
-            break; 
+    $stmtChiTiet = $pdo->prepare("
+        INSERT INTO PHIEU_THU_CHI_TIET (soPhieuThu, soHoaDon, soTienPhanBo)
+        VALUES (?, ?, ?)
+    ");
+
+    // Waterfall payment: phan bo tien tu hoa don cu den moi
+    $tienConLai = $soTienDaNop_POST;
+
+    foreach ($listHD_PhaiChiu as $hdRow) {
+        if ($tienConLai <= 0) {
+            break;
         }
 
-        $noBillHienHanhNodeTrenCung = (float)$hdKiemToan['soTienConNo'];
+        $noBillHienTai = (float)$hdRow['soTienConNo'];
 
-        if ($tienLuuChuyenHanhTrinh >= $noBillHienHanhNodeTrenCung) {
-            // Đủ Quỹ tiền Để Quất Sạch Cái Bill Hiện Tại Này 
-            $khoanTienTieuHaoChoBillNay = $noBillHienHanhNodeTrenCung;
-            $soNoConLaiCuaBillNayBocHoiVe_0 = 0;
-            $trangThaiLienThongMoi = 'DaThu'; // RB-06.3
-            
-            // Lượng Nước Máu (Quỹ Tiền) Bị Tụt Giảm Chuẩn Bị Cho Vòng Lặp Phía Dưới
-            $tienLuuChuyenHanhTrinh -= $noBillHienHanhNodeTrenCung; 
+        if ($tienConLai >= $noBillHienTai) {
+            // Du tien de thanh toan het bill nay
+            $phanBoChoBill = $noBillHienTai;
+            $noConLai = 0;
+            $trangThaiMoi = 'DaThu';
+            $tienConLai -= $noBillHienTai;
         } else {
-            // Khách Đâm Vô Tổng Tiền Không Đủ Sức Để Tiêu Hủy Bill Này (Có Nộp Thác Thiết)
-            // VD Bill Nợ 5 Triệu Mả Đưa Tiền Lúc Này Chỉ Còn Dư Lại 2 Triệu => Trút Sạch 2 Triệu Vô, Còn Nợ Bill Này 3 Tr 
-            $khoanTienTieuHaoChoBillNay = $tienLuuChuyenHanhTrinh;
-            $soNoConLaiCuaBillNayBocHoiVe_0 = $noBillHienHanhNodeTrenCung - $tienLuuChuyenHanhTrinh; // Theo RB-06.2 Logic
-            $trangThaiLienThongMoi = 'ConNo'; // Vẫn Nợ (RB-06.3)
-            
-            $tienLuuChuyenHanhTrinh = 0; // Trút Hết Nước Rùi
+            // Khong du tien, thanh toan mot phan
+            $phanBoChoBill = $tienConLai;
+            $noConLai = $noBillHienTai - $tienConLai;
+            $trangThaiMoi = 'ConNo';
+            $tienConLai = 0;
         }
 
-        // BÓP VÀI CỘT ACID TRANSCATION
-        $stmtTrangThaiHoaDon->execute([
-            ':chiecKhauDaNap'      => $khoanTienTieuHaoChoBillNay,
-            ':noMoiTruTaiBuc'      => $soNoConLaiCuaBillNayBocHoiVe_0,
-            ':statusMoi'           => $trangThaiLienThongMoi,
-            ':nvKeToanNhapLieu'    => $maNV_HienHanh,
-            ':maBillChotHinh'      => $hdKiemToan['soHoaDon']
+        // UPDATE HOA_DON
+        $stmtUpdateHD->execute([
+            ':phanBo'       => $phanBoChoBill,
+            ':noMoi'        => $noConLai,
+            ':trangThaiMoi' => $trangThaiMoi,
+            ':maNV'         => $maNV_HienHanh,
+            ':soHoaDon'     => $hdRow['soHoaDon']
+        ]);
+
+        // INSERT PHIEU_THU_CHI_TIET cho moi hoa don duoc phan bo
+        $stmtChiTiet->execute([
+            $soPhieuThu,
+            $hdRow['soHoaDon'],
+            $phanBoChoBill
         ]);
     }
 
-    // CONCEPT BÙ TRỪ NỢ DƯ VÀO QUỸ TƯƠNG LẠI TÍCH LŨY (Tức là KHÁCH BAO BAO TIỀN ĐEM NÉM XUỐNG DƯ GẦN 20 Tỉ Chẳng Hạn)
-    // Sẽ dồn con số dư thừa $tienLuuChuyenHanhTrinh này làm con số ÂM (Credit Point Tích Cực) vào mông Của Hóa Đơn Cuối Cùng.
-    if ($tienLuuChuyenHanhTrinh > 0) {
-        $lastBillIdArrayPoint = end($listHD_PhaiChiu);
-        $stmtCreditNapTrangThaiHoaDon = $pdo->prepare("
+    // Xu ly tien du nop thua: ghi nhan vao hoa don cuoi cung lam credit
+    if ($tienConLai > 0) {
+        $lastBill = end($listHD_PhaiChiu);
+        $stmtCredit = $pdo->prepare("
             UPDATE HOA_DON 
             SET soTienDaNop = soTienDaNop + :du, soTienConNo = soTienConNo - :du 
-            WHERE soHoaDon = :mb
+            WHERE soHoaDon = :soHoaDon
         ");
-        $stmtCreditNapTrangThaiHoaDon->execute([
-            ':du' => $tienLuuChuyenHanhTrinh, 
-            ':mb' => $lastBillIdArrayPoint['soHoaDon']
+        $stmtCredit->execute([
+            ':du' => $tienConLai,
+            ':soHoaDon' => $lastBill['soHoaDon']
+        ]);
+
+        // Ghi nhan phan tien du vao chi tiet phieu thu
+        $stmtChiTiet->execute([
+            $soPhieuThu,
+            $lastBill['soHoaDon'],
+            $tienConLai
         ]);
     }
 
-    // GET INFO MỒI TRÁI CÔNG CỤ EMAIL KẾT NỐI (LÀM TRONG DB TRANSACTION ĐỂ TRÁNH QUÁ NẶNG)
+    // COMMIT transaction truoc khi lay thong tin KH gui mail (giam lock time)
+    $pdo->commit();
+
+    // --- SAU COMMIT: Lay thong tin KH de gui mail va ghi audit log ---
+
+    // Ghi audit log
+    $soBillXuLy = count($listHD_PhaiChiu);
+    ghiAuditLog(
+        $pdo,
+        $maNV_HienHanh,
+        'CREATE_PAYMENT',
+        'HOA_DON',
+        $soHopDong,
+        "Thanh toan HD {$soHopDong}: phieu thu={$soPhieuThu}, so tien=" . number_format($soTienDaNop_POST, 0) . " VND, phuong thuc={$phuongThucM}, ma giao dich=" . ($maGiaoDich ?: 'N/A') . ", so bill xu ly={$soBillXuLy}"
+    );
+
+    // Rotate CSRF token sau submit thanh cong
+    if (function_exists('rotateCSRFToken')) {
+        rotateCSRFToken();
+    } else {
+        unset($_SESSION['csrf_token']);
+    }
+
+    // Query thong tin KH SAU COMMIT (toi uu hieu nang, khong giu lock khong can thiet)
     $stmtKHInfo = $pdo->prepare("
         SELECT k.tenKH, k.email 
         FROM HOP_DONG h JOIN KHACH_HANG k ON h.maKH = k.maKH 
@@ -135,62 +213,55 @@ try {
     $stmtKHInfo->execute([$soHopDong]);
     $mMailPack = $stmtKHInfo->fetch(PDO::FETCH_ASSOC);
 
-    // DỌN SỔ SẠCH BĂNG BĂNG, COMMIT DATA!
-    $pdo->commit();
-
-    // [AUDIT] Ghi log sau khi thanh toán thành công
-    $soBillXuLy = count($listHD_PhaiChiu);
-    ghiAuditLog(
-        $pdo,
-        $maNV_HienHanh,
-        'CREATE_PAYMENT',
-        'HOA_DON',
-        $soHopDong,
-        "Thanh toán HĐ {$soHopDong}: số tiền=" . formatTien($soTienDaNop_POST) . " VNĐ, phương thức={$phuongThucM}, số bill xử lý={$soBillXuLy}"
-    );
-
-
-    // ----------------------------------------------------------------------------------
-    // API PHÁT BĂNG EMAIL TRƯỚC KHI DỜI VỊ TRÍ HỆ THỐNG
-    // ----------------------------------------------------------------------------------
+    // Gui email bien lai
     if ($mMailPack && !empty($mMailPack['email'])) {
         require_once __DIR__ . '/../../includes/common/mailer.php';
         
-        $kh_name = htmlspecialchars($mMailPack['tenKH']);
-        $tienDaPhayFormat = number_format($soTienDaNop_POST, 0);
-        $phTh = str_replace('_', ' ', $phuongThucM);
+        // Escape tat ca bien truoc khi dua vao template HTML (Convention C.4)
+        $kh_name_e     = htmlspecialchars($mMailPack['tenKH'] ?? '', ENT_QUOTES, 'UTF-8');
+        $soHopDong_e   = htmlspecialchars($soHopDong, ENT_QUOTES, 'UTF-8');
+        $soPhieuThu_e  = htmlspecialchars($soPhieuThu, ENT_QUOTES, 'UTF-8');
+        $phuongThuc_e  = htmlspecialchars($phuongThucM, ENT_QUOTES, 'UTF-8');
+        $maGiaoDich_e  = htmlspecialchars($maGiaoDich ?: 'Khong co', ENT_QUOTES, 'UTF-8');
+        $tienFormat    = number_format($soTienDaNop_POST, 0);
+        $thoiGian      = date('d/m/Y H:i:s');
 
         $htmlMContent = "
             <div style='background-color: #f4f7f9; padding: 20px; font-family: Arial, sans-serif;'>
                 <div style='background: #fff; border-top: 5px solid #28a745; padding: 30px; border-radius: 8px; max-width: 600px; margin: auto;'>
-                    <h2 style='color: #28a745; margin-top: 0;'>XÁC NHẬN THANH TOÁN (E-INVOICE RECEIPT)</h2>
-                    <p>Kính chào Đại Diện Thuê <strong>$kh_name</strong>,</p>
-                    <p>Ban Quản Lý Tòa Nhà Blue Sky Tower xin trân trọng xác nhận và cảm ơn Quý Khách đã thanh toán khoản cước phí duy trì Không Gian Hợp Đồng <strong style='color:#1e3a5f;'>[$soHopDong]</strong>.</p>
+                    <h2 style='color: #28a745; margin-top: 0;'>XAC NHAN THANH TOAN</h2>
+                    <p>Kinh chao <strong>{$kh_name_e}</strong>,</p>
+                    <p>Ban Quan Ly Toa Nha xac nhan da nhan duoc khoan thanh toan cho Hop Dong <strong style='color:#1e3a5f;'>[{$soHopDong_e}]</strong>.</p>
                     
                     <div style='background: #f8f9fa; border-left: 4px solid #1e3a5f; padding: 15px; margin: 20px 0;'>
-                        <p style='margin: 5px 0;'><strong>Khoản Nhận Thực Tế:</strong> <span style='color: #d32f2f; font-size: 1.2em; font-weight: bold;'>$tienDaPhayFormat VNĐ</span></p>
-                        <p style='margin: 5px 0;'><strong>Bàng Phương Thức Thẻ (Gate):</strong> $phTh</p>
-                        <p style='margin: 5px 0;'><strong>Thời Gian Trạm Ghi Nhận:</strong> " . date('d/m/Y H:i:s') . "</p>
+                        <p style='margin: 5px 0;'><strong>So phieu thu:</strong> {$soPhieuThu_e}</p>
+                        <p style='margin: 5px 0;'><strong>So tien:</strong> <span style='color: #d32f2f; font-size: 1.2em; font-weight: bold;'>{$tienFormat} VND</span></p>
+                        <p style='margin: 5px 0;'><strong>Phuong thuc:</strong> {$phuongThuc_e}</p>
+                        <p style='margin: 5px 0;'><strong>Ma giao dich:</strong> {$maGiaoDich_e}</p>
+                        <p style='margin: 5px 0;'><strong>Thoi gian ghi nhan:</strong> {$thoiGian}</p>
                     </div>
 
-                    <p>Mọi khoản dư thừa (Credit Balance) nếu có sẽ được lưu giữ chập quỹ và cấn trừ cho kỳ cước phát sinh tháng Tới liên quan số Phí Điều Hòa.</p>
-                    <p>Kính chúc Công Ty Khách hàng Đạt Thêm Nhiều Dự Án Chiến Lược - Tốt Của Khối.</p>
+                    <p>Moi khoan du thua (Credit Balance) neu co se duoc luu giu va can tru cho ky cuoc phat sinh tiep theo.</p>
                     <hr style='border: none; border-top: 1px dashed #ccc;'/>
-                    <p style='font-size: 0.85em; color: #7f8c8d; text-align: center;'>Email Mạch Nổi System tự động, xin quý vị không Reply phản hồi.</p>
+                    <p style='font-size: 0.85em; color: #7f8c8d; text-align: center;'>Email tu dong, vui long khong reply.</p>
                 </div>
             </div>
         ";
 
         try {
-            // Task Yêu Cầu Fire Email
-            sendEmail($mMailPack['email'], "[Blue Sky Tower] Biên Lai Dịch Vụ Thanh Toán $soHopDong", $htmlMContent);
-        } catch(Exception $mailErrE) {
-            error_log("FIRE MAIL FAILED, BUT FINANCIAL TX SUCCESSFUL Cứu Lỗi Khẩn Mãi Mãi Vẫn Lên Tiền.: " . $mailErrE->getMessage());
+            sendEmail(
+                $mMailPack['email'],
+                "[Blue Sky Tower] Bien lai thanh toan - {$soHopDong}",
+                $htmlMContent
+            );
+        } catch (Exception $mailErr) {
+            // Giao dich da commit thanh cong, chi ghi log loi mail
+            error_log("[tt_tao_submit] Gui email loi: " . $mailErr->getMessage());
         }
     }
 
-
-    // ĐIỀU CHUYỂN KỸ SƯ SAU KHI LÀM TRÒN Sứ Mệnh Database
+    // Redirect thanh cong
+    $_SESSION['success_msg'] = "Giao dich thanh toan da ghi nhan thanh cong. So phieu thu: {$soPhieuThu}.";
     header("Location: tt_tao.php?soHopDong=" . urlencode($soHopDong) . "&msg=success");
     exit();
 
@@ -198,7 +269,8 @@ try {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    // [SEC] Không lộ $e->getMessage() ra HTML
-    error_log("tt_tao_submit PDO error: " . $e->getMessage());
-    die("Xảy ra lỗi khi xử lý thanh toán. Dữ liệu đã được rollback an toàn. Vui lòng liên hệ quản trị viên.");
+    error_log("[tt_tao_submit] PDO error: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Xay ra loi khi xu ly thanh toan. Du lieu da duoc rollback an toan. Vui long lien he quan tri vien.";
+    header("Location: tt_tao.php?soHopDong=" . urlencode($soHopDong));
+    exit();
 }
