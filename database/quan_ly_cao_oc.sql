@@ -38,6 +38,7 @@ CREATE TABLE PHONG (
     loaiPhong VARCHAR(50),
     dienTich DECIMAL(10,2),
     soChoLamViec INT DEFAULT 0,
+    moTaViTri VARCHAR(200) NULL,
     donGiaM2 DECIMAL(15,2) DEFAULT 0.00,
     giaThue DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     trangThai TINYINT DEFAULT 1 COMMENT '1: Trong, 2: Da thue, 3: Dang sua chua, 4: Lock',
