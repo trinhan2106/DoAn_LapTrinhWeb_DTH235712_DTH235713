@@ -304,7 +304,7 @@ CREATE TABLE THONG_BAO (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- 22. Bảng AUDIT_LOG (Ghi sự kiện Thay đổi/Xoá Dữ Liệu nhạy cảm)
+-- 22. Bảng AUDIT_LOG (Ghi sự kiện Thay đổi/Xoá Dữ Liệu nhạy cảm — FIX-20: thêm ipAddress)
 CREATE TABLE AUDIT_LOG (
     id INT AUTO_INCREMENT PRIMARY KEY,
     maNguoiDung VARCHAR(50),
@@ -312,6 +312,7 @@ CREATE TABLE AUDIT_LOG (
     bangBiTacDong VARCHAR(50) NOT NULL,
     recordId VARCHAR(50),
     chiTiet TEXT,
+    ipAddress VARCHAR(45) NULL COMMENT 'IP client khi thuc hien hanh dong',
     thoiGian DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

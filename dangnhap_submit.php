@@ -19,6 +19,7 @@ require_once __DIR__ . '/config/roles.php';
 require_once __DIR__ . '/includes/common/db.php';
 require_once __DIR__ . '/includes/common/csrf.php';
 require_once __DIR__ . '/includes/common/login_throttle.php';
+require_once __DIR__ . '/includes/common/functions.php';
 
 // Chặn truy cập trực tiếp bằng GET
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -41,7 +42,7 @@ if (!$csrf_token || !validateCSRFToken($csrf_token)) {
 // -------------------------------------------------------------
 $username = trim($_POST['username'] ?? '');
 $password = $_POST['password'] ?? '';
-$ip       = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+$ip       = layIP();
 
 if (empty($username) || empty($password)) {
     $_SESSION['error_msg'] = "Vui lòng nhập đầy đủ tài khoản và mật khẩu.";

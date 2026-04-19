@@ -11,6 +11,7 @@ require_once __DIR__ . '/../../config/roles.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
 require_once __DIR__ . '/../../includes/common/login_throttle.php';
+require_once __DIR__ . '/../../includes/common/functions.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: kh_dangnhap.php");
@@ -26,7 +27,7 @@ if (!$csrf_token || !validateCSRFToken($csrf_token)) {
 
 $username = trim($_POST['username'] ?? '');
 $password = $_POST['password'] ?? '';
-$ip       = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+$ip       = layIP();
 
 if (empty($username) || empty($password)) {
     $_SESSION['error_msg'] = "Dữ liệu không đầy đủ.";

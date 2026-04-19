@@ -34,12 +34,17 @@ function ghiAuditLog(
     string $hanhDong,
     string $bangBiTacDong,
     ?string $recordId = null,
-    ?string $chiTiet = null
+    ?string $chiTiet = null,
+    ?string $ipAddress = null
 ): bool {
+        // Tu dong lay IP neu khong truyen vao (FIX-20)
+        if ($ipAddress === null) {
+            $ipAddress = layIP();
+        }
         try {
             $stmt = $pdo->prepare("
-                INSERT INTO AUDIT_LOG (maNguoiDung, hanhDong, bangBiTacDong, recordId, chiTiet, thoiGian) 
-                VALUES (?, ?, ?, ?, ?, NOW())
+                INSERT INTO AUDIT_LOG (maNguoiDung, hanhDong, bangBiTacDong, recordId, chiTiet, ipAddress, thoiGian) 
+                VALUES (?, ?, ?, ?, ?, ?, NOW())
             ");
         $stmt->execute([
             $maNguoiDung,
@@ -47,6 +52,7 @@ function ghiAuditLog(
             $bangBiTacDong,
             $recordId,
             $chiTiet,
+            $ipAddress,
         ]);
         return true;
         } catch (PDOException $e) {
