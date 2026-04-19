@@ -1,8 +1,13 @@
 <?php
 // modules/hop_dong/hd_ket_thuc_le_submit.php
 /**
- * DAO XỬ LÝ GIAO DỊCH DATABASE BÀI TOÁN "TÁCH LẼ PHÒNG" UC10
+ * Xu ly ket thuc phong le (UC10): tra mot so phong trong hop dong, giu lai phan con lai.
+ * - Chong IDOR: xac minh tat ca maCTHD thuoc dung soHopDong hien tai.
+ * - Kiem tra trang thai hop dong = 1 (DangHieuLuc) truoc khi xu ly.
+ * - SELECT FOR UPDATE de chong race condition.
+ * - Khong die() — dung flash message + redirect.
  */
+
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 require_once __DIR__ . '/../../config/constants.php';
@@ -13,97 +18,165 @@ require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 
 kiemTraSession();
-// Chỉ Admin và Quản lý nhà được kết thúc phòng lẻ
 kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Action Blocked by Engine.");
-
-// CSRF Layer
-$csrf_token = filter_input(INPUT_POST, 'csrf_token', FILTER_DEFAULT);
-if (!$csrf_token || !validateCSRFToken($csrf_token)) {
-    die("<h1>Lỗi Security Form CSRF Match Failed.</h1>");
+// Kiem tra phuong thuc HTTP
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: hd_hienthi.php");
+    exit();
 }
 
+// Validate CSRF token
+$csrf_token = $_POST['csrf_token'] ?? '';
+if (!$csrf_token || !validateCSRFToken($csrf_token)) {
+    $_SESSION['error_msg'] = "Phien lam viec het han. Vui long tai lai trang.";
+    header("Location: hd_hienthi.php");
+    exit();
+}
+
+// Doc input
 $soHD = trim($_POST['soHopDong'] ?? '');
 $mangPhayChon = $_POST['chonTraPhan'] ?? []; // Array ["maCTHD|maPhong", ...]
 
-if (empty($soHD) || empty($mangPhayChon)) {
-    die("Bạn chưa tick chọn bất kỳ phòng BĐS nào để giải phẫu rút phòng.");
+if (empty($soHD) || empty($mangPhayChon) || !is_array($mangPhayChon)) {
+    $_SESSION['error_msg'] = "Du lieu khong hop le. Vui long chon it nhat mot phong de ket thuc.";
+    header("Location: hd_hienthi.php");
+    exit();
 }
 
+// Trich xuat danh sach maCTHD va maPhong tu POST data
+$dsMaCTHD = [];
+$dsMapCTHD_Phong = []; // maCTHD => maPhong
+
+foreach ($mangPhayChon as $item) {
+    $parts = explode('|', $item);
+    if (count($parts) === 2) {
+        $maCTHD = trim($parts[0]);
+        $maPhong = trim($parts[1]);
+        if (!empty($maCTHD) && !empty($maPhong)) {
+            $dsMaCTHD[] = $maCTHD;
+            $dsMapCTHD_Phong[$maCTHD] = $maPhong;
+        }
+    }
+}
+
+if (empty($dsMaCTHD)) {
+    $_SESSION['error_msg'] = "Du lieu phong khong hop le. Vui long chon lai.";
+    header("Location: hd_hienthi.php");
+    exit();
+}
+
+$maNV_KetThuc = $_SESSION['user_id'] ?? null;
 $pdo = Database::getInstance()->getConnection();
 
 try {
-    // -------------------------------------------------------------------------
-    // BẮT ĐẦU TRANSACTIONS THEO CHỈ THỊ (RB-10.3)
-    // -------------------------------------------------------------------------
     $pdo->beginTransaction();
 
-    // 1. RE-CHECK DB ĐỂ CHỐNG HACKER BYPASS JAVASCRIPT (RB-10.1 Lõi)
+    // 1. Kiem tra trang thai hop dong: chi cho phep khi trangThai = 1 (DangHieuLuc)
+    $stmtCheckHD = $pdo->prepare("SELECT trangThai FROM HOP_DONG WHERE soHopDong = ? FOR UPDATE");
+    $stmtCheckHD->execute([$soHD]);
+    $hdTrangThai = $stmtCheckHD->fetchColumn();
+
+    if ($hdTrangThai === false) {
+        $pdo->rollBack();
+        $_SESSION['error_msg'] = "Hop dong khong ton tai.";
+        header("Location: hd_hienthi.php");
+        exit();
+    }
+
+    if ((int)$hdTrangThai !== 1) {
+        $pdo->rollBack();
+        $_SESSION['error_msg'] = "Hop dong khong o trang thai hieu luc (trang thai hien tai: {$hdTrangThai}). Khong the ket thuc phong le.";
+        header("Location: hd_hienthi.php");
+        exit();
+    }
+
+    // 2. CHONG IDOR: Xac minh TAT CA maCTHD thuoc dung soHopDong nay
+    // va dang o trang thai active (trangThai = 1)
+    $placeholders = implode(',', array_fill(0, count($dsMaCTHD), '?'));
+    $stmtVerify = $pdo->prepare("
+        SELECT COUNT(*) FROM CHI_TIET_HOP_DONG 
+        WHERE soHopDong = ? AND maCTHD IN ({$placeholders}) AND trangThai = 1
+        FOR UPDATE
+    ");
+    $paramsVerify = array_merge([$soHD], $dsMaCTHD);
+    $stmtVerify->execute($paramsVerify);
+    $countMatched = (int)$stmtVerify->fetchColumn();
+
+    if ($countMatched !== count($dsMaCTHD)) {
+        $pdo->rollBack();
+        $_SESSION['error_msg'] = "Du lieu khong hop le. Co ma chi tiet khong thuoc hop dong nay hoac khong o trang thai dang thue. So yeu cau: " . count($dsMaCTHD) . ", so xac minh: {$countMatched}.";
+        header("Location: hd_hienthi.php");
+        exit();
+    }
+
+    // 3. Kiem tra khong duoc ket thuc tat ca phong (phai dung UC11 huy toan phan)
     $stmtCheckCount = $pdo->prepare("SELECT COUNT(*) FROM CHI_TIET_HOP_DONG WHERE soHopDong = ? AND trangThai = 1");
     $stmtCheckCount->execute([$soHD]);
-    $soPhongActiveThucTe = (int)$stmtCheckCount->fetchColumn();
+    $soPhongActive = (int)$stmtCheckCount->fetchColumn();
 
-    if (count($mangPhayChon) >= $soPhongActiveThucTe) {
+    if (count($dsMaCTHD) >= $soPhongActive) {
         $pdo->rollBack();
-        die("Backend Reject Block: Hành vị Cố Tình Hủy Toàn Bộ Phòng lọt qua lưới JS. Bạn bắt buộc phải xài file Hủy Toàn Phần UC11.");
+        $_SESSION['error_msg'] = "Khong the ket thuc tat ca phong bang chuc nang nay. Vui long su dung chuc nang huy hop dong (UC11) de ket thuc toan bo.";
+        header("Location: hd_hienthi.php");
+        exit();
     }
 
-    // MAP QUERY
-    // CHI_TIET_HOP_DONG = 0 (Da Ket Thuc), PHONG = 1 (Trong)
-    $stmtCT = $pdo->prepare("UPDATE CHI_TIET_HOP_DONG SET trangThai = 0 WHERE maCTHD = ?");
+    // 4. Thuc hien UPDATE: ket thuc tung phong da chon
+    $stmtCT = $pdo->prepare("UPDATE CHI_TIET_HOP_DONG SET trangThai = 0 WHERE maCTHD = ? AND soHopDong = ?");
     $stmtPH = $pdo->prepare("UPDATE PHONG SET trangThai = 1 WHERE maPhong = ?");
-    $stmtLog = $pdo->prepare("DELETE FROM PHONG_LOCK WHERE maPhong = ?"); // Dọn dẹp bổ sung cho sạch
+    $stmtLock = $pdo->prepare("DELETE FROM PHONG_LOCK WHERE maPhong = ?");
 
-    foreach ($mangPhayChon as $item) {
-        // Tách chuỗi maCTHD|maPhong
-        $parts = explode('|', $item);
-        if(count($parts) === 2) {
-            $mCT = $parts[0];
-            $mPH = $parts[1];
+    foreach ($dsMaCTHD as $maCTHD) {
+        $maPhong = $dsMapCTHD_Phong[$maCTHD];
 
-            // Rút dây bảo vệ hệ thống CTHD
-            $stmtCT->execute([$mCT]);
-            
-            // Re-active Tòa nhà cho Phòng Sáng Đèn Lên (Sẵn sàng cho thuê khách khác)
-            $stmtPH->execute([$mPH]);
-            $stmtLog->execute([$mPH]); // Anti rác
-        }
+        // Cap nhat CTHD: them dieu kien soHopDong de chong IDOR tang them
+        $stmtCT->execute([$maCTHD, $soHD]);
+
+        // Tra phong ve trang thai Trong (1)
+        $stmtPH->execute([$maPhong]);
+
+        // Don dep PHONG_LOCK (neu co)
+        $stmtLock->execute([$maPhong]);
     }
 
-
-    // THẨM ĐỊNH LẠI CỘT TÍNH CHẤT THỜI GIAN NGÀY (RB-10.3 CẬP NHẬT LẠI NGÀY MAX HẾT HẠN)
-    // Cực kỳ tinh tế: Có thể cái căn vừa bị RÚT ra chứa lịch Hết hạn Xa Nhất. Cần tính lại!
-    $sqlThuatToanMaxDate = "
-        SELECT MAX(COALESCE(ngayHetHan, (SELECT ngayKetThuc FROM HOP_DONG WHERE soHopDong=:hd1)))
+    // 5. Tinh lai ngayKetThuc cho hop dong dua tren cac phong con lai
+    $sqlMaxDate = "
+        SELECT MAX(COALESCE(ngayHetHan, (SELECT ngayKetThuc FROM HOP_DONG WHERE soHopDong = :hd1)))
         FROM CHI_TIET_HOP_DONG 
         WHERE soHopDong = :hd2 AND trangThai = 1
     ";
-    $stmtMax = $pdo->prepare($sqlThuatToanMaxDate);
+    $stmtMax = $pdo->prepare($sqlMaxDate);
     $stmtMax->execute([':hd1' => $soHD, ':hd2' => $soHD]);
-    $maxDateTinhToanMoi = $stmtMax->fetchColumn();
+    $maxDateMoi = $stmtMax->fetchColumn();
 
-    // Ốp khối Max Date an toàn này cắm ngược vào Bảng Tổng HOP_DONG dọn cỏ sạch sẽ
-    if ($maxDateTinhToanMoi) {
+    if ($maxDateMoi) {
         $stmtUpHD = $pdo->prepare("UPDATE HOP_DONG SET ngayKetThuc = ? WHERE soHopDong = ?");
-        $stmtUpHD->execute([$maxDateTinhToanMoi, $soHD]);
+        $stmtUpHD->execute([$maxDateMoi, $soHD]);
     }
 
-    // NGÃ ĐÍCH THÀNH CÔNG VÀ LƯU DI CHÚC VÀO DB THẬT
     $pdo->commit();
 
-    // [AUDIT] Ghi log sau khi kết thúc phòng lẻ thành công
-    $maNV_KetThuc = $_SESSION['user_id'] ?? null;
-    $soPhongKetThuc = is_array($mangPhayChon) ? count($mangPhayChon) : 0;
+    // Ghi audit log sau commit
+    $soPhongKetThuc = count($dsMaCTHD);
+    $dsPhongStr = implode(', ', array_values($dsMapCTHD_Phong));
     ghiAuditLog(
         $pdo,
         $maNV_KetThuc,
         'END_ROOM_PARTIAL',
         'CHI_TIET_HOP_DONG',
         $soHD,
-        "Kết thúc phòng lẻ HĐ {$soHD}: số phòng trả={$soPhongKetThuc}, ngày hết hạn HĐ mới={$maxDateTinhToanMoi}"
+        "Ket thuc phong le HD {$soHD}: so phong tra={$soPhongKetThuc}, phong=[{$dsPhongStr}], ngay het han HD moi={$maxDateMoi}"
     );
 
+    // Rotate CSRF token
+    if (function_exists('rotateCSRFToken')) {
+        rotateCSRFToken();
+    } else {
+        unset($_SESSION['csrf_token']);
+    }
+
+    $_SESSION['success_msg'] = "Ket thuc {$soPhongKetThuc} phong thanh cong cho hop dong {$soHD}.";
     header("Location: hd_hienthi.php?msg=tra_le_success");
     exit();
 
@@ -111,7 +184,8 @@ try {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    // [SEC] Không lộ $e->getMessage() ra HTML
-    error_log("hd_ket_thuc_le_submit PDO error: " . $e->getMessage());
-    die("Xảy ra lỗi khi kết thúc phòng lẻ. Dữ liệu đã được rollback an toàn. Vui lòng liên hệ quản trị viên.");
+    error_log("[hd_ket_thuc_le_submit] PDO error: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Xay ra loi khi ket thuc phong le. Du lieu da duoc rollback an toan. Vui long lien he quan tri vien.";
+    header("Location: hd_hienthi.php");
+    exit();
 }
