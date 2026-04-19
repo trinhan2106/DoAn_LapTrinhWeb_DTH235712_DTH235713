@@ -1,139 +1,194 @@
 <?php
 // modules/thanh_toan/dien_nuoc_ghi_submit.php
 /**
- * DAO XỬ LÝ (TASK 6.5) GHI NHẬN BIÊN BẢN CẮT CHỈ SỐ KỸ THUẬT VÀ NẠP HÓA ĐƠN
+ * Xu ly ghi nhan chi so dien nuoc va tao hoa don tuong ung.
+ * - Access control: ADMIN, KE_TOAN, QUAN_LY_NHA.
+ * - Map POST fields sang dung cot DB: chiSoDienCu, chiSoDienMoi, chiSoNuocCu, chiSoNuocMoi.
+ * - Validate server-side: chiSoMoi >= chiSoCu.
+ * - INSERT day du cot vao CHI_SO_DIEN_NUOC (bao gom thanhTienDien, thanhTienNuoc).
+ * - INSERT HOA_DON voi day du cot FIX-01 (loaiHoaDon, maNV, kyThanhToan, lyDo, created_at).
+ * - Ghi audit log. Khong die() hay echo loi SQL ra HTML.
  */
+
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 require_once __DIR__ . '/../../config/constants.php';
+require_once __DIR__ . '/../../config/roles.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
 require_once __DIR__ . '/../../includes/common/auth.php';
+require_once __DIR__ . '/../../includes/common/functions.php';
 
 kiemTraSession();
+kiemTraRole([ROLE_ADMIN, ROLE_KE_TOAN, ROLE_QUAN_LY_NHA]);
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Lỗi Mạng Backend.");
-
-// Phôi Pha Bảo Mật (L1) CSRF 
-$csrf_token = filter_input(INPUT_POST, 'csrf_token', FILTER_DEFAULT);
-if (!$csrf_token || !validateCSRFToken($csrf_token)) {
-    die("<h1>Cổng tường lửa chặn Request: CSRF Validation Fail.</h1>");
+// Kiem tra phuong thuc HTTP
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: dien_nuoc_ghi.php");
+    exit();
 }
 
+// Validate CSRF token
+$csrf_token = $_POST['csrf_token'] ?? '';
+if (!$csrf_token || !validateCSRFToken($csrf_token)) {
+    $_SESSION['error_msg'] = "Phien lam viec het han. Vui long tai lai trang.";
+    header("Location: dien_nuoc_ghi.php");
+    exit();
+}
+
+// Doc input tu form
 $maPhong    = trim($_POST['maPhong'] ?? '');
 $soHopDong  = trim($_POST['soHopDong'] ?? '');
 $thangGhi   = (int)($_POST['thangGhi'] ?? 0);
 $namGhi     = (int)($_POST['namGhi'] ?? 0);
 
-$csD_Dau    = (float)($_POST['chiSoDien_Dau'] ?? 0);
-$csD_Cuoi   = (float)($_POST['chiSoDien_Cuoi'] ?? 0);
+// Map POST field names (tu form) sang gia tri dung cho DB columns
+// Form gui: chiSoDien_Dau, chiSoDien_Cuoi -> DB: chiSoDienCu, chiSoDienMoi
+$csD_Cu     = (float)($_POST['chiSoDien_Dau'] ?? 0);
+$csD_Moi    = (float)($_POST['chiSoDien_Cuoi'] ?? 0);
 $dgDien     = (float)($_POST['donGiaDien'] ?? 0);
 
-$csN_Dau    = (float)($_POST['chiSoNuoc_Dau'] ?? 0);
-$csN_Cuoi   = (float)($_POST['chiSoNuoc_Cuoi'] ?? 0);
+$csN_Cu     = (float)($_POST['chiSoNuoc_Dau'] ?? 0);
+$csN_Moi    = (float)($_POST['chiSoNuoc_Cuoi'] ?? 0);
 $dgNuoc     = (float)($_POST['donGiaNuoc'] ?? 0);
 
-// Phôi Pha Bảo Mật (L2) Toán Trọng Lớp Lõi (Chống Hacker Dùng F12 Xóa Lệnh JS) 
-// BẮT BUỘC NHƯ Requirement: "Kiểm tra lại cuoi >= dau bằng PHP. Nếu sai, đá văng về form."
-if ($csD_Cuoi < $csD_Dau || $csN_Cuoi < $csN_Dau) {
-    header("Location: dien_nuoc_ghi.php?err=invalid_delta");
+$maNV_HienHanh = $_SESSION['user_id'] ?? null;
+
+// Validate input co ban
+if (empty($maPhong) || empty($soHopDong) || $thangGhi < 1 || $thangGhi > 12 || $namGhi < 2020 || $namGhi > 2099) {
+    $_SESSION['error_msg'] = "Du lieu khong hop le. Vui long kiem tra ma phong, thang va nam.";
+    header("Location: dien_nuoc_ghi.php");
     exit();
 }
 
-$deltaDien = $csD_Cuoi - $csD_Dau;
-$deltaNuoc = $csN_Cuoi - $csN_Dau;
-$tienDien  = $deltaDien * $dgDien;
-$tienNuoc  = $deltaNuoc * $dgNuoc;
-$tongTien  = $tienDien + $tienNuoc;
+if ($dgDien < 0 || $dgNuoc < 0) {
+    $_SESSION['error_msg'] = "Don gia dien/nuoc khong duoc am.";
+    header("Location: dien_nuoc_ghi.php");
+    exit();
+}
+
+// Validate server-side: chi so moi phai >= chi so cu
+if ($csD_Moi < $csD_Cu) {
+    $_SESSION['error_msg'] = "Chi so dien moi ({$csD_Moi}) khong duoc nho hon chi so dien cu ({$csD_Cu}).";
+    header("Location: dien_nuoc_ghi.php");
+    exit();
+}
+
+if ($csN_Moi < $csN_Cu) {
+    $_SESSION['error_msg'] = "Chi so nuoc moi ({$csN_Moi}) khong duoc nho hon chi so nuoc cu ({$csN_Cu}).";
+    header("Location: dien_nuoc_ghi.php");
+    exit();
+}
+
+// Tinh toan thanh tien
+$deltaDien      = $csD_Moi - $csD_Cu;
+$deltaNuoc      = $csN_Moi - $csN_Cu;
+$thanhTienDien  = $deltaDien * $dgDien;
+$thanhTienNuoc  = $deltaNuoc * $dgNuoc;
+$tongTien       = $thanhTienDien + $thanhTienNuoc;
 
 $pdo = Database::getInstance()->getConnection();
 
 try {
-    // ----------------------------------------------------------------------------------
-    // ĐÓNG KHÓA VÒNG TRÒN ACID: UPDATE 2 BẢNG PARALLEL (CHI_SO VÀ HOA_DON)
-    // ----------------------------------------------------------------------------------
     $pdo->beginTransaction();
 
-    // 1. TẠO SINH LỊCH GHI NHẬN KỸ THUẬT TRONG BẢNG CHI_SO_DIEN_NUOC
+    // 1. Sinh maChiSo va INSERT vao CHI_SO_DIEN_NUOC (day du cot theo schema)
+    $maChiSo = sinhMaNgauNhien('CS-' . date('Ym') . '-', 5);
+
     $stmtGhiSo = $pdo->prepare("
         INSERT INTO CHI_SO_DIEN_NUOC (
-            maPhong, thangGhi, namGhi,
-            chiSoDien_Dau, chiSoDien_Cuoi, donGiaDien,
-            chiSoNuoc_Dau, chiSoNuoc_Cuoi, donGiaNuoc
+            maChiSo, maPhong, thangGhi, namGhi,
+            chiSoDienCu, chiSoDienMoi, chiSoNuocCu, chiSoNuocMoi,
+            donGiaDien, donGiaNuoc, thanhTienDien, thanhTienNuoc
         ) VALUES (
-            :phong, :thang, :nam,
-            :dDau, :dCuoi, :dGia,
-            :nDau, :nCuoi, :nGia
+            :maChiSo, :phong, :thang, :nam,
+            :dCu, :dMoi, :nCu, :nMoi,
+            :dGia, :nGia, :ttDien, :ttNuoc
         )
     ");
     $stmtGhiSo->execute([
-        ':phong' => $maPhong,
-        ':thang' => $thangGhi,
-        ':nam'   => $namGhi,
-        ':dDau'  => $csD_Dau, ':dCuoi' => $csD_Cuoi, ':dGia' => $dgDien,
-        ':nDau'  => $csN_Dau, ':nCuoi' => $csN_Cuoi, ':nGia' => $dgNuoc
+        ':maChiSo' => $maChiSo,
+        ':phong'   => $maPhong,
+        ':thang'   => $thangGhi,
+        ':nam'     => $namGhi,
+        ':dCu'     => $csD_Cu,
+        ':dMoi'    => $csD_Moi,
+        ':nCu'     => $csN_Cu,
+        ':nMoi'    => $csN_Moi,
+        ':dGia'    => $dgDien,
+        ':nGia'    => $dgNuoc,
+        ':ttDien'  => $thanhTienDien,
+        ':ttNuoc'  => $thanhTienNuoc
     ]);
 
-    // 2. SAO KÊ CHẬP NỢ (BILLING) LÊN HỆ THỐNG KẾ TOÁN TÀI CHÍNH (HOA_DON)
-    // Tự sinh ID Invoice (VD: INV-DN-2026xxxxxx)
-    $soHD_INV = 'INV-DN-' . date('YmdHis') . rand(10,99);
-    
-    // Convert 1 -> 01/2026
+    // 2. Sinh soHoaDon va INSERT vao HOA_DON (day du cot FIX-01)
+    $soHD_INV = sinhMaNgauNhien('INV-DN-' . date('Ym') . '-', 5);
     $kyThanhToanStr = sprintf("%02d/%04d", $thangGhi, $namGhi);
 
-    // lyDo = 'TienDienNuoc' đã được fix cứng theo Luật Requirement
-    // trangThai = 'ConNo'
-    // soTienDaNop = 0, soTienConNo = Tống Tiền Vừa Rút Máu
     $stmtBill = $pdo->prepare("
         INSERT INTO HOA_DON (
-            soHoaDon, soHopDong, lyDo,
+            soHoaDon, soHopDong, thang, nam,
             tongTien, soTienDaNop, soTienConNo,
-            trangThai, kyThanhToan
+            trangThai, kyThanhToan, lyDo, maNV, loaiHoaDon
         ) VALUES (
-            :soHD, :soHDP, 'TienDienNuoc',
+            :soHD, :soHDP, :thang, :nam,
             :tongt, 0, :tongt_no,
-            'ConNo', :kyTT
+            'ConNo', :kyTT, 'TienDienNuoc', :maNV, 'Chinh'
         )
     ");
     $stmtBill->execute([
-        ':soHD'    => $soHD_INV,
-        ':soHDP'   => $soHopDong,
-        ':tongt'   => $tongTien,
-        ':tongt_no'=> $tongTien,
-        ':kyTT'    => $kyThanhToanStr
+        ':soHD'     => $soHD_INV,
+        ':soHDP'    => $soHopDong,
+        ':thang'    => $thangGhi,
+        ':nam'      => $namGhi,
+        ':tongt'    => $tongTien,
+        ':tongt_no' => $tongTien,
+        ':kyTT'     => $kyThanhToanStr,
+        ':maNV'     => $maNV_HienHanh
     ]);
 
-    // NIÊM PHONG LUẬT ACID
     $pdo->commit();
 
-    // Redirect ra Danh Sách Hóa Đơn Trả Thù lao 
-    // Trong file này chưa thiết kế hd_hienthi của hóa đơn, mượn tạm Redirect kèm success flag.
-    echo "<div style='background:#f4f7f9; padding:50px; font-family:sans-serif; text-align:center;'>";
-    echo "<h1 style='color:#2ecc71;'>✅ NGHIỆP VỤ LẬP PHIẾU ĐIỆN NƯỚC THÀNH CÔNG!</h1>";
-    echo "<h3>Sổ Kế Toán đã ghi nợ Số Hóa Đơn: <span style='color:red;'>$soHD_INV</span></h3>";
-    echo "<h3>Tổng tiền phải thu: " . number_format($tongTien, 0) . " VNĐ</h3>";
-    echo "<p>(Lưu ý: Mảng Frontend View List Hóa Đơn đang được build, bạn có thể quay lại thủ công)</p>";
-    echo "<a href='dien_nuoc_ghi.php' style='padding: 10px 20px; background: #1e3a5f; color:#fff; text-decoration:none; border-radius:5px;'>Quay Lại Lập Thêm Phiếu Trạm Khác</a>";
-    echo "</div>";
+    // Ghi audit log sau commit
+    ghiAuditLog(
+        $pdo,
+        $maNV_HienHanh,
+        'CREATE_INVOICE_UTILITY',
+        'CHI_SO_DIEN_NUOC',
+        $maChiSo,
+        "Ghi chi so dien nuoc phong={$maPhong}, ky={$kyThanhToanStr}, "
+        . "dien: {$csD_Cu}->{$csD_Moi} (don gia={$dgDien}, thanh tien=" . number_format($thanhTienDien, 0) . "), "
+        . "nuoc: {$csN_Cu}->{$csN_Moi} (don gia={$dgNuoc}, thanh tien=" . number_format($thanhTienNuoc, 0) . "), "
+        . "tong tien=" . number_format($tongTien, 0) . " VND, hoa don={$soHD_INV}"
+    );
+
+    // Rotate CSRF token
+    if (function_exists('rotateCSRFToken')) {
+        rotateCSRFToken();
+    } else {
+        unset($_SESSION['csrf_token']);
+    }
+
+    // Redirect thanh cong
+    $_SESSION['success_msg'] = "Ghi nhan chi so dien nuoc thanh cong. Ma hoa don: {$soHD_INV}, tong tien: " . number_format($tongTien, 0) . " VND.";
+    header("Location: dien_nuoc_ghi.php");
+    exit();
 
 } catch (PDOException $e) {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    
-    // ĐÂY LÀ KHÚC TRY/CATCH CỰC KỲ QUAN TRỌNG ĐỂ BẮT ĐỤNG ĐỘ DATA THEO LỆNH TASK Ràng buộc UNIQUE(maPhong, thangGhi, namGhi)
-    // Code 23000 ở Tầng MySql Engine biểu hiện cho [Integrity constraint violation: 1062 Duplicate entry]
+
+    // Xu ly loi trung lap UNIQUE constraint (maPhong + thangGhi + namGhi)
     if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate entry') !== false) {
-        die("
-            <div style='background:#fce4ec; border:3px solid #c62828; padding:30px; font-family:sans-serif; text-align:center;'>
-                <h1 style='color:#c62828;'>CẢNH BÁO BẢO MẬT: BỊ TRÙNG LẶP SỔ PHỤ</h1>
-                <h3>Hệ thống phát hiện [Mã Phòng: $maPhong] ĐÃ ĐƯỢC NHÂN VIÊN KHÁC GHI CÔNG TƠ CHỈ SỐ cho Tháng $thangGhi/$namGhi rồi!</h3>
-                <p>Constraint Bảo Vệ Toàn Vẹn ACID của DB đã chủ động BLOCK giao dịch. Transaction Hủy!</p>
-                <a href='dien_nuoc_ghi.php'>Bấm quay lại form làm lại</a>
-            </div>
-        ");
+        $_SESSION['error_msg'] = "Phong {$maPhong} da duoc ghi chi so dien nuoc cho thang {$thangGhi}/{$namGhi}. Khong the ghi trung.";
+        header("Location: dien_nuoc_ghi.php");
+        exit();
     }
 
-    error_log("LỖI SQL KẾ TÓAN: " . $e->getMessage());
-    die("Xảy ra Sự Cô Rớt Đĩa Ổ Cứng Backend CSDL (Rollback Kích Hoạt): Lỗi: " . $e->getMessage());
+    // Loi chung: ghi log, khong lo thong tin DB ra ngoai
+    error_log("[dien_nuoc_ghi_submit] PDO error: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Xay ra loi khi ghi nhan chi so dien nuoc. Du lieu da duoc rollback an toan. Vui long lien he quan tri vien.";
+    header("Location: dien_nuoc_ghi.php");
+    exit();
 }
