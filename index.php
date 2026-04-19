@@ -9,39 +9,25 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-// Dữ liệu giả lập cho phòng nổi bật
-$featuredRooms = [
-    [
-        'maPhong'   => 'P301',
-        'tenPhong'  => 'P301 - Văn Phòng Cao Cấp',
-        'loaiPhong' => 'Văn phòng riêng',
-        'dienTich'  => 75,
-        'tang'      => 'Tầng 3',
-        'giaThue'   => 18500000,
-        'trangThai' => 'Trống',
-        'hinhAnh'   => 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80'
-    ],
-    [
-        'maPhong'   => 'P002',
-        'tenPhong'  => 'P002 - Mặt Bằng Thương Mại',
-        'loaiPhong' => 'Mặt bằng kinh doanh',
-        'dienTich'  => 120,
-        'tang'      => 'Tầng Trệt',
-        'giaThue'   => 45000000,
-        'trangThai' => 'Trống',
-        'hinhAnh'   => 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80'
-    ],
-    [
-        'maPhong'   => 'P405',
-        'tenPhong'  => 'P405 - Tầm Nhìn Panorama',
-        'loaiPhong' => 'Văn phòng hiện đại',
-        'dienTich'  => 95,
-        'tang'      => 'Tầng 4',
-        'giaThue'   => 22000000,
-        'trangThai' => 'Trống',
-        'hinhAnh'   => 'https://images.unsplash.com/photo-1416339134316-0e91dc9ded92?auto=format&fit=crop&w=800&q=80'
-    ]
-];
+// Include file kết nối CSDL (biến $conn)
+require_once 'config/database.php';
+
+// Thực thi truy vấn lấy 3 phòng nổi bật
+$featuredRooms = [];
+try {
+    if (isset($conn)) {
+        $sql = "SELECT p.maPhong, p.tenPhong, p.loaiPhong, p.dienTich, p.giaThue, p.trangThai, p.hinhAnh, t.tenTang AS tang 
+                FROM PHONG p 
+                JOIN TANG t ON p.maTang = t.maTang 
+                WHERE p.deleted_at IS NULL 
+                LIMIT 3";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        $featuredRooms = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+} catch (PDOException $e) {
+    error_log("Lỗi truy vấn CSDL: " . $e->getMessage());
+}
 
 // Include layout chung
 include_once 'includes/public/header.php';
@@ -49,6 +35,24 @@ include_once 'includes/public/navbar.php';
 ?>
 
 <style>
+    body {
+        background-color: #f4f7f9;
+        color: #1f2a44;
+    }
+
+    .btn-outline-brand {
+        border: 1px solid #1e3a5f;
+        color: #1e3a5f;
+        background-color: transparent;
+        transition: all 0.3s ease;
+        border-radius: 8px;
+    }
+
+    .btn-outline-brand:hover {
+        background-color: #1e3a5f;
+        color: #ffffff;
+    }
+
     /* Bổ sung CSS riêng cho file index nếu cần thiết (để đảm bảo yêu cầu layout) */
     .hero-carousel .carousel-item {
         height: 80vh;
@@ -267,11 +271,15 @@ include_once 'includes/public/navbar.php';
 
     <div class="row g-4 justify-content-center">
         <?php foreach ($featuredRooms as $room): ?>
+            <?php 
+                // Sử dụng ảnh mặc định nếu không có ảnh
+                $hinhAnh = !empty($room['hinhAnh']) ? $room['hinhAnh'] : 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80'; 
+            ?>
             <div class="col-12 col-md-6 col-xl-4">
                 <div class="card card-brand h-100">
                     <div class="position-relative">
                         <!-- XSS protection for Display -->
-                        <img src="<?php echo htmlspecialchars($room['hinhAnh']); ?>" class="card-img-top w-100" alt="<?php echo htmlspecialchars($room['tenPhong']); ?>">
+                        <img src="<?php echo htmlspecialchars($hinhAnh); ?>" class="card-img-top w-100" alt="<?php echo htmlspecialchars($room['tenPhong']); ?>">
                         
                         <?php if ($room['trangThai'] === 'Trống'): ?>
                             <span class="position-absolute top-0 start-0 m-3 badge badge-brand--success shadow-sm">
@@ -315,7 +323,7 @@ include_once 'includes/public/navbar.php';
                         </div>
                     </div>
                     <div class="card-footer bg-white border-0 pb-4 px-4 pt-0">
-                        <a href="chi_tiet_phong.php?maPhong=<?php echo htmlspecialchars(urlencode($room['maPhong'])); ?>" class="btn w-100 py-2 border text-brand-primary fw-bold" style="border-radius: 8px; transition: all 0.3s; background-color: #f8f9fa;">
+                        <a href="chi_tiet_phong.php?maPhong=<?php echo htmlspecialchars(urlencode($room['maPhong'])); ?>" class="btn w-100 py-2 fw-bold btn-outline-brand">
                             Xem Chi Tiết
                         </a>
                     </div>

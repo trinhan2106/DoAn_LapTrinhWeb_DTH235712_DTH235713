@@ -159,3 +159,18 @@ body {
 .status-column .badge-brand {
     min-width: 90px; /* Đảm bảo các badge đồng đều về kích thước trên cột trạng thái */
 }
+
+/* --- Sticky Navbar --- */
+.navbar.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 1050; /* Z-index cao hơn cả modal mặc định để không bị đè */
+    transition: all 0.3s ease-in-out;
+    width: 100%;
+}
+.navbar.sticky-top.scrolled {
+    box-shadow: 0 5px 20px rgba(30, 58, 95, 0.4); /* Bóng đổ màu brand-primary đậm hơn để tách biệt hẳn */
+    /* Có thể thu nhỏ padding của navbar đi 1 chút khi scroll để tạo cảm giác gọn gàng */
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+}
