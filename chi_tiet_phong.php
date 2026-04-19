@@ -121,7 +121,7 @@ include_once 'includes/public/navbar.php';
 
     .btn-brand--accent:hover {
         background-color: #b39158;
-        color: #152943;
+        color: #ffffff !important;
         transform: translateY(-2px);
         box-shadow: 0 6px 15px rgba(201, 166, 107, 0.4);
     }
@@ -282,32 +282,35 @@ include_once 'includes/public/navbar.php';
                     <p class="text-muted text-center small mb-4">Để lại thông tin, chúng tôi sẽ liên hệ lại với bạn trong 24h.</p>
                     
                     <?php if ($room['trangThai'] == 1): ?>
-                        <form action="dang_ky_thue_submit.php" method="POST">
+                        <form action="dang_ky_thue_submit.php" method="POST" class="needs-validation" novalidate>
                             <!-- Bảo mật CSRF -->
                             <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
                             <input type="hidden" name="maPhong" value="<?= e($room['maPhong']) ?>">
                             
                             <div class="mb-3">
                                 <label for="hoTen" class="form-label small fw-bold text-muted">Họ và Tên <span class="text-danger">*</span></label>
-                                <div class="input-group">
+                                <div class="input-group has-validation">
                                     <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-user text-muted"></i></span>
                                     <input type="text" class="form-control bg-light border-start-0 ps-0 shadow-none" id="hoTen" name="hoTen" required placeholder="Nguyễn Văn A" maxlength="100">
+                                    <div class="invalid-feedback">Vui lòng nhập họ và tên hợp lệ.</div>
                                 </div>
                             </div>
                             
                             <div class="mb-3">
                                 <label for="soDienThoai" class="form-label small fw-bold text-muted">Số điện thoại <span class="text-danger">*</span></label>
-                                <div class="input-group">
+                                <div class="input-group has-validation">
                                     <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-phone text-muted"></i></span>
                                     <input type="text" class="form-control bg-light border-start-0 ps-0 shadow-none" id="soDienThoai" name="soDienThoai" required pattern="(84|0[3|5|7|8|9])+([0-9]{8})\b" title="Vui lòng nhập định dạng số điện thoại Việt Nam (VD: 0912345678)" placeholder="09xx xxx xxx">
+                                    <div class="invalid-feedback">Vui lòng nhập số điện thoại Việt Nam hợp lệ (VD: 0912345678).</div>
                                 </div>
                             </div>
                             
                             <div class="mb-3">
                                 <label for="email" class="form-label small fw-bold text-muted">Email <span class="text-danger">*</span></label>
-                                <div class="input-group">
+                                <div class="input-group has-validation">
                                     <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-envelope text-muted"></i></span>
                                     <input type="email" class="form-control bg-light border-start-0 ps-0 shadow-none" id="email" name="email" required placeholder="email@congty.com" maxlength="100">
+                                    <div class="invalid-feedback">Vui lòng nhập định dạng email hợp lệ.</div>
                                 </div>
                             </div>
                             
@@ -347,6 +350,22 @@ include_once 'includes/public/navbar.php';
       'resizeDuration': 200,
       'wrapAround': true,
       'albumLabel': "Hình ảnh %1 / %2"
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+      'use strict'
+      var forms = document.querySelectorAll('.needs-validation')
+      Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+          if (!form.checkValidity()) {
+            event.preventDefault()
+            event.stopPropagation()
+          }
+          form.classList.add('was-validated')
+        }, false)
+      })
     });
 </script>
 
