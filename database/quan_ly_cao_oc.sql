@@ -192,13 +192,14 @@ CREATE TABLE PHONG_HINH_ANH (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- 13. Bảng PHONG_LOCK (Lock phòng tạm thời trong 10 phút mua/thuê)
+-- 13. Bảng PHONG_LOCK (Lock phòng tạm thời trong 10 phút — FIX-07: thêm UNIQUE maPhong cho atomic upsert)
 CREATE TABLE PHONG_LOCK (
     id VARCHAR(50) PRIMARY KEY,
     maPhong VARCHAR(50) NOT NULL,
     session_id VARCHAR(100) NOT NULL,
     locked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     expire_at DATETIME NOT NULL COMMENT 'Thoi gian giu phong tam ket thuc',
+    CONSTRAINT uk_phong_lock UNIQUE (maPhong),
     CONSTRAINT fk_lock_phong FOREIGN KEY (maPhong) REFERENCES PHONG(maPhong) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

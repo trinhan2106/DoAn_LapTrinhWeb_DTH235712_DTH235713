@@ -2,10 +2,9 @@
 // modules/phong/phong_lock.php
 /**
  * AJAX endpoint: Lock/Unlock phong tam thoi khi tao hop dong.
- * - Bat buoc authentication + CSRF.
- * - Atomic upsert bang INSERT ... ON DUPLICATE KEY UPDATE de chong race condition.
- * - Sau upsert, SELECT verify ownership.
- * - Khong lo thong tin DB ra JSON response.
+ * Atomic upsert nho UNIQUE(maPhong) — khong can transaction/FOR UPDATE.
+ * INSERT ... ON DUPLICATE KEY UPDATE chi cap nhat neu cung session hoac lock het han.
+ * Sau upsert, SELECT verify ownership.
  */
 
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
@@ -16,10 +15,9 @@ require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
 require_once __DIR__ . '/../../includes/common/auth.php';
 
-// Content-Type JSON cho AJAX endpoint
 header('Content-Type: application/json; charset=utf-8');
 
-// Authentication: phai dang nhap
+// --- Authentication ---
 try {
     kiemTraSession();
 } catch (\Exception $e) {
@@ -28,41 +26,34 @@ try {
     exit();
 }
 
-// Role check: chi staff (Admin, QLN, Ke Toan) duoc lock phong
 $userRole = (int)($_SESSION['user_role'] ?? 0);
 if (!in_array($userRole, [ROLE_ADMIN, ROLE_QUAN_LY_NHA, ROLE_KE_TOAN], true)) {
     http_response_code(403);
-    echo json_encode(['status' => 'error', 'message' => 'Ban khong co quyen thuc hien thao tac nay.']);
+    echo json_encode(['status' => 'error', 'message' => 'Khong co quyen thuc hien thao tac nay.']);
     exit();
 }
 
-// Kiem tra phuong thuc HTTP
+// --- Method check ---
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['status' => 'error', 'message' => 'Chi chap nhan phuong thuc POST.']);
+    echo json_encode(['status' => 'error', 'message' => 'Chi chap nhan POST.']);
     exit();
 }
 
-// Validate CSRF: doc tu header X-CSRF-Token hoac POST field csrf_token
+// --- CSRF: header X-CSRF-Token hoac POST field ---
 $csrf = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ($_POST['csrf_token'] ?? '');
 if (!$csrf || !validateCSRFToken($csrf)) {
     http_response_code(403);
-    echo json_encode(['status' => 'error', 'message' => 'CSRF token khong hop le. Vui long tai lai trang.']);
+    echo json_encode(['status' => 'error', 'message' => 'CSRF token khong hop le.']);
     exit();
 }
 
-// Doc input
-$action   = $_POST['action'] ?? '';
-$maPhong  = trim($_POST['maPhong'] ?? '');
+// --- Input ---
+$action    = $_POST['action'] ?? '';
+$maPhong   = trim($_POST['maPhong'] ?? '');
 $sessionId = session_id();
 
-if (empty($maPhong)) {
-    echo json_encode(['status' => 'error', 'message' => 'Thieu tham so ma phong.']);
-    exit();
-}
-
-// Validate do dai
-if (strlen($maPhong) > 50) {
+if (empty($maPhong) || strlen($maPhong) > 50) {
     echo json_encode(['status' => 'error', 'message' => 'Ma phong khong hop le.']);
     exit();
 }
@@ -70,84 +61,55 @@ if (strlen($maPhong) > 50) {
 try {
     $pdo = Database::getInstance()->getConnection();
 
-    // Xoa cac lock da het han truoc khi xu ly (don dep)
+    // Don dep lock het han truoc moi request
     $pdo->prepare("DELETE FROM PHONG_LOCK WHERE expire_at < NOW()")->execute();
 
     if ($action === 'lock') {
 
-        // Atomic upsert: INSERT ... ON DUPLICATE KEY UPDATE
-        // Dieu kien: chi cap nhat neu lock da het han HOAC chinh minh dang giu
-        // Can UNIQUE index tren maPhong. Neu chua co, dung transaction + FOR UPDATE thay the.
-        $pdo->beginTransaction();
-
-        // Lock row hien tai (neu co) de tranh race condition
-        $stmtCheck = $pdo->prepare("
-            SELECT id, session_id, expire_at 
-            FROM PHONG_LOCK 
-            WHERE maPhong = ? 
-            FOR UPDATE
+        // Atomic upsert: UNIQUE(maPhong) dam bao 1 phong chi co 1 lock.
+        // Chi cap nhat expire_at neu:
+        //   - session_id trung (chinh minh gia han) HOAC
+        //   - lock da het han (expire_at < NOW)
+        // Neu nguoi khac dang giu va chua het han -> giu nguyen row cu (khong cap nhat).
+        $lockId = 'LK-' . $maPhong . '-' . substr($sessionId, 0, 8);
+        $stmtUpsert = $pdo->prepare("
+            INSERT INTO PHONG_LOCK (id, maPhong, session_id, locked_at, expire_at)
+            VALUES (:id, :phong, :sess, NOW(), DATE_ADD(NOW(), INTERVAL 10 MINUTE))
+            ON DUPLICATE KEY UPDATE
+                session_id = IF(expire_at < NOW() OR session_id = VALUES(session_id), VALUES(session_id), session_id),
+                expire_at  = IF(expire_at < NOW() OR session_id = VALUES(session_id), VALUES(expire_at), expire_at),
+                locked_at  = IF(expire_at < NOW() OR session_id = VALUES(session_id), NOW(), locked_at)
         ");
-        $stmtCheck->execute([$maPhong]);
-        $lockData = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+        $stmtUpsert->execute([
+            ':id'    => $lockId,
+            ':phong' => $maPhong,
+            ':sess'  => $sessionId
+        ]);
 
-        if ($lockData) {
-            $isExpired = strtotime($lockData['expire_at']) <= time();
-            $isOwner   = $lockData['session_id'] === $sessionId;
-
-            if (!$isExpired && !$isOwner) {
-                // Phong dang bi nguoi khac giu va chua het han -> reject
-                $pdo->rollBack();
-                echo json_encode([
-                    'status'  => 'error',
-                    'message' => 'Phong nay dang duoc nhan vien khac giu de tao hop dong. Lock con hieu luc. Vui long chon phong khac.'
-                ]);
-                exit();
-            }
-
-            // Lock het han hoac chinh minh giu -> cap nhat lai
-            $stmtUpdate = $pdo->prepare("
-                UPDATE PHONG_LOCK 
-                SET session_id = ?, expire_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE), locked_at = NOW()
-                WHERE maPhong = ?
-            ");
-            $stmtUpdate->execute([$sessionId, $maPhong]);
-        } else {
-            // Chua co lock -> tao moi
-            $lockId = 'LOCK-' . $maPhong . '-' . substr(session_id(), 0, 8);
-            $stmtInsert = $pdo->prepare("
-                INSERT INTO PHONG_LOCK (id, maPhong, session_id, locked_at, expire_at) 
-                VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 10 MINUTE))
-            ");
-            $stmtInsert->execute([$lockId, $maPhong, $sessionId]);
-        }
-
-        // Verify ownership sau khi upsert
+        // Verify ownership: ai la chu lock sau upsert?
         $stmtVerify = $pdo->prepare("SELECT session_id FROM PHONG_LOCK WHERE maPhong = ?");
         $stmtVerify->execute([$maPhong]);
-        $currentOwner = $stmtVerify->fetchColumn();
+        $owner = $stmtVerify->fetchColumn();
 
-        if ($currentOwner !== $sessionId) {
-            $pdo->rollBack();
+        if ($owner === $sessionId) {
+            echo json_encode([
+                'status'  => 'success',
+                'message' => 'Da giu phong ' . htmlspecialchars($maPhong, ENT_QUOTES, 'UTF-8') . ' trong 10 phut.'
+            ]);
+        } else {
             echo json_encode([
                 'status'  => 'error',
-                'message' => 'Khong the giu phong. Phong da bi chiem boi phien khac.'
+                'message' => 'Phong dang duoc nhan vien khac giu. Vui long chon phong khac.'
             ]);
-            exit();
         }
-
-        $pdo->commit();
-
-        echo json_encode([
-            'status'  => 'success',
-            'message' => 'Da giu phong ' . htmlspecialchars($maPhong, ENT_QUOTES, 'UTF-8') . ' trong 10 phut.'
-        ]);
         exit();
 
     } elseif ($action === 'unlock') {
-        // Chi xoa lock cua chinh session nay (tranh nguoi khac go lock cua minh)
+
+        // Chi xoa lock cua chinh session nay
         $stmtUnlock = $pdo->prepare("DELETE FROM PHONG_LOCK WHERE maPhong = ? AND session_id = ?");
         $stmtUnlock->execute([$maPhong, $sessionId]);
-        
+
         echo json_encode([
             'status'  => 'success',
             'message' => 'Da giai phong phong ' . htmlspecialchars($maPhong, ENT_QUOTES, 'UTF-8') . '.'
@@ -160,11 +122,8 @@ try {
     }
 
 } catch (PDOException $e) {
-    if (isset($pdo) && $pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-    // Ghi log chi tiet, tra ve message generic cho client
     error_log("[phong_lock.php] PDO error: " . $e->getMessage());
-    echo json_encode(['status' => 'error', 'message' => 'Loi he thong khi xu ly lock phong. Vui long thu lai.']);
+    http_response_code(500);
+    echo json_encode(['status' => 'error', 'message' => 'Loi he thong. Vui long thu lai.']);
     exit();
 }
