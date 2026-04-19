@@ -1,6 +1,7 @@
 <?php
 $ten_user = isset($_SESSION['ten_user']) ? $_SESSION['ten_user'] : 'Admin User';
 $user_role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : 'Quản trị viên';
+$current_user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 'guest';
 ?>
 <header class="admin-topbar bg-white shadow-sm d-flex justify-content-between align-items-center px-4 py-3 sticky-top">
     <div class="d-flex align-items-center">
@@ -13,7 +14,7 @@ $user_role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : 'Quản tr
     
     <div class="d-flex align-items-center gap-3">
         <!-- Nút Toggle Dark Mode -->
-        <button class="btn btn-light rounded-circle shadow-sm" id="themeToggle" title="Toggle Dark Mode">
+        <button class="btn btn-light rounded-circle shadow-sm" id="themeToggle" title="Toggle Dark Mode" data-user-id="<?php echo htmlspecialchars($current_user_id, ENT_QUOTES, 'UTF-8'); ?>">
             <i class="bi bi-moon"></i>
         </button>
         

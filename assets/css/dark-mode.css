@@ -1,0 +1,125 @@
+/* 
+ * PROJECT: Quản lý Cao ốc (Office Rental Management)
+ * MODULE: Dark Mode System
+ * DESC: CSS Custom Properties adjustments cho .dark-theme
+ */
+
+body.dark-theme {
+    /* Color Palette - Dark Mode overrides */
+    --color-background: #111111;   /* Đen sâu / Xám đen sâu */
+    --color-text: #eae8e1;         /* Xám sáng / Trắng nhạt (Ivory) */
+    
+    /* Điều chỉnh primary sáng hơn một chút để nổi bật trên nền tối */
+    --color-primary: #3b5c8f;      
+    --color-primary-dark: #2c4a7c;
+    
+    /* Các thành phần nổi như card, modal sử dụng màu background hiển thị nhẹ hơn */
+    --color-white: #1e1e1e;
+    
+    /* Adjusting shadows cho dark mode */
+    --shadow-soft: 0 4px 15px rgba(0, 0, 0, 0.4);
+    --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.6);
+}
+
+/* Adjustments cho Bootstrap 5 components trong Dark Mode */
+
+/* Cards */
+body.dark-theme .card,
+body.dark-theme .card-brand {
+    background-color: var(--color-white);
+    color: var(--color-text);
+    border: 1px solid rgba(255, 255, 255, 0.08); /* 1px rule consistency */
+    box-shadow: none; 
+}
+
+body.dark-theme .card-brand__header,
+body.dark-theme .card-brand__footer {
+    border-color: rgba(255, 255, 255, 0.08);
+    background-color: transparent;
+}
+
+/* Tables */
+body.dark-theme .table {
+    --bs-table-color: var(--color-text);
+    --bs-table-bg: transparent;
+    --bs-table-border-color: rgba(255, 255, 255, 0.1);
+    --bs-table-striped-color: var(--color-text);
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.03);
+    --bs-table-hover-color: var(--color-text);
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.05);
+    color: var(--color-text);
+}
+
+/* Modals */
+body.dark-theme .modal-content {
+    background-color: var(--color-white);
+    color: var(--color-text);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme .modal-header,
+body.dark-theme .modal-footer {
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Forms */
+body.dark-theme .form-control,
+body.dark-theme .form-select {
+    background-color: #2a2a2c;
+    color: var(--color-text);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+body.dark-theme .form-control:focus,
+body.dark-theme .form-select:focus {
+    background-color: #2a2a2c;
+    color: var(--color-text);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 0.25rem rgba(201, 166, 107, 0.25);
+}
+
+body.dark-theme .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Adjustments cho các màu mặc định bg-white */
+body.dark-theme .bg-white {
+    background-color: var(--color-white) !important;
+}
+
+body.dark-theme .text-dark {
+    color: var(--color-text) !important;
+}
+
+/* Buttons topbar / dropdown */
+body.dark-theme .dropdown-menu {
+    background-color: var(--color-white);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme .dropdown-item {
+    color: var(--color-text);
+}
+
+body.dark-theme .dropdown-item:hover,
+body.dark-theme .dropdown-item:focus {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--color-accent);
+}
+
+body.dark-theme .btn-light {
+    background-color: #2a2a2c;
+    color: var(--color-text);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme .btn-light:hover {
+    background-color: #38383a;
+    color: var(--color-white);
+}
+
+/* Utilities */
+body.dark-theme .border-top,
+body.dark-theme .border-bottom {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
