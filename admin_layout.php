@@ -1,6 +1,14 @@
 <?php
 session_start();
 
+/**
+ * admin_layout.php
+ * Trang tổng quan Admin (Dashboard)
+ */
+
+// Bắt buộc nạp hằng số để có BASE_URL cho Sidebar và Header
+require_once __DIR__ . '/config/constants.php';
+
 // Demo: Khởi tạo biến session để test hiển thị, trong thực tế sẽ lấy lúc đăng nhập
 if (!isset($_SESSION['ten_user'])) {
     $_SESSION['ten_user'] = 'Admin Demo';
