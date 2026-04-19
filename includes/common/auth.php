@@ -34,6 +34,41 @@ function kiemTraSession(): void
 
     // Cập nhật lại thời điểm tương tác thao tác cuối cùng của người dùng
     $_SESSION['last_activity'] = time();
+
+    // BUG-F03: Check phai_doi_matkhau
+    $currentScript = basename($_SERVER['PHP_SELF'] ?? '');
+    $allowedScripts = ['doi_mat_khau_batbuoc.php', 'dangxuat.php'];
+
+    if (!in_array($currentScript, $allowedScripts, true)) {
+        // Lazy check: chỉ check nếu chưa biết flag (cache vào session với TTL ngắn)
+        if (!isset($_SESSION['_pdm_checked_at']) || (time() - $_SESSION['_pdm_checked_at']) > 60) {
+            try {
+                require_once __DIR__ . '/../../config/roles.php';
+                require_once __DIR__ . '/db.php';
+                $pdoAuth = Database::getInstance()->getConnection();
+                
+                $roleId = (int)($_SESSION['user_role'] ?? 0);
+                if ($roleId === ROLE_KHACH_HANG) {
+                    $accountId = $_SESSION['accountId'] ?? null;
+                    $stmtAuth = $pdoAuth->prepare("SELECT phai_doi_matkhau FROM KHACH_HANG_ACCOUNT WHERE accountId = ? AND deleted_at IS NULL");
+                    $stmtAuth->execute([$accountId]);
+                } else {
+                    $stmtAuth = $pdoAuth->prepare("SELECT phai_doi_matkhau FROM NHAN_VIEN WHERE maNV = ? AND deleted_at IS NULL");
+                    $stmtAuth->execute([$_SESSION['user_id']]);
+                }
+                
+                $_SESSION['_pdm_flag'] = (int)($stmtAuth->fetchColumn() ?: 0);
+                $_SESSION['_pdm_checked_at'] = time();
+            } catch (PDOException $e) {
+                error_log("[kiemTraSession] pdm check error: " . $e->getMessage());
+            }
+        }
+
+        if (($_SESSION['_pdm_flag'] ?? 0) === 1) {
+            header("Location: " . BASE_URL . "modules/ho_so/doi_mat_khau_batbuoc.php");
+            exit();
+        }
+    }
 }
 
 /**

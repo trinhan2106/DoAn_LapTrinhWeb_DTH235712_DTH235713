@@ -133,10 +133,6 @@ try {
         ':gia'   => $phongData['giaThue']
     ]);
 
-    $pdo->commit();
-
-    // --- Sau commit ---
-
     // INSERT TIEN_COC neu co tien coc > 0 (A.2.6)
     if ($tienTienCoc > 0) {
         $maTC = sinhMaNgauNhien('TC-' . date('Ym') . '-', 5);
@@ -146,6 +142,10 @@ try {
         ");
         $stmtCoc->execute([$maTC, $soHD_Ran, $tienTienCoc, $maNV]);
     }
+
+    $pdo->commit();
+
+    // --- Sau commit ---
 
     // Ghi audit log
     ghiAuditLog(

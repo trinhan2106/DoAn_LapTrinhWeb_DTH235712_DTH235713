@@ -127,16 +127,17 @@ try {
     $stmtPH = $pdo->prepare("UPDATE PHONG SET trangThai = 1 WHERE maPhong = ?");
     $stmtLock = $pdo->prepare("DELETE FROM PHONG_LOCK WHERE maPhong = ?");
 
+    // Lay maPhong tu DB (da verify thuoc $soHD) thay vi trust POST
+    $stmtGetPhongDB = $pdo->prepare("SELECT maPhong FROM CHI_TIET_HOP_DONG WHERE maCTHD = ? AND soHopDong = ?");
+    
     foreach ($dsMaCTHD as $maCTHD) {
-        $maPhong = $dsMapCTHD_Phong[$maCTHD];
+        $stmtGetPhongDB->execute([$maCTHD, $soHD]);
+        $maPhong = $stmtGetPhongDB->fetchColumn();
+        
+        if (!$maPhong) continue; // Should not happen after verify
 
-        // Cap nhat CTHD: them dieu kien soHopDong de chong IDOR tang them
         $stmtCT->execute([$maCTHD, $soHD]);
-
-        // Tra phong ve trang thai Trong (1)
         $stmtPH->execute([$maPhong]);
-
-        // Don dep PHONG_LOCK (neu co)
         $stmtLock->execute([$maPhong]);
     }
 

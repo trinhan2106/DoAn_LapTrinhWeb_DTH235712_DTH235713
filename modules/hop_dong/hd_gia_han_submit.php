@@ -85,6 +85,21 @@ try {
         exit();
     }
 
+    // CHONG IDOR: Verify tat ca maCTHD thuoc soHopDong
+    $placeholders = implode(',', array_fill(0, count($dsMaCTHD), '?'));
+    $stmtVerify = $pdo->prepare("
+        SELECT COUNT(*) FROM CHI_TIET_HOP_DONG 
+        WHERE soHopDong = ? AND maCTHD IN ($placeholders)
+    ");
+    $stmtVerify->execute(array_merge([$soHD], $dsMaCTHD));
+    
+    if ((int)$stmtVerify->fetchColumn() !== count($dsMaCTHD)) {
+        $pdo->rollBack();
+        $_SESSION['error_msg'] = "Du lieu khong hop le. Co ma chi tiet khong thuoc hop dong nay.";
+        header("Location: hd_hienthi.php");
+        exit();
+    }
+
     // 2. Sinh ma gia han bang sinhMaNgauNhien (Convention C.5)
     $soGiaHan = sinhMaNgauNhien('GH-' . date('Ym') . '-', 6);
 

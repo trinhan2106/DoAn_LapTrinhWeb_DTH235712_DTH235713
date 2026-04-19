@@ -120,8 +120,8 @@ try {
     ");
     $stmtUnlock->execute([$soHD]);
 
-    // 6. Xu ly tien coc: chuyen trangThai sang 2 (ChoXuLy/DaHoan) de ke toan xu ly sau
-    $stmtCoc = $pdo->prepare("UPDATE TIEN_COC SET trangThai = 2 WHERE soHopDong = ? AND trangThai = 1");
+    // 6. Xu ly tien coc: chuyen trangThai sang 4 (ChoXuLy) de ke toan xu ly sau
+    $stmtCoc = $pdo->prepare("UPDATE TIEN_COC SET trangThai = 4 WHERE soHopDong = ? AND trangThai = 1");
     $stmtCoc->execute([$soHD]);
 
     $pdo->commit();

@@ -79,7 +79,7 @@ try {
     }
 
     // 3. Lay danh sach phong thuoc hop dong nay
-    $stmtGetPh = $pdo->prepare("SELECT maPhong FROM CHI_TIET_HOP_DONG WHERE soHopDong = ?");
+    $stmtGetPh = $pdo->prepare("SELECT maPhong FROM CHI_TIET_HOP_DONG WHERE soHopDong = ? ORDER BY maPhong ASC");
     $stmtGetPh->execute([$soHopDong]);
     $dsPhong = $stmtGetPh->fetchAll(PDO::FETCH_COLUMN);
 

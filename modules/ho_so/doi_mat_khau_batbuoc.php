@@ -104,6 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($stmtUp->rowCount() > 0) {
+                unset($_SESSION['_pdm_flag'], $_SESSION['_pdm_checked_at']); // Force re-check
                 $_SESSION['success_msg'] = "Mat khau da duoc thiet lap thanh cong.";
                 header("Location: " . BASE_URL . "index.php");
                 exit();
