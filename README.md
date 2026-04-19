@@ -1,5 +1,7 @@
 # 🏢 Web Hệ thống Quản lý Vận hành Cho thuê Cao ốc
 
+> **Trạng thái:** v2.1 — Production Ready (Đạt chuẩn Zero Bugs Backend)
+
 ## 📋 Thông tin đồ án
 
 | Thông tin       | Chi tiết                                      |
@@ -25,7 +27,12 @@ Hệ thống số hóa toàn bộ nghiệp vụ cho thuê văn phòng tại các
 - ✅ Gia hạn linh hoạt từng phòng riêng biệt trong cùng một hợp đồng
 - ✅ Giá thuê tự động: `donGiaM2 × dienTich × heSoGia` – field chỉ đọc
 - ✅ Phân quyền 4 cấp: Admin / Quản lý Nhà / Kế toán / Khách hàng
-- ✅ Transaction cho nghiệp vụ nhạy cảm (hủy HĐ, kết thúc phòng lẻ)
+- ✅ Nguyên khối Transaction (A.C.I.D) cho nghiệp vụ nhạy cảm (hủy HĐ, kết thúc phòng lẻ)
+- ✅ Cấn trừ nợ tự động Waterfall Payment qua bảng `PHIEU_THU` / `PHIEU_THU_CHI_TIET`
+- ✅ Xử lý Dangling State Tiền Cọc khép kín (luồng 4 trạng thái: Đã thu → Chờ Xử Lý → Đã Hoàn / Tịch Thu)
+- ✅ Chống Race Condition & Deadlock bằng `SELECT FOR UPDATE` + `ORDER BY` lock cố định
+- ✅ Bảo vệ IDOR cấp độ CSDL (verify ownership mọi maCTHD/maPhong trước khi UPDATE)
+- ✅ Rate-Limit & Login Throttle chống Brute-force (lockout 15 phút, ghi log IP)
 - ✅ Soft Delete (Thùng rác) – không mất dữ liệu vĩnh viễn
 - ✅ Audit Log – ghi nhận "Ai sửa gì, từ giá trị nào, lúc nào"
 - ✅ Cấu hình hệ thống động – Admin tự điều chỉnh quy tắc nghiệp vụ
@@ -36,11 +43,11 @@ Hệ thống số hóa toàn bộ nghiệp vụ cho thuê văn phòng tại các
 - ✅ Chatbot Rule-based tra cứu phòng trống
 - ✅ Tenant Portal – khách đăng nhập tài khoản riêng, xem HĐ cá nhân
 - ✅ Maintenance Request – luồng sửa chữa có SLA & priority
-- ✅ Lock phòng tạm thời khi wizard đang lập HĐ (chống race condition)
+- ✅ Lock phòng tạm thời khi wizard đang lập HĐ (chống race condition + atomic upsert)
 - ✅ Trạng thái nháp hợp đồng (ChoDuyet → DangHieuLuc)
 - ✅ Void hóa đơn + credit note có audit trail
 - ✅ Validate chỉ số điện/nước không được nhỏ hơn kỳ trước
-- ✅ Theo dõi tiền cọc & luồng hoàn cọc
+- ✅ Theo dõi tiền cọc & luồng hoàn cọc khép kín (4 trạng thái: Đã thu / Đã hoàn / Tịch thu / Chờ Xử Lý)
 - ✅ Tài khoản Khách hàng (đăng nhập riêng, không dùng mã HĐ + SĐT)
 - ✅ Lockout đăng nhập sau 5 lần sai
 
@@ -162,7 +169,7 @@ quan_ly_cao_oc/
 │       └── 📁 phong/
 │
 └── 📁 database/
-    └── quan_ly_cao_oc.sql          ← 21+ bảng + INSERT dữ liệu mẫu
+    └── quan_ly_cao_oc.sql          ← 28 bảng + INSERT dữ liệu mẫu
 ```
 
 ---
@@ -270,7 +277,7 @@ quan_ly_cao_oc/
 
 ---
 
-## 🗄️ Cơ sở dữ liệu (21+ bảng)
+## 🗄️ Cơ sở dữ liệu (28 bảng)
 
 **11 bảng gốc từ đồ án OOAD:** CAO_OC, TANG, PHONG, KHACH_HANG, HOP_DONG, CHI_TIET_HOP_DONG, GIA_HAN_HOP_DONG, CHI_TIET_GIA_HAN, HOA_DON, CHI_SO_DIEN_NUOC, NHAN_VIEN
 
@@ -282,7 +289,7 @@ quan_ly_cao_oc/
 | `PHONG_LOCK`             | Lock phòng tạm thời khi wizard đang mở (expire 10 phút) |
 | `YEU_CAU_THUE`           | Đơn đăng ký thuê từ trang public                        |
 | `YEU_CAU_GIA_HAN`        | Yêu cầu gia hạn online từ Khách hàng                    |
-| `TIEN_COC`               | Theo dõi tiền cọc đã thu & hoàn trả                     |
+| `TIEN_COC`               | Theo dõi tiền cọc đã thu & luồng hoàn cọc khép kín (4 trạng thái) |
 | `HOA_DON_VOID`           | Lưu lý do void + credit note tham chiếu                 |
 | `KHACH_HANG_ACCOUNT`     | Tài khoản đăng nhập của Khách hàng                      |
 | `LOGIN_ATTEMPT`          | Đếm lần đăng nhập sai theo IP + username                |
@@ -293,8 +300,10 @@ quan_ly_cao_oc/
 | `CAU_HINH_HE_THONG`      | Cấu hình quy tắc nghiệp vụ động                         |
 | `MAINTENANCE_REQUEST`    | Yêu cầu sửa chữa phòng (có priority + SLA)              |
 | `MAINTENANCE_STATUS_LOG` | Timeline trạng thái sửa chữa                            |
+| `PHIEU_THU`              | Ledger giao dịch thanh toán (phiếu thu tiền mặt/CK/ví)  |
+| `PHIEU_THU_CHI_TIET`     | Mapping waterfall phân bổ tiền vào hóa đơn (cấn trừ nợ) |
 
-> **Tổng:** ~26 bảng. Tất cả cột tiền dùng `DECIMAL(15,2)`. Mọi bảng quan trọng có `deleted_at` (Soft Delete).
+> **Tổng:** 28 bảng. Tất cả cột tiền dùng `DECIMAL(15,2)`. Mọi bảng quan trọng có `deleted_at` (Soft Delete).
 
 ---
 

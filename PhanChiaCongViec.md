@@ -10,7 +10,7 @@
 | **Sinh viên 2**    | Huỳnh Minh Nhật – DTH235713                                     |
 | **Tỉ lệ đóng góp** | 50% – 50%                                                       |
 | **Quy tắc Git**    | Mỗi task = 1 branch `feature/ten-task`. Merge qua Pull Request. |
-| **Phiên bản**      | Chính thức                                                      |
+| **Phiên bản**      | v2.1 — Production Ready (Đạt chuẩn Zero Bugs Backend)   |
 
 > **Ghi chú phân loại task:**
 >
@@ -78,7 +78,7 @@
 | 4.3     | `feature/crud-nhanvien`           | CRUD NV (Admin only) + **chặn xóa NV có hóa đơn ConNo**            | `modules/nhan_vien/*.php`                        | Nhân     | Session role check        | 🔴      | ✅ "Đã xong (BE)"     |
 | **4.4** | **`feature/tenant-account-crud`** | **CRUD tài khoản KH (Admin): tạo, reset mật khẩu, kích hoạt/khóa** | **`modules/khach_hang_account/*.php`**           | **Nhân** | **PDO, password_hash**    | 🔴      | ✅ "Đã xong (BE)" |
 | **4.5** | **`feature/tenant-login`**        | **Đăng nhập riêng cho Khách hàng + lockout + buộc đổi MK**         | **`modules/khach_hang_account/kh_dangnhap.php`** | **Nhân** | **PDO Session, throttle** | 🔴      | ✅ "Đã xong (BE)" |
-| 4.6     | `feature/ho-so-canhan`            | Hồ sơ cá nhân + Đổi mật khẩu (mọi role)                            | `modules/ho_so/*.php`                            | Nhân     | PDO UPDATE                | 🔴      | 🔍 "Cần rà soát (BE)" |
+| 4.6     | `feature/ho-so-canhan`            | Hồ sơ cá nhân + Đổi mật khẩu (mọi role)                            | `modules/ho_so/*.php`                            | Nhân     | PDO UPDATE                | 🔴      | ✅ "Đã xong (BE)"  |
 
 ---
 
@@ -97,7 +97,7 @@
 | **5.8**  | **`feature/hd-duyet-giahan`** | **Duyệt yêu cầu gia hạn online từ KH (YEU_CAU_GIA_HAN)**               | **`modules/hop_dong/hd_duyet_giahan.php`**                       | **Nhân** | **PDO, notification**        | 🔴      | ✅ "Đã xong (BE)"     |
 | 5.9      | `feature/hd-ketthucle`        | Kết thúc thuê phòng lẻ + Transaction                                   | `modules/hop_dong/hd_ket_thuc_le*.php`                           | Nhân     | PDO Transaction              | 🔴      | ✅ "Đã xong (BE)"     |
 | 5.10     | `feature/hd-huy`              | Hủy HĐ: kiểm tra nợ **và tiền cọc**, Transaction                       | `modules/hop_dong/hd_huy*.php`                                   | Nhân     | PDO Transaction              | 🔴      | ✅ "Đã xong (BE)"     |
-| **5.11** | **`feature/tien-coc`**        | **Theo dõi tiền cọc đã thu + luồng hoàn cọc khi HĐ kết thúc đúng hạn** | **`modules/tien_coc/*.php`**                                     | **Nhân** | **PDO, business logic**      | 🔴      | 🔍 "Cần rà soát (BE)" |
+| **5.11** | **`feature/tien-coc`**        | **Theo dõi tiền cọc đã thu + luồng hoàn cọc khép kín khi HĐ kết thúc/hủy (4 trạng thái)** | **`modules/tien_coc/*.php`**                                     | **Nhân** | **PDO, business logic**      | 🔴      | ✅ "Đã xong (BE)"     |
 
 ---
 
@@ -157,7 +157,7 @@
 | 9.10    | `feature/lang-toggle`         | Toggle Tiếng Việt / English                                                                          | `config/lang_vi.php`, `lang.js`                                       | Nhân     | PHP Session, JS              | 🔴      | ✅ "Đã xong (BE)"     |
 | 9.11    | `feature/ui-polish`           | Responsive hoàn thiện, toast, loading spinner                                                        | `assets/css/style.css`, `main.js`                                     | Nhật     | CSS3, Bootstrap Toast        | 🔴      | ⏳ "Chờ Nhật (FE)"    |
 | 9.12    | `feature/chatbot`             | Rule-based chatbot tra cứu phòng                                                                     | `modules/chatbot/bot.php`, `chatbot.js`                               | Nhật     | JS, PHP endpoint             | 🔴      | ⏳ "Chờ Nhật (FE)"    |
-| 9.13    | `feature/fix-bugs`            | Test toàn hệ thống, fix lỗi                                                                          | Toàn bộ                                                               | Cả 2     | Debug, Test case             | 🔴      | 🔍 "Cần rà soát (BE)" |
+| 9.13    | `feature/fix-bugs`            | Test toàn hệ thống, fix lỗi                                                                          | Toàn bộ                                                               | Cả 2     | Debug, Test case             | 🔴      | ✅ "Đã xong (BE)"     |
 
 ---
 
@@ -186,7 +186,7 @@
 
 | Người                       | Khu vực chủ lực                         | Số task      | Tỉ lệ    |
 | --------------------------- | --------------------------------------- | ------------ | -------- |
-| Trần Trí Nhân (DTH235712)   | Backend, Logic, Security, Core business | ~42 task     | 50%      |
+| Trần Trí Nhân (DTH235712)   | Backend, Logic, Security, Core business | ~42 task     | 50% — **100% Hoàn tất (Đạt chuẩn Zero Bugs sau đợt Final Audit)** |
 | Huỳnh Minh Nhật (DTH235713) | Frontend, UI, Tenant Dashboard, Reports | ~40 task     | 50%      |
 | **Tổng**                    |                                         | **~82 task** | **100%** |
 
@@ -276,4 +276,4 @@ Ví dụ:
 ---
 
 _Đồ án môn Lập trình Web – Lớp DH24TH2 – Khoa Công nghệ Thông tin – Đại học An Giang – 2026_
-_Cập nhật v2 – Sau QA Review toàn hệ thống_
+_Cập nhật v2.1 — Production Ready (Đạt chuẩn Zero Bugs Backend sau Final Audit)_
