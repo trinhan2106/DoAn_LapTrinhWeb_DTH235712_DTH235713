@@ -1,8 +1,13 @@
 <?php
 // modules/hop_dong/hd_gia_han_submit.php
 /**
- * BACKEND XỬ LÝ DAO GIA HẠN ĐA TẦNG PHỨC THẠP BẰNG TRANSACTION (Task 5.7)
+ * Xu ly gia han hop dong (UC08).
+ * - Sinh ma bang sinhMaNgauNhien (Convention C.5).
+ * - Khong nested try/catch (A.2.2).
+ * - Precondition: FOR UPDATE + trangThai = 1,4 + kiem tra ngay het han (A.2.3, A.2.4).
+ * - Convention C.2 (transaction/rollback).
  */
+
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 require_once __DIR__ . '/../../config/constants.php';
@@ -13,115 +18,192 @@ require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 
 kiemTraSession();
-// Chỉ Admin và Quản lý nhà được gia hạn hợp đồng
 kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Action Blocked by Engine.");
+// Kiem tra phuong thuc HTTP
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: hd_hienthi.php");
+    exit();
+}
 
-// Tường Rào CSRF
-$csrf_token = filter_input(INPUT_POST, 'csrf_token', FILTER_DEFAULT);
+// Validate CSRF
+$csrf_token = $_POST['csrf_token'] ?? '';
 if (!$csrf_token || !validateCSRFToken($csrf_token)) {
-    die("<h1>Lỗi 403. Form Transaction bị mất dấu CSRF Authenticator.</h1>");
+    $_SESSION['error_msg'] = "Phien lam viec het han. Vui long tai lai trang.";
+    header("Location: hd_hienthi.php");
+    exit();
 }
 
 $soHD          = trim($_POST['soHopDong'] ?? '');
 $dsMaCTHD      = $_POST['dsMaCTHD'] ?? [];
 $dsMaPhong     = $_POST['dsMaPhong'] ?? [];
-$soThangGiaHan = $_POST['soThangGiaHan'] ?? []; // Array mảng từ Input (maCTHD => Tháng)
+$soThangGiaHan = $_POST['soThangGiaHan'] ?? []; // Array: maCTHD => soThang
 
-if (empty($soHD) || empty($dsMaCTHD)) die("Dữ liệu mảng ID khuyết thiếu không thể nối mạch Transaction.");
+if (empty($soHD) || empty($dsMaCTHD) || !is_array($dsMaCTHD)) {
+    $_SESSION['error_msg'] = "Du lieu khong hop le. Ma hop dong va danh sach phong la bat buoc.";
+    header("Location: hd_hienthi.php");
+    exit();
+}
 
+$maNV_GiaHan = $_SESSION['user_id'] ?? null;
 $pdo = Database::getInstance()->getConnection();
 
 try {
-    // ----------------------------------------------------------------------------------
-    // RENDER VÒNG BẢO VỆ CHUỖI BLOCK (TRANSACTION ACiD)
-    // ----------------------------------------------------------------------------------
-    // Rủi ro UC08: Có thể update 10 phòng dỡ dang bị sập máy thì database sẽ dính rác, bắt buộc dùng Transaction che chở.
     $pdo->beginTransaction();
 
-    // Tự sinh Khóa Gia Hạn Lịch Sử cho riêng lần này
-    $soGiaHan = 'GH-' . date('Ymd-His');
-    
-    // ACTION 1: TẠO BẢN GHI LỊCH SỬ VÀO BẢNG CHÍNH [GIA_HAN_HOP_DONG]
-    // Giả lập SQL INSERT vì trong DB DDL của 1.5 chúng ta chưa create bảng GIA_HAN_HOP_DONG hoàn chỉnh
-    // Nếu bảng GIA_HAN_HOP_DONG đã có (do user tự thêm), lệnh sẽ chạy tuyệt vời.
-    $stmtHistory = $pdo->prepare("INSERT INTO GIA_HAN_HOP_DONG (soGiaHan, soHopDong, ngayKyGiaHan) VALUES (?, ?, NOW())");
+    // 1. Precondition: Lock hop dong va kiem tra trang thai + ngay het han
+    $stmtCheckHD = $pdo->prepare("
+        SELECT trangThai, ngayKetThuc, DATEDIFF(ngayKetThuc, CURRENT_DATE) AS ngayConLai
+        FROM HOP_DONG 
+        WHERE soHopDong = ? 
+        FOR UPDATE
+    ");
+    $stmtCheckHD->execute([$soHD]);
+    $hdData = $stmtCheckHD->fetch(PDO::FETCH_ASSOC);
+
+    if (!$hdData) {
+        $pdo->rollBack();
+        $_SESSION['error_msg'] = "Hop dong [{$soHD}] khong ton tai.";
+        header("Location: hd_hienthi.php");
+        exit();
+    }
+
+    // Chi cho phep gia han khi trangThai = 1 (DangHieuLuc) hoac 4 (DaGiaHan)
+    if (!in_array((int)$hdData['trangThai'], [1, 4], true)) {
+        $pdo->rollBack();
+        $_SESSION['error_msg'] = "Hop dong khong o trang thai co the gia han (trang thai hien tai: {$hdData['trangThai']}). Chi gia han duoc hop dong dang hieu luc.";
+        header("Location: hd_hienthi.php");
+        exit();
+    }
+
+    // Kiem tra ngay het han: khong cho gia han neu con > 30 ngay (A.2.4)
+    $ngayConLai = (int)($hdData['ngayConLai'] ?? 0);
+    if ($ngayConLai > 30) {
+        $pdo->rollBack();
+        $_SESSION['error_msg'] = "Hop dong con {$ngayConLai} ngay moi het han (het han: {$hdData['ngayKetThuc']}). Chi gia han khi con <= 30 ngay.";
+        header("Location: hd_hienthi.php");
+        exit();
+    }
+
+    // 2. Sinh ma gia han bang sinhMaNgauNhien (Convention C.5)
+    $soGiaHan = sinhMaNgauNhien('GH-' . date('Ym') . '-', 6);
+
+    // INSERT vao GIA_HAN_HOP_DONG
+    $stmtHistory = $pdo->prepare("
+        INSERT INTO GIA_HAN_HOP_DONG (soGiaHan, soHopDong, ngayKyGiaHan) 
+        VALUES (?, ?, NOW())
+    ");
     $stmtHistory->execute([$soGiaHan, $soHD]);
 
+    // 3. Prepare cac statement dung trong vong lap
+    $stmtInsertCTGH = $pdo->prepare("
+        INSERT INTO CHI_TIET_GIA_HAN (soGiaHan, maPhong, thoiGianGiaHan, ngayHetHanMoi) 
+        VALUES (?, ?, ?, ?)
+    ");
 
-    // PREPARE CÁC NHÁNH DAO XỬ LÝ CON ĐỂ DÙNG CHUNG TRONG LÚP
-    // Chèn Lịch Cự Ly vào Bảng Trung Gian Chi Tiết Rẽ Nhánh
-    $stmtInsertCTGH = $pdo->prepare("INSERT INTO CHI_TIET_GIA_HAN (soGiaHan, maPhong, thoiGianGiaHan, ngayHetHanMoi) VALUES (?, ?, ?, ?)");
-    
-    // Cập Nhật Cấu Trúc Bảng CTHD cũ
-    // Yêu cầu (RB-08.3): Thay thế ngayHetHan mới. Do CTHD chưa có cột ngayHetHan, nếu user tự ALTER ta dùng lệnh sau.
-    // Nếu bảng chưa có thì phải ALTER TABLE CHI_TIET_HOP_DONG ADD ngayHetHan DATE.
     $stmtUpdateCT = $pdo->prepare("UPDATE CHI_TIET_HOP_DONG SET ngayHetHan = ? WHERE maCTHD = ?");
-    
-    // QUÉT TÌM NGÀY ĐÍCH LỚN NHẤT
-    $maxDateMoi = null;
-    $hasSucceedRoom = false; // Phù hiệu kiểm tra xem có phòng nào trên > 0 không
 
-    // QUERY FETCH ĐỂ LẤY BASE RĂNG CƯA NGÀY CŨ CỦA DATABASE TRÁNH JS HACK THAY ĐỔI
-    $stmtGetBase = $pdo->prepare("SELECT COALESCE(ngayHetHan, (SELECT ngayKetThuc FROM HOP_DONG WHERE soHopDong=?)) FROM CHI_TIET_HOP_DONG WHERE maCTHD = ?");
+    $stmtGetBase = $pdo->prepare("
+        SELECT COALESCE(ngayHetHan, (SELECT ngayKetThuc FROM HOP_DONG WHERE soHopDong = ?)) 
+        FROM CHI_TIET_HOP_DONG 
+        WHERE maCTHD = ?
+    ");
+
+    $maxDateMoi = null;
+    $soPhongXuLy = 0;
 
     foreach ($dsMaCTHD as $maCT) {
-        $thangThieu = (int)($soThangGiaHan[$maCT] ?? 0);
-        
-        // CHỈ THỰC THI NGHIỆP VỤ DAO TRÊN NHỮNG PHÒNG ĐƯỢC ỦY QUYỀN GIA HẠN > 0 THÁNG
-        if ($thangThieu > 0) {
-            $hasSucceedRoom = true;
-            $maPh = $dsMaPhong[$maCT];
-            
-            // Xách Base Cũ 
-            $stmtGetBase->execute([$soHD, $maCT]);
-            $baseDate = $stmtGetBase->fetchColumn();
+        $thangGiaHan = (int)($soThangGiaHan[$maCT] ?? 0);
 
-            // Tính hàm Engine Date Bằng PHP Cứng (Tuyệt đối không lấy Value của FE JS Submit lên vì nguy hiểm Injection Dữ Tiền)
-            $newExtendDateStr = date('Y-m-d', strtotime("+{$thangThieu} months", strtotime($baseDate)));
-
-            // ACTION 2: Đẩy Nhánh Data Vào History CHI TIEU
-            $stmtInsertCTGH->execute([$soGiaHan, $maPh, $thangThieu, $newExtendDateStr]);
-            
-            // ACTION 3: Đè Xương Rồng Vào CTHD Cũ Của Phân Hệ Đó
-            try {
-                $stmtUpdateCT->execute([$newExtendDateStr, $maCT]);
-            } catch (Exception $e) {} // Fallback pass qua nếu DB T1.5 chưa có Cột ngayHetHan con.
-
-            // Soạn Trận Chứa thuật toán Tìm Max Date Của Cả Cuộc Chơi (RB-08.3)
-            if ($maxDateMoi === null || strtotime($newExtendDateStr) > strtotime($maxDateMoi)) {
-                $maxDateMoi = $newExtendDateStr;
-            }
+        // Chi xu ly phong co so thang gia han > 0
+        if ($thangGiaHan <= 0) {
+            continue;
         }
+
+        // Validate so thang hop ly (toi da 60 thang = 5 nam)
+        if ($thangGiaHan > 60) {
+            $pdo->rollBack();
+            $_SESSION['error_msg'] = "So thang gia han khong hop le (toi da 60 thang).";
+            header("Location: hd_hienthi.php");
+            exit();
+        }
+
+        $maPh = $dsMaPhong[$maCT] ?? '';
+        if (empty($maPh)) {
+            $pdo->rollBack();
+            $_SESSION['error_msg'] = "Thieu thong tin ma phong cho chi tiet {$maCT}.";
+            header("Location: hd_hienthi.php");
+            exit();
+        }
+
+        // Lay ngay het han hien tai tu DB (khong tin JS)
+        $stmtGetBase->execute([$soHD, $maCT]);
+        $baseDate = $stmtGetBase->fetchColumn();
+
+        if (!$baseDate) {
+            $pdo->rollBack();
+            $_SESSION['error_msg'] = "Khong tim thay thong tin ngay het han cho chi tiet {$maCT}.";
+            header("Location: hd_hienthi.php");
+            exit();
+        }
+
+        // Tinh ngay het han moi
+        $newDateStr = date('Y-m-d', strtotime("+{$thangGiaHan} months", strtotime($baseDate)));
+
+        // INSERT chi tiet gia han
+        $stmtInsertCTGH->execute([$soGiaHan, $maPh, $thangGiaHan, $newDateStr]);
+
+        // UPDATE ngayHetHan trong CHI_TIET_HOP_DONG
+        $stmtUpdateCT->execute([$newDateStr, $maCT]);
+
+        // Tim max date
+        if ($maxDateMoi === null || strtotime($newDateStr) > strtotime($maxDateMoi)) {
+            $maxDateMoi = $newDateStr;
+        }
+
+        $soPhongXuLy++;
     }
 
-    // ACTION CHỐT HẠ (RB-08.3): NẾU CÓ ÍT NHẤT 1 HÀNH ĐỘNG HỢP LỆ VÀ CÓ MAX_DATE
-    if ($hasSucceedRoom && $maxDateMoi !== null) {
-        
-        // Càn quét Bảng Quản Hợp Đồng Mẹ. Nới Mốc ngayKetThuc (ngayHetHanCuoiCung theo design OOAD chuẩn) ra cục Date khủng nhất hiện có.
-        // Đống thời Tráo thẻ trangThai thành cờ 4 (Tượng Ký cho 'GiaHan')
-        $stmtChot = $pdo->prepare("UPDATE HOP_DONG SET ngayKetThuc = ?, trangThai = 4 WHERE soHopDong = ?");
+    // Kiem tra co it nhat 1 phong duoc gia han
+    if ($soPhongXuLy === 0) {
+        $pdo->rollBack();
+        $_SESSION['error_msg'] = "Chua co phong nao duoc chon gia han (so thang phai > 0).";
+        header("Location: hd_hienthi.php");
+        exit();
+    }
+
+    // 4. Cap nhat HOP_DONG: noi ngayKetThuc, doi trangThai = 4 (DaGiaHan)
+    if ($maxDateMoi !== null) {
+        $stmtChot = $pdo->prepare("
+            UPDATE HOP_DONG 
+            SET ngayKetThuc = ?, trangThai = 4 
+            WHERE soHopDong = ? AND trangThai IN (1, 4)
+        ");
         $stmtChot->execute([$maxDateMoi, $soHD]);
-        
     }
 
-    // KHÔNG THẤY LỖI, COMMIT
     $pdo->commit();
 
-    // [AUDIT] Ghi log sau khi gia hạn thành công
-    $maNV_GiaHan = $_SESSION['user_id'] ?? null;
-    $soPhongGiaHan = $hasSucceedRoom ? count(array_filter($soThangGiaHan, fn($t) => (int)$t > 0)) : 0;
+    // --- Sau commit ---
+
+    // Ghi audit log
     ghiAuditLog(
         $pdo,
         $maNV_GiaHan,
         'EXTEND_HD',
         'HOP_DONG',
         $soHD,
-        "Gia hạn HĐ: mã gia hạn={$soGiaHan}, số phòng gia hạn={$soPhongGiaHan}, ngày hết hạn mới={$maxDateMoi}"
+        "Gia han HD: ma gia han={$soGiaHan}, so phong={$soPhongXuLy}, ngay het han moi={$maxDateMoi}"
     );
 
-    // RÚT RA BÊN NGOÀI
+    // Rotate CSRF token
+    if (function_exists('rotateCSRFToken')) {
+        rotateCSRFToken();
+    } else {
+        unset($_SESSION['csrf_token']);
+    }
+
+    $_SESSION['success_msg'] = "Gia han hop dong [{$soHD}] thanh cong. {$soPhongXuLy} phong da duoc cap nhat, het han moi: {$maxDateMoi}.";
     header("Location: hd_hienthi.php?msg=giahan_success");
     exit();
 
@@ -129,7 +211,8 @@ try {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    // [SEC] Không lộ $e->getMessage() ra HTML
-    error_log("hd_gia_han_submit PDO error: " . $e->getMessage());
-    die("Xảy ra lỗi khi gia hạn hợp đồng. Dữ liệu đã được rollback an toàn. Vui lòng liên hệ quản trị viên.");
+    error_log("[hd_gia_han_submit] PDO error: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Xay ra loi khi gia han hop dong. Du lieu da duoc rollback an toan. Vui long lien he quan tri vien.";
+    header("Location: hd_hienthi.php");
+    exit();
 }
