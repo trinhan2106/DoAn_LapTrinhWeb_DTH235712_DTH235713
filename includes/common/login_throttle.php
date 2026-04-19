@@ -66,3 +66,26 @@ function kiemTraLockout($pdo, $ip, $username) {
         return ['locked' => false]; // Fallback pass nếu Database nghẽn cổ chai
     }
 }
+
+/**
+ * Xoa cac ban ghi dang nhap that bai sau khi dang nhap thanh cong (A.2.16).
+ * Tranh tinh trang user bi lockout oan do cac lan sai truoc do van con dem.
+ *
+ * @param PDO    $pdo
+ * @param string $username Ten dang nhap
+ * @param string $ip       Dia chi IP
+ */
+function resetLoginAttempts(PDO $pdo, string $username, string $ip): void
+{
+    try {
+        $stmt = $pdo->prepare("
+            DELETE FROM LOGIN_ATTEMPT 
+            WHERE (username = ? OR ip_address = ?) 
+              AND status = 0 
+              AND attempt_time > DATE_SUB(NOW(), INTERVAL 15 MINUTE)
+        ");
+        $stmt->execute([$username, $ip]);
+    } catch (PDOException $e) {
+        error_log("[login_throttle] Reset login attempts error: " . $e->getMessage());
+    }
+}

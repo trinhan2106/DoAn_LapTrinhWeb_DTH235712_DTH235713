@@ -86,9 +86,10 @@ try {
     }
 
     // -------------------------------------------------------------
-    // 5. GHI LOGIN_ATTEMPT THÀNH CÔNG
+    // 5. GHI LOGIN_ATTEMPT THÀNH CÔNG + RESET FAILED ATTEMPTS (FIX-16)
     // -------------------------------------------------------------
     ghiLogDangNhap($pdo, $username, $ip, 1);
+    resetLoginAttempts($pdo, $username, $ip);
 
     // -------------------------------------------------------------
     // 6. KHỞI TẠO SESSION + REGENERATE_ID CHỐNG SESSION FIXATION
@@ -101,8 +102,8 @@ try {
     $_SESSION['user_role']     = (int) $user['role_id'];
     $_SESSION['last_activity'] = time();
 
-    // Reset CSRF token để phiên mới sinh token mới
-    unset($_SESSION['csrf_token']);
+    // Reset CSRF token để phiên mới sinh token mới (FIX-14)
+    rotateCSRFToken();
 
     // -------------------------------------------------------------
     // 7a. FORCE ĐỔI MẬT KHẨU LẦN ĐẦU (nếu có)

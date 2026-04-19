@@ -42,3 +42,15 @@ function validateCSRFToken(string $token): bool
     }
     return false;
 }
+
+/**
+ * Xoa token cu va tao token moi. Goi sau moi lan submit thanh cong
+ * de tranh rui ro Token Reuse (A.2.1).
+ *
+ * @return string Token moi da duoc luu vao session
+ */
+function rotateCSRFToken(): string
+{
+    unset($_SESSION['csrf_token']);
+    return generateCSRFToken();
+}

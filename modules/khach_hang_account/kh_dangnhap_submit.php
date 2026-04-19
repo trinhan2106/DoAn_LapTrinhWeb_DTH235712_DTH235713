@@ -64,6 +64,7 @@ try {
 
     // Xác thực Thành Công.
     ghiLogDangNhap($pdo, "TENANT_" . $username, $ip, 1);
+    resetLoginAttempts($pdo, "TENANT_" . $username, $ip); // FIX-16
     
     // Setup định dạng Session
     session_regenerate_id(true);
@@ -76,7 +77,7 @@ try {
     $_SESSION['user_role']     = (int) $account['role_id']; 
     $_SESSION['last_activity'] = time();
 
-    unset($_SESSION['csrf_token']);
+    rotateCSRFToken(); // FIX-14
 
     // Check force change password block
     if ((int) $account['phai_doi_matkhau'] === 1) {
