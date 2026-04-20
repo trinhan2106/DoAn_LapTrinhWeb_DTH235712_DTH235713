@@ -35,13 +35,13 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
                         <a class="nav-link fw-semibold active text-white" href="<?= BASE_URL ?>index.php">Trang Chủ</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link fw-semibold text-white-50" href="#" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Danh Sách Phòng</a>
+                        <a class="nav-link fw-semibold text-white-50" href="<?= BASE_URL ?>phong_trong.php" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Danh Sách Phòng</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link fw-semibold text-white-50" href="#" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Tiện Ích</a>
+                        <a class="nav-link fw-semibold text-white-50" href="<?= BASE_URL ?>tien_ich.php" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Tiện Ích</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link fw-semibold text-white-50" href="#" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Liên Hệ</a>
+                        <a class="nav-link fw-semibold text-white-50" href="<?= BASE_URL ?>gioi_thieu.php" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Liên Hệ</a>
                     </li>
                 <?php endif; ?>
             </ul>
@@ -79,7 +79,7 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
                                     <i class="fa-solid fa-gauge-high me-2 text-muted"></i> Bảng điều khiển
                                 </a>
                             </li>
-                            <li><a class="dropdown-item py-2" href="#"><i class="fa-solid fa-user-pen me-2 text-muted"></i> Hồ sơ cá nhân</a></li>
+                            <li><a class="dropdown-item py-2" href="<?= BASE_URL ?>modules/ho_so/index.php"><i class="fa-solid fa-user-pen me-2 text-muted"></i> Hồ sơ cá nhân</a></li>
                             <li><hr class="dropdown-divider opacity-50"></li>
                             <li>
                                 <a class="dropdown-item py-2 text-danger fw-bold" href="<?= BASE_URL ?>dangxuat.php">

@@ -56,18 +56,23 @@ if (!function_exists('is_nav_active')) {
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white <?= is_nav_active('modules/tai_khoan/', $current_script) ?>" href="<?= BASE_URL ?>modules/tai_khoan/index.php">
-                    <i class="bi bi-person-badge me-2"></i> Tài khoản khách thuê
+                <a class="nav-link text-white <?= is_nav_active('modules/khach_hang_account/', $current_script) ?>" href="<?= BASE_URL ?>modules/khach_hang_account/index.php">
+                    <i class="bi bi-person-badge me-2"></i> Tài khoản khách hàng
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white <?= is_nav_active('modules/hop_dong/', $current_script) ?>" href="<?= BASE_URL ?>modules/hop_dong/index.php">
-                    <i class="bi bi-file-earmark-text me-2"></i> Hợp đồng
+                <a class="nav-link text-white <?= is_nav_active('modules/hop_dong/hd_hienthi.php', $current_script) ?>" href="<?= BASE_URL ?>modules/hop_dong/hd_hienthi.php">
+                    <i class="bi bi-file-earmark-text me-2"></i> Hồ sơ Hợp đồng
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white <?= is_nav_active('modules/hoa_don/', $current_script) ?>" href="<?= BASE_URL ?>modules/hoa_don/index.php">
-                    <i class="bi bi-receipt me-2"></i> Hóa đơn
+                <a class="nav-link text-white <?= is_nav_active('modules/thanh_toan/tt_tao.php', $current_script) ?>" href="<?= BASE_URL ?>modules/thanh_toan/tt_tao.php">
+                    <i class="bi bi-receipt me-2"></i> Lập Hóa đơn / Thu tiền
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white <?= is_nav_active('modules/thanh_toan/dien_nuoc_ghi.php', $current_script) ?>" href="<?= BASE_URL ?>modules/thanh_toan/dien_nuoc_ghi.php">
+                    <i class="bi bi-speedometer2 me-2"></i> Ghi chỉ số Điện/Nước
                 </a>
             </li>
             <li class="nav-item">
@@ -76,8 +81,8 @@ if (!function_exists('is_nav_active')) {
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white <?= is_nav_active('modules/tien_coc/', $current_script) ?>" href="<?= BASE_URL ?>modules/tien_coc/index.php">
-                    <i class="bi bi-cash-stack me-2"></i> Tiền cọc (Tien Coc)
+                <a class="nav-link text-white <?= is_nav_active('modules/tien_coc/coc_hienthi.php', $current_script) ?>" href="<?= BASE_URL ?>modules/tien_coc/coc_hienthi.php">
+                    <i class="bi bi-cash-stack me-2"></i> Quản lý Tiền cọc
                 </a>
             </li>
             <li class="nav-item">

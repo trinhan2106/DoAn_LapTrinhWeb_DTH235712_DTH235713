@@ -92,7 +92,7 @@ $pdo = Database::getInstance()->getConnection();
 // CONCERN-F07: Validate maPhong thuoc soHopDong
 $stmtVerifyPhong = $pdo->prepare("
     SELECT COUNT(*) FROM CHI_TIET_HOP_DONG 
-    WHERE soHopDong = ? AND maPhong = ? AND trangThai = 1
+    WHERE soHopDong = ? AND maPhong = ? AND trangThai = 'DangThue'
 ");
 $stmtVerifyPhong->execute([$soHopDong, $maPhong]);
 if ((int)$stmtVerifyPhong->fetchColumn() === 0) {
