@@ -78,6 +78,12 @@ if (!function_exists('is_nav_active')) {
                     <i class="bi bi-person-badge me-2"></i> Tài khoản KH
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link <?= is_nav_active('modules/yeu_cau_thue/', $current_script) ?>"
+                   href="<?= BASE_URL ?>modules/yeu_cau_thue/yc_hienthi.php">
+                    <i class="bi bi-envelope-paper me-2"></i> Yêu cầu thuê phòng
+                </a>
+            </li>
 
             <hr class="admin-sidebar__divider">
             <span class="admin-sidebar__section-label">Tài chính</span>
