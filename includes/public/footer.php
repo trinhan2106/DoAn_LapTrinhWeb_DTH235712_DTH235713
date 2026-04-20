@@ -122,5 +122,36 @@ document.addEventListener("DOMContentLoaded", function() {
 
 <!-- Scripts -->
 <script src="assets/js/chatbot.js"></script>
+<script>
+// Logout confirmation for public/tenant portal
+document.addEventListener('DOMContentLoaded', function() {
+    const logoutLinks = document.querySelectorAll('.logout-link');
+    logoutLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const href = this.getAttribute('href');
+            
+            Swal.fire({
+                title: 'Xác nhận đăng xuất?',
+                text: "Bạn có chắc chắn muốn rời khỏi hệ thống THE SAPPHIRE?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#1e3a5f',
+                cancelButtonColor: '#d33',
+                confirmButtonText: '<i class="fa-solid fa-power-off me-2"></i>Đăng xuất',
+                cancelButtonText: 'Hủy',
+                background: '#fff',
+                color: '#1e3a5f',
+                iconColor: '#c9a66b',
+                borderRadius: '15px'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = href;
+                }
+            });
+        });
+    });
+});
+</script>
 </body>
 </html>
