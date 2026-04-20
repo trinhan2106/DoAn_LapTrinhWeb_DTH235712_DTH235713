@@ -221,3 +221,166 @@ body {
         font-size: 1.5rem;
     }
 }
+
+/* ============================================
+   ADMIN LAYOUT — Two-column sticky structure
+   ============================================ */
+.admin-layout {
+    display: flex;
+    min-height: 100vh;
+    align-items: stretch;
+}
+
+.admin-main-wrapper {
+    flex: 1;
+    min-width: 0;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-main-content {
+    flex: 1;
+    padding: 1.5rem 2rem;
+}
+
+/* ============================================
+   ADMIN SIDEBAR — Modern Redesign
+   ============================================ */
+
+/* Override Bootstrap offcanvas-lg trên desktop */
+@media (min-width: 992px) {
+    .admin-sidebar.offcanvas-lg {
+        /* Override Bootstrap --bs-offcanvas-bg để xóa nền trắng */
+        --bs-offcanvas-bg: #1e3a5f;
+        position: sticky !important;
+        top: 0 !important;
+        width: 260px !important;
+        min-width: 260px !important;
+        max-width: 260px !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        transform: none !important;
+        visibility: visible !important;
+        display: flex !important;
+        flex-direction: column !important;
+        flex-shrink: 0 !important;
+        background: linear-gradient(180deg, #1a3356 0%, #1e3a5f 100%) !important;
+        border-right: 1px solid rgba(255,255,255,0.06) !important;
+        z-index: 100 !important;
+    }
+}
+
+.admin-sidebar {
+    --bs-offcanvas-bg: #1e3a5f;
+    background: linear-gradient(180deg, #1a3356 0%, #1e3a5f 100%) !important;
+    border-right: 1px solid rgba(255,255,255,0.06);
+}
+
+.admin-sidebar .offcanvas-body {
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1 1 auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+
+.admin-sidebar .offcanvas-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.admin-sidebar .offcanvas-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.admin-sidebar .offcanvas-body::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.15);
+    border-radius: 4px;
+}
+
+/* Brand name "THE SAPPHIRE" */
+.admin-sidebar__brand-sub {
+    display: block;
+    font-size: 0.6rem;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.45);
+    text-transform: uppercase;
+    margin-top: 1px;
+    line-height: 1;
+}
+
+/* Section label */
+.admin-sidebar__section-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.35);
+    padding: 1.25rem 1.25rem 0.35rem;
+    margin: 0;
+    display: block;
+}
+
+/* Divider giữa các nhóm */
+.admin-sidebar__divider {
+    border-color: rgba(255, 255, 255, 0.08);
+    margin: 0.4rem 1rem;
+}
+
+/* Ngăn Bootstrap nav wrap thành nhiều cột */
+.admin-sidebar__nav {
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+}
+
+.admin-sidebar__nav .nav-item {
+    width: 100%;
+    min-width: 0;
+}
+
+/* Base nav-link */
+.admin-sidebar__nav .nav-link {
+    padding: 0.6rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.72) !important;
+    border-left: 3px solid transparent;
+    border-radius: 0 6px 6px 0;
+    margin-right: 0.5rem;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+
+.admin-sidebar__nav .nav-link i {
+    font-size: 1rem;
+    width: 1.4rem;
+    flex-shrink: 0;
+    color: rgba(255, 255, 255, 0.45);
+    transition: color 0.18s ease;
+}
+
+/* Hover */
+.admin-sidebar__nav .nav-link:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: #ffffff !important;
+    border-left-color: rgba(201, 166, 107, 0.5);
+}
+
+.admin-sidebar__nav .nav-link:hover i {
+    color: var(--color-accent);
+}
+
+/* Active */
+.admin-sidebar__nav .nav-link.active {
+    background: rgba(201, 166, 107, 0.12);
+    color: #ffffff !important;
+    font-weight: 600;
+    border-left-color: var(--color-accent);
+}
+
+.admin-sidebar__nav .nav-link.active i {
+    color: var(--color-accent);
+}
