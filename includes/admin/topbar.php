@@ -14,7 +14,7 @@ if (!defined('BASE_URL')) {
         <button class="btn btn-outline-secondary d-lg-none me-1" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
             <i class="bi bi-list fs-5"></i>
         </button>
-        <span class="fs-5 fw-bold text-brand-primary d-none d-lg-block m-0 me-2" style="white-space:nowrap;">Hệ thống Quản lý Cao ốc</span>
+
 
         <!-- Expandable Search Bar (WOW UI) -->
         <div class="expandable-search ms-2" id="searchContainer">

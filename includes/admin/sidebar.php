@@ -21,12 +21,12 @@ if (!function_exists('is_nav_active')) {
 }
 ?>
 <div class="offcanvas-lg offcanvas-start bg-brand-primary text-white admin-sidebar" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
-    <div class="offcanvas-header border-bottom border-light border-opacity-10 py-3 px-4">
-        <h5 class="offcanvas-title fw-bold d-flex align-items-center mb-0" id="sidebarMenuLabel">
+    <div class="sidebar-header border-bottom border-light border-opacity-10 py-4 px-4 d-flex align-items-center justify-content-between">
+        <h5 class="fw-bold d-flex align-items-center mb-0" style="color: inherit;">
             <i class="bi bi-buildings me-2 fs-4 text-brand-accent"></i>
             <span class="d-flex flex-column">
-                <span class="text-brand-accent fs-6 lh-1">THE SAPPHIRE</span>
-                <span class="admin-sidebar__brand-sub">Office Management</span>
+                <span class="text-white fs-6 lh-1 opacity-75" style="font-size: 0.7rem !important; letter-spacing: 1px;">HỆ THỐNG</span>
+                <span class="text-brand-accent fw-bold" style="letter-spacing: 1.5px; font-size: 1rem;">QUẢN LÝ CAO ỐC</span>
             </span>
         </h5>
         <button type="button" class="btn-close btn-close-white d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
