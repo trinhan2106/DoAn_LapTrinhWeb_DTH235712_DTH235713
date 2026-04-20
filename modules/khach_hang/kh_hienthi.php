@@ -54,13 +54,6 @@ $csrf_token = generateCSRFToken(); // Tạo token cho form Xóa
         <?php require_once __DIR__ . '/../../includes/admin/topbar.php'; ?>
         
         <main class="admin-main-content p-4">
-            <!-- Breadcrumbs -->
-            <nav aria-label="breadcrumb" class="mb-4">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="<?= BASE_URL ?>modules/dashboard/admin.php" class="text-decoration-none">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Quản lý Khách hàng</li>
-                </ol>
-            </nav>
 
             <!-- Header -->
             <div class="card filter-section shadow-sm border-0 mb-4">
@@ -105,14 +98,14 @@ $csrf_token = generateCSRFToken(); // Tạo token cho form Xóa
                                         <td><?= e($kh['sdt']) ?></td>
                                         <td><?= e($kh['email']) ?></td>
                                         <td class="text-center">
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="kh_lichsu.php?id=<?= urlencode($kh['maKH']) ?>" class="btn btn-outline-info" title="Xem lịch sử giao dịch">
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <a href="kh_lichsu.php?id=<?= urlencode($kh['maKH']) ?>" class="btn btn-sm btn-outline-info rounded shadow-sm" title="Xem lịch sử giao dịch">
                                                     <i class="bi bi-clock-history"></i>
                                                 </a>
-                                                <a href="kh_sua.php?id=<?= urlencode($kh['maKH']) ?>" class="btn btn-outline-primary" title="Sửa thông tin">
+                                                <a href="kh_sua.php?id=<?= urlencode($kh['maKH']) ?>" class="btn btn-sm btn-outline-primary rounded shadow-sm" title="Sửa thông tin">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </a>
-                                                <button type="button" class="btn btn-outline-danger" title="Xóa khách hàng" onclick="xacNhanXoa('<?= e($kh['maKH']) ?>', '<?= e($kh['tenKH']) ?>')">
+                                                <button type="button" class="btn btn-sm btn-outline-danger rounded shadow-sm" title="Xóa khách hàng" onclick="xacNhanXoa('<?= e($kh['maKH']) ?>', '<?= e($kh['tenKH']) ?>')">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </div>

@@ -81,13 +81,6 @@ $dsCaoOc = $db->query($sql)->fetchAll();
         <?php include __DIR__ . '/../../includes/admin/topbar.php'; ?>
         
         <main class="admin-main-content p-4">
-            <!-- Breadcrumbs -->
-            <nav aria-label="breadcrumb" class="mb-4 card-main">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="<?= BASE_URL ?>admin_layout.php" class="text-decoration-none">Dashboard</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Quản lý Cao ốc</li>
-                </ol>
-            </nav>
 
             <div class="card shadow-sm border-0 card-main">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">

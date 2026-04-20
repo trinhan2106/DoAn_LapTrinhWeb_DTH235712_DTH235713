@@ -84,12 +84,6 @@ $csrf_token = generateCSRFToken();
         <?php require_once __DIR__ . '/../../includes/admin/topbar.php'; ?>
         
         <main class="admin-main-content p-4">
-            <nav aria-label="breadcrumb" class="mb-4">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="<?= BASE_URL ?>modules/dashboard/admin.php" class="text-decoration-none">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Xử lý tranh chấp</li>
-                </ol>
-            </nav>
 
             <div class="card filter-card shadow-sm border-0 mb-4">
                 <div class="card-body p-4">
