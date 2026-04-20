@@ -18,18 +18,28 @@ $pdo = Database::getInstance()->getConnection();
 $notifications = [];
 $totalUnread = 0;
 
-// 1. Thông báo hệ thống chưa đọc
-$stmt1 = $pdo->prepare("SELECT COUNT(*) FROM THONG_BAO WHERE nguoiNhan = ? AND daDoc = 0");
+// 1. Thông báo hệ thống chưa đọc (push từ admin - ví dụ: cập nhật bảo trì)
+$stmt1 = $pdo->prepare("
+    SELECT maThongBao, tieuDe, loaiThongBao FROM THONG_BAO
+    WHERE nguoiNhan = ? AND daDoc = 0
+    ORDER BY ngayGui DESC LIMIT 10
+");
 $stmt1->execute([$maKH]);
-$count = (int)$stmt1->fetchColumn();
-if ($count > 0) {
-    $totalUnread += $count;
-    $notifications[] = [
-        'title' => "Bạn có <b>$count</b> thông báo chưa đọc",
-        'link'  => BASE_URL . 'modules/tenant/dashboard.php#thongbao',
-        'icon'  => 'bi-bell-fill',
-        'color' => 'text-primary'
-    ];
+$dsThongBao = $stmt1->fetchAll(PDO::FETCH_ASSOC);
+$countTB = count($dsThongBao);
+
+if ($countTB > 0) {
+    $totalUnread += $countTB;
+    $loaiIcon = ['BaoTri' => 'bi-tools', 'HoaDon' => 'bi-receipt', 'HopDong' => 'bi-file-earmark-text'];
+    foreach ($dsThongBao as $tb) {
+        $icon = $loaiIcon[$tb['loaiThongBao']] ?? 'bi-bell-fill';
+        $notifications[] = [
+            'title' => htmlspecialchars($tb['tieuDe'], ENT_QUOTES, 'UTF-8'),
+            'link'  => BASE_URL . 'modules/tenant/dashboard.php#thongbao',
+            'icon'  => $icon,
+            'color' => 'text-primary'
+        ];
+    }
 }
 
 // 2. Hóa đơn còn nợ / chưa thanh toán đủ
@@ -50,7 +60,7 @@ if ($countHD > 0) {
     ];
 }
 
-// 3. Yêu cầu bảo trì đang xử lý
+// 3. Yêu cầu bảo trì đang chờ / đang xử lý
 $stmt3 = $pdo->prepare("
     SELECT COUNT(*) FROM MAINTENANCE_REQUEST mr
     JOIN PHONG p ON mr.maPhong = p.maPhong

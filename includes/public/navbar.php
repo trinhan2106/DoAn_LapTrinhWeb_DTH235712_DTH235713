@@ -166,7 +166,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     fetchTenantNoti();
-    setInterval(fetchTenantNoti, 60000);
+    setInterval(fetchTenantNoti, 30000);
+
+    // Khi mở dropdown: đánh dấu THONG_BAO đã đọc + xóa badge
+    document.getElementById('tenantNotiDropdown').addEventListener('click', function() {
+        if (tenantBadge && !tenantBadge.classList.contains('d-none')) {
+            fetch(baseUrl + 'includes/tenant/mark_read.php').catch(() => {});
+            tenantBadge.classList.add('d-none');
+        }
+    });
     <?php endif; ?>
 
     // Tự động ẩn các thông báo thành công sau 5 giây

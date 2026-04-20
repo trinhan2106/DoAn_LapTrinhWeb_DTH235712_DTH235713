@@ -48,10 +48,33 @@ try {
 
     // 2. Lưu Track Status Log đảm bảo tính trong suốt
     $stmtLog = $pdo->prepare("
-        INSERT INTO MAINTENANCE_STATUS_LOG (request_id, trangThaiCu, trangThaiMoi, nguoiCapNhat) 
+        INSERT INTO MAINTENANCE_STATUS_LOG (request_id, trangThaiCu, trangThaiMoi, nguoiCapNhat)
         VALUES (?, ?, ?, ?)
     ");
     $stmtLog->execute([$reqId, $trangThaiCu, $trangThaiMoi, $updateBy]);
+
+    // 2b. Ghi THONG_BAO đến khách hàng nếu status thay đổi đáng kể
+    $statusLabels = [0 => 'Chờ tiếp nhận', 1 => 'Đang xử lý', 2 => 'Hoàn thành', 3 => 'Đã hủy'];
+    $stmtKH = $pdo->prepare("
+        SELECT h.maKH FROM HOP_DONG h
+        JOIN CHI_TIET_HOP_DONG cthd ON h.soHopDong = cthd.soHopDong
+        JOIN MAINTENANCE_REQUEST mr ON cthd.maPhong = mr.maPhong
+        WHERE mr.id = ? AND h.trangThai = 1
+        LIMIT 1
+    ");
+    $stmtKH->execute([$reqId]);
+    $maKHNhan = $stmtKH->fetchColumn();
+    if ($maKHNhan) {
+        $labelMoi = $statusLabels[$trangThaiMoi] ?? "Trạng thái $trangThaiMoi";
+        $tieuDe = "Yêu cầu bảo trì #$reqId đã được cập nhật";
+        $noiDung = "Yêu cầu bảo trì của bạn (#{$reqId}) vừa được cập nhật sang trạng thái: <b>{$labelMoi}</b>.";
+        $maThongBao = 'TB_MR_' . $reqId . '_' . time();
+        $stmtTB = $pdo->prepare("
+            INSERT INTO THONG_BAO (maThongBao, tieuDe, noiDung, nguoiNhan, loaiThongBao, daDoc)
+            VALUES (?, ?, ?, ?, 'BaoTri', 0)
+        ");
+        $stmtTB->execute([$maThongBao, $tieuDe, $noiDung, $maKHNhan]);
+    }
 
     // 3. Kéo cờ Audit Log
     $logDetail = "Yêu cầu bảo trì {$reqId}: Đổi luồng trạng thái từ {$trangThaiCu} sang {$trangThaiMoi} bởi {$updateBy}.";
