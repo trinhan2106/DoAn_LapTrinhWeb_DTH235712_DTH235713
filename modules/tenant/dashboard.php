@@ -198,7 +198,7 @@ include __DIR__ . '/../../includes/public/header.php';
                                     ?>
                                         <tr>
                                             <td class="fw-bold"><?php echo $hd['soHopDong']; ?></td>
-                                            <td><span class="badge bg-light text-navy border"><?php echo $hd['danhSachPhong']; ?></span></td>
+                                            <td><span class="badge" style="background-color: #f0f4f8; color: #1e3a5f; border: 1px solid #d1d9e6;"><?php echo $hd['danhSachPhong']; ?></span></td>
                                             <td>
                                                 <span class="text-danger fw-bold"><?php echo date('d/m/Y', $ngayHetHan); ?></span>
                                                 <?php if($isSapHetHan): ?>
@@ -239,6 +239,7 @@ include __DIR__ . '/../../includes/public/header.php';
                                         <th class="border-0">Kỳ thanh toán</th>
                                         <th class="border-0 text-end">Tổng tiền</th>
                                         <th class="border-0 text-center">Trạng thái</th>
+                                        <th class="border-0 text-end">Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -246,11 +247,16 @@ include __DIR__ . '/../../includes/public/header.php';
                                         <tr>
                                             <td><?php echo $hd['soHoaDon']; ?></td>
                                             <td><?php echo $hd['kyThanhToan']; ?></td>
-                                            <td class="text-end fw-bold"><?php echo number_format($hd['tongTien'],0,',','.'); ?> ₫</td>
+                                            <td class="text-end fw-bold text-navy"><?php echo number_format($hd['tongTien'],0,',','.'); ?> ₫</td>
                                             <td class="text-center">
-                                                <span class="badge rounded-pill <?php echo $hd['trangThai']=='DaThu' ? 'bg-success' : 'bg-warning'; ?>">
+                                                <span class="badge rounded-pill <?php echo $hd['trangThai']=='DaThu' ? 'bg-success' : 'bg-warning text-dark'; ?>">
                                                     <?php echo $hd['trangThai']=='DaThu' ? 'Đã thu' : 'Chưa thu'; ?>
                                                 </span>
+                                            </td>
+                                            <td class="text-end">
+                                                <a href="tranh_chap.php?soHoaDon=<?php echo $hd['soHoaDon']; ?>" class="btn btn-sm btn-link text-danger text-decoration-none fw-bold p-0">
+                                                    Khiếu nại
+                                                </a>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
