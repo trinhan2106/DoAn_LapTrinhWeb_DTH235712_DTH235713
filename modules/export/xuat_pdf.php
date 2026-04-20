@@ -9,6 +9,8 @@
 require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
+require_once __DIR__ . '/../../includes/common/jwt_helper.php';
+use \Firebase\JWT\JWT;
 
 // Xác thực session và quyền truy cập
 kiemTraSession();
@@ -118,6 +120,20 @@ if ($type === 'contract') {
     $data = $stmt->fetch(PDO::FETCH_ASSOC);
     $fileName = "HoaDon_" . $id . "_" . date('Ymd') . ".pdf";
     $title = "HÓA ĐƠN THANH TOÁN";
+
+    // TẠO TOKEN QR CODE BẢO MẬT (Task 9.2)
+    $issuedAt = time();
+    $expirationTime = $issuedAt + 900; // Token sống đúng 15 phút
+    $payload = [
+        'iat'  => $issuedAt,
+        'exp'  => $expirationTime,
+        'data' => [
+            'soHoaDon' => $data['soHoaDon'] ?? '',
+            'maKH'     => $data['maKH'] ?? ''
+        ]
+    ];
+    $jwtToken = JWT::encode($payload, JWT_SECRET_KEY);
+    $qrUrl = BASE_URL . "modules/tenant_portal/index.php?token=" . $jwtToken;
 }
 
 if (!$data) {
@@ -452,6 +468,17 @@ if (!$data) {
                 </div>
             </div>
 
+            <?php if ($type === 'invoice'): ?>
+            <!-- QR Code xác thực bảo mật (Task 9.2) -->
+            <div class="text-center mt-5 mb-3">
+                <div id="qrcode-container" data-url="<?= $qrUrl ?>" class="d-inline-block p-2 bg-white border"></div>
+                <p class="text-muted small mt-2 mb-0">
+                    <i class="bi bi-shield-check me-1"></i>Quét mã để xác thực hóa đơn trực tuyến
+                </p>
+                <p class="text-danger fw-bold" style="font-size: 10px;">(Mã có hiệu lực trong 15 phút kể từ lúc xem)</p>
+            </div>
+            <?php endif; ?>
+
             <!-- Footer -->
             <div class="pdf-footer">
                 Dữ liệu trích xuất từ hệ thống quản lý cao ốc THE SAPPHIRE. <br>
@@ -463,6 +490,9 @@ if (!$data) {
 
     <!-- html2pdf Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- QRCode.js Library & Init (Task 9.2) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="../../assets/js/qrcode-init.js"></script>
     
     <script>
         document.getElementById('btn-do-export').addEventListener('click', function() {
