@@ -46,12 +46,12 @@ if (!function_exists('is_nav_active')) {
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white <?= is_nav_active('modules/phong/', $current_script) ?>" href="<?= BASE_URL ?>modules/phong/index.php">
+                <a class="nav-link text-white <?= is_nav_active('modules/phong/', $current_script) ?>" href="<?= BASE_URL ?>modules/phong/phong_hienthi.php">
                     <i class="bi bi-door-open me-2"></i> Phòng
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white <?= is_nav_active('modules/khach_hang/', $current_script) ?>" href="<?= BASE_URL ?>modules/khach_hang/index.php">
+                <a class="nav-link text-white <?= is_nav_active('modules/khach_hang/', $current_script) ?>" href="<?= BASE_URL ?>modules/khach_hang/kh_hienthi.php">
                     <i class="bi bi-people me-2"></i> Khách hàng
                 </a>
             </li>
