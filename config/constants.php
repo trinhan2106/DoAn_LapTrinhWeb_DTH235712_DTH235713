@@ -10,7 +10,7 @@
 define('BASE_URL', 'http://localhost/DoAn_LapTrinhWeb_DTH235712_DTH235713/');
 
 // Tên hiển thị hệ thống (dùng trong email, header...)
-define('APP_NAME', 'Blue Sky Tower');
+define('APP_NAME', 'THE SAPPHIRE');
 
 // Nạp cấu hình DB từ file riêng (file này được gitignore, mỗi máy tự cấu hình)
 require_once __DIR__ . '/database.php';

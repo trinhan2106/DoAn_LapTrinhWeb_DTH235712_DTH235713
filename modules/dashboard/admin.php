@@ -10,9 +10,9 @@ require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 
-// Xác thực Session & Role (Admin=1, Quản lý nhà=2 mới được xem tổng quan)
+// Xác thực Session & Role (Admin=1, Quản lý nhà=2, Kế toán=3 được xem tổng quan)
 kiemTraSession();
-kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
+kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA, ROLE_KE_TOAN]);
 
 // Kết nối CSDL Singleton PDO
 $db = Database::getInstance()->getConnection();

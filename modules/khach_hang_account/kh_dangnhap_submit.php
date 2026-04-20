@@ -14,14 +14,14 @@ require_once __DIR__ . '/../../includes/common/login_throttle.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: kh_dangnhap.php");
+    header("Location: ../../dangnhap.php?tab=tenant");
     exit();
 }
 
 $csrf_token = filter_input(INPUT_POST, 'csrf_token', FILTER_DEFAULT);
 if (!$csrf_token || !validateCSRFToken($csrf_token)) {
     $_SESSION['error_msg'] = "Request hết hạn, reload lại trang.";
-    header("Location: kh_dangnhap.php");
+    header("Location: ../../dangnhap.php?tab=tenant");
     exit();
 }
 
@@ -31,7 +31,7 @@ $ip       = layIP();
 
 if (empty($username) || empty($password)) {
     $_SESSION['error_msg'] = "Dữ liệu không đầy đủ.";
-    header("Location: kh_dangnhap.php");
+    header("Location: ../../dangnhap.php?tab=tenant");
     exit();
 }
 
@@ -42,7 +42,7 @@ try {
     $lockStatus = kiemTraLockout($pdo, $ip, "TENANT_" . $username); // Thêm tiền tố Tenant tránh nhầm lẫn log nội bộ
     if ($lockStatus['locked']) {
         $_SESSION['error_msg'] = "Tài khoản bị khóa do vượt định mức đăng nhập sai. Chờ {$lockStatus['remaining']} phút.";
-        header("Location: kh_dangnhap.php");
+        header("Location: ../../dangnhap.php?tab=tenant");
         exit();
     }
 
@@ -59,7 +59,7 @@ try {
     if (!$account || !password_verify($password, $account['password_hash'])) {
         ghiLogDangNhap($pdo, "TENANT_" . $username, $ip, 0);
         $_SESSION['error_msg'] = "Sai thông tin hoặc mật khẩu.";
-        header("Location: kh_dangnhap.php");
+        header("Location: ../../dangnhap.php?tab=tenant");
         exit();
     }
 
@@ -94,6 +94,6 @@ try {
 } catch (PDOException $e) {
     error_log("DB Tenant Login Fail: " . $e->getMessage());
     $_SESSION['error_msg'] = "Lỗi kết nối máy chủ dịch vụ.";
-    header("Location: kh_dangnhap.php");
+    header("Location: ../../dangnhap.php?tab=tenant");
     exit();
 }

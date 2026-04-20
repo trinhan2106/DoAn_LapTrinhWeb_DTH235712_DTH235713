@@ -201,106 +201,150 @@ if (empty($_SESSION['csrf_token'])) {
                 </style>
 
                 <div class="login-card w-100">
-                    <div class="text-center mb-4 pb-2">
+                    <div class="text-center mb-3">
                         <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 60px; height: 60px; background-color: var(--color-background, #f4f7f9); color: var(--color-accent, #c9a66b);">
-                            <i class="fa-solid fa-user-shield fs-3"></i>
+                            <i class="fa-solid fa-city fs-3"></i>
                         </div>
-                        <h3 class="login-title">Đăng Nhập Tài Khoản</h3>
-                        <p class="text-muted">Vui lòng nhập thông tin để truy cập hệ thống</p>
+                        <h3 class="login-title">Đăng Nhập Hệ Thống</h3>
                     </div>
+                    <!-- TAB CHỌN LOẠI TÀI KHOẢN -->
+                    <ul class="nav nav-pills nav-fill mb-4 p-1 rounded-3" id="loginTab" style="background:#f0f4f8;" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-bold" id="tab-staff" data-bs-toggle="pill" data-bs-target="#pane-staff" type="button" role="tab" style="border-radius:8px;">
+                                <i class="fa-solid fa-user-shield me-1"></i> Nhân viên
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold" id="tab-tenant" data-bs-toggle="pill" data-bs-target="#pane-tenant" type="button" role="tab" style="border-radius:8px;">
+                                <i class="fa-solid fa-building-user me-1"></i> Khách hàng
+                            </button>
+                        </li>
+                    </ul>
                     
-                    <!-- Vùng hiển thị lỗi (ví dụ: Session Lockout) -->
+                    <!-- Vùng hiển thị lỗi -->
                     <?php if (isset($_SESSION['error_msg'])): ?>
                         <div class="alert alert-danger alert-dismissible fade show border-0 rounded-3 shadow-sm" role="alert">
                             <i class="fa-solid fa-triangle-exclamation me-2"></i>
-                            <?php 
-                                echo htmlspecialchars($_SESSION['error_msg']); 
-                                unset($_SESSION['error_msg']);
-                            ?>
+                            <?php echo htmlspecialchars($_SESSION['error_msg']); unset($_SESSION['error_msg']); ?>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     <?php endif; ?>
 
-                    <form method="POST" action="dangnhap_submit.php">
-                        
-                        <!-- Security: CSRF Token -->
-                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
+                    <div class="tab-content" id="loginTabContent">
 
-                        <!-- Tên đăng nhập -->
-                        <div class="mb-3">
-                            <label for="username" class="custom-label">Tên đăng nhập</label>
-                            <div class="position-relative">
-                                <i class="fa-regular fa-user input-icon-left"></i>
-                                <input type="text" class="form-control custom-input" id="username" name="username" placeholder="Nhập tên đăng nhập" required autocomplete="username" autofocus>
-                            </div>
+                        <!-- ═══ TAB NHÂN VIÊN ═══ -->
+                        <div class="tab-pane fade show active" id="pane-staff" role="tabpanel">
+                            <form method="POST" action="dangnhap_submit.php">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
+                                <div class="mb-3">
+                                    <label for="username" class="custom-label">Tên đăng nhập</label>
+                                    <div class="position-relative">
+                                        <i class="fa-regular fa-user input-icon-left"></i>
+                                        <input type="text" class="form-control custom-input" id="username" name="username" placeholder="Tên tài khoản" required autocomplete="username" autofocus>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="password" class="custom-label">Mật khẩu</label>
+                                    <div class="position-relative">
+                                        <i class="fa-solid fa-lock input-icon-left"></i>
+                                        <input type="password" class="form-control custom-input" id="password" name="password" placeholder="Nhập mật khẩu" required autocomplete="current-password">
+                                        <span class="password-toggle-icon" id="togglePassword" title="Hiện/ẩn mật khẩu">
+                                            <i class="fa-regular fa-eye fs-6" id="toggleIcon"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn-brand btn-brand--primary btn-login">
+                                        <i class="fa-solid fa-right-to-bracket me-2"></i>Đăng nhập Nhân viên
+                                    </button>
+                                </div>
+                            </form>
                         </div>
 
-                        <!-- Mật khẩu -->
-                        <div class="mb-4">
-                            <label for="password" class="custom-label">Mật khẩu</label>
-                            <div class="position-relative">
-                                <i class="fa-solid fa-lock input-icon-left"></i>
-                                <input type="password" class="form-control custom-input" id="password" name="password" placeholder="Nhập mật khẩu" required autocomplete="current-password">
-                                <span class="password-toggle-icon" id="togglePassword" title="Hiện/ẩn mật khẩu">
-                                    <i class="fa-regular fa-eye fs-6" id="toggleIcon"></i>
-                                </span>
-                            </div>
+                        <!-- ═══ TAB KHÁCH HÀNG ═══ -->
+                        <div class="tab-pane fade" id="pane-tenant" role="tabpanel">
+                            <form method="POST" action="modules/khach_hang_account/kh_dangnhap_submit.php">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
+                                <div class="mb-3">
+                                    <label for="kh_username" class="custom-label">Tài khoản khách hàng</label>
+                                    <div class="position-relative">
+                                        <i class="fa-regular fa-building input-icon-left"></i>
+                                        <input type="text" class="form-control custom-input" id="kh_username" name="username" placeholder="Tên tài khoản" required autocomplete="username">
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="kh_password" class="custom-label">Mật khẩu</label>
+                                    <div class="position-relative">
+                                        <i class="fa-solid fa-lock input-icon-left"></i>
+                                        <input type="password" class="form-control custom-input" id="kh_password" name="password" placeholder="Nhập mật khẩu" required autocomplete="current-password">
+                                        <span class="password-toggle-icon" id="togglePasswordKH" title="Hiện/ẩn mật khẩu">
+                                            <i class="fa-regular fa-eye fs-6" id="toggleIconKH"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="alert border-0 py-2 px-3 mb-3" style="background:#e8f4fd;font-size:.82rem;border-radius:8px;color:#0c63a4;">
+                                    <i class="fa-solid fa-circle-info me-1"></i>
+                                    Tài khoản khách hàng được Ban Quản Lý tòa nhà cung cấp.
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn-brand btn-brand--primary btn-login">
+                                        <i class="fa-solid fa-right-to-bracket me-2"></i>Đăng nhập Khách hàng
+                                    </button>
+                                </div>
+                            </form>
                         </div>
 
-                        <!-- Ghi nhớ đăng nhập & Quên Mật Khẩu Layout Flex -->
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="remember_me" name="remember_me">
-                                <label class="form-check-label text-muted" for="remember_me">Ghi nhớ</label>
-                            </div>
-                            <a href="#" class="text-brand-primary text-decoration-none fw-semibold" style="font-size: 0.9rem;">Quên mật khẩu?</a>
-                        </div>
+                    </div><!-- /.tab-content -->
 
-                        <!-- Nút Submit -->
-                        <div class="d-grid mt-4">
-                            <button type="submit" class="btn-brand btn-brand--primary btn-login">
-                                Khởi Đầu <i class="fa-solid fa-arrow-right ms-2"></i>
-                            </button>
-                        </div>
-
-                        <!-- Link điều hướng Đăng ký -->
-                        <div class="mt-4 text-center">
-                            <p class="mb-0 text-muted" style="font-size: 0.95rem;">
-                                Bạn là khách mới? 
-                                <a href="dangky.php" class="text-brand-primary fw-bold text-decoration-none border-bottom border-warning border-2 pb-1" style="transition: all 0.2s;">Gia nhập ngay</a>
-                            </p>
-                        </div>
-                    </form>
+                    <div class="mt-4 text-center">
+                        <a href="index.php" class="text-muted text-decoration-none" style="font-size:.85rem;">
+                            <i class="fa-solid fa-arrow-left me-1"></i>Quay về trang chủ
+                        </a>
+                    </div>
                 </div>
             </div>
-            
         </div>
     </div>
 
-    <!-- Bootstrap Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Vanilla JS: Hiển thị / Ẩn mật khẩu (Đã tối ưu logic cho the new layout) -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const togglePasswordBtn = document.getElementById('togglePassword');
-            const passwordInput = document.getElementById('password');
-            const toggleIcon = document.getElementById('toggleIcon');
+            // Toggle show/hide password — Tab Nhân viên
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput  = document.getElementById('password');
+            const toggleIcon     = document.getElementById('toggleIcon');
+            if (togglePassword) {
+                togglePassword.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const isPass = passwordInput.type === 'password';
+                    passwordInput.type = isPass ? 'text' : 'password';
+                    toggleIcon.classList.toggle('fa-eye', !isPass);
+                    toggleIcon.classList.toggle('fa-eye-slash', isPass);
+                });
+            }
 
-            togglePasswordBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                const isPassword = passwordInput.type === 'password';
-                passwordInput.type = isPassword ? 'text' : 'password';
-                
-                if (isPassword) {
-                    toggleIcon.classList.remove('fa-eye');
-                    toggleIcon.classList.add('fa-eye-slash');
-                } else {
-                    toggleIcon.classList.remove('fa-eye-slash');
-                    toggleIcon.classList.add('fa-eye');
-                }
-            });
+            // Toggle show/hide password — Tab Khách hàng
+            const togglePasswordKH = document.getElementById('togglePasswordKH');
+            const passwordInputKH  = document.getElementById('kh_password');
+            const toggleIconKH     = document.getElementById('toggleIconKH');
+            if (togglePasswordKH) {
+                togglePasswordKH.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const isPass = passwordInputKH.type === 'password';
+                    passwordInputKH.type = isPass ? 'text' : 'password';
+                    toggleIconKH.classList.toggle('fa-eye', !isPass);
+                    toggleIconKH.classList.toggle('fa-eye-slash', isPass);
+                });
+            }
+
+            // Nếu session error_msg xuất hiện và user đang ở tab KH,
+            // tự động mở tab KH lại (dựa trên URL param)
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('tab') === 'tenant') {
+                const tenantTab = document.getElementById('tab-tenant');
+                if (tenantTab) tenantTab.click();
+            }
         });
     </script>
 </body>
-</html>
+</html>
