@@ -121,6 +121,21 @@ try {
         .btn-sign:hover {
             background-color: #172d4c; color: #fff;
         }
+
+        /* --- CSS Tối Ưu Hóa Render Bản In (PDF) --- */
+        @media print {
+            body { background: #fff !important; padding: 0 !important; margin: 0 !important; }
+            .container { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            .contract-paper { 
+                box-shadow: none !important; 
+                padding: 15px !important; 
+                max-width: 100% !important; 
+                background-image: none !important; /* Bỏ lớp giả sần để chữ rõ nét */
+            }
+            /* Ẩn hoàn toàn các UI điều khiển không thuộc hợp đồng */
+            .alert, .btn, .border-top { display: none !important; }
+            @page { size: A4; margin: 20mm; }
+        }
     </style>
 </head>
 <body>
@@ -209,9 +224,9 @@ try {
     <?php else: ?>
         <!-- MÀN HÌNH ĐÃ KÝ THÀNH CÔNG -> NHẬT SẼ RÁP EXPORT BẢN IN PDF NẰM Ở ĐÂY SAU NÀY -->
         <div class="text-center mt-4 border-top pt-4" style="max-width: 850px; margin: 0 auto;">
-             <a href="../dashboard/admin.php" class="btn btn-outline-secondary px-4 me-2"><i class="fa-solid fa-arrow-left me-1"></i> Trở về Quản Trị</a>
-             <button class="btn btn-outline-danger px-4" disabled title="[Task 9.1] Dev Nhiệm vụ In HTML2PDF">
-                 <i class="fa-solid fa-print me-1"></i> Xuất bản lưu Trữ Bản PDF (Frontend Update)
+             <a href="hd_hienthi.php" class="btn btn-outline-secondary px-4 me-2"><i class="fa-solid fa-arrow-left me-1"></i> Quay Lại Danh Sách</a>
+             <button onclick="window.print();" class="btn btn-outline-danger px-4" title="In / Xuất file PDF">
+                 <i class="fa-solid fa-print me-1"></i> Xuất bản lưu Trữ Bản PDF
              </button>
         </div>
     <?php endif; ?>

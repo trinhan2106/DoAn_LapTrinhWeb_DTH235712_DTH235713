@@ -128,6 +128,11 @@ function formatTrangThaiHD($tt) {
                                             <a href="hd_ky.php?id=<?= urlencode($row['soHopDong']) ?>" class="btn btn-success btn-sm px-2 text-white fw-bold shadow-sm" style="border-radius: 4px;">
                                                 <i class="fa-solid fa-file-signature"></i> Ký Duyệt
                                             </a>
+                                        <?php else: ?>
+                                            <!-- Đã Ký / Trạng thái khác -> Xem Bản In -->
+                                            <a href="hd_ky.php?id=<?= urlencode($row['soHopDong']) ?>" class="btn btn-outline-primary btn-sm px-2 fw-bold shadow-sm" style="border-radius: 4px;" title="Xem / In Bản PDF Hợp Đồng">
+                                                <i class="fa-solid fa-print"></i> Bản In
+                                            </a>
                                         <?php endif; ?>
                                     </td>
                                 </tr>

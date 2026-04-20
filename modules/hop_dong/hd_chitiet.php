@@ -231,6 +231,11 @@ function badgeTrangThai($tt) {
             <i class="fa-solid fa-arrow-left me-2"></i>Quay Lại Danh Sách
         </a>
         <div class="d-flex gap-2">
+            <!-- Nút In Bản Mẫu PDF luôn xuất hiện để Review Document mọi lúc -->
+            <a href="hd_ky.php?id=<?= urlencode($soHD) ?>" class="btn btn-primary px-4 fw-bold shadow-sm">
+                <i class="fa-solid fa-print me-2"></i>Bản In (PDF)
+            </a>
+            
             <?php if ((int)$hd['trangThai'] === 3): ?>
                 <a href="hd_ky.php?id=<?= urlencode($soHD) ?>" class="btn btn-success px-4 fw-bold">
                     <i class="fa-solid fa-signature me-2"></i>Ký Duyệt Hợp Đồng
