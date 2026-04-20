@@ -6,6 +6,7 @@
 $(document).ready(function() {
     // Khởi tạo DataTables cho tất cả các bảng có class 'table-datatable'
     $('.table-datatable').DataTable({
+        "destroy": true,
         "language": {
             "sProcessing":   "Đang xử lý...",
             "sLengthMenu":   "Hiển thị _MENU_ dòng",

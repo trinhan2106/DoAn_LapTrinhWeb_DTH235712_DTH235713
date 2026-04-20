@@ -1,4 +1,12 @@
 <?php
+/**
+ * gioi_thieu.php
+ * Trang Giới thiệu & Liên hệ - Hệ thống Quản lý Cao ốc
+ */
+
+// Đảm bảo BASE_URL có sẵn
+require_once __DIR__ . '/config/constants.php';
+
 // Bắt đầu session nếu chưa có
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -10,8 +18,8 @@ if (empty($_SESSION['csrf_token'])) {
 }
 
 $pageTitle = "Giới thiệu & Liên hệ - Quản lý Cao ốc";
-include_once 'includes/public/header.php';
-include_once 'includes/public/navbar.php';
+include_once __DIR__ . '/includes/public/header.php';
+include_once __DIR__ . '/includes/public/navbar.php';
 ?>
 
 <main class="main-content">
