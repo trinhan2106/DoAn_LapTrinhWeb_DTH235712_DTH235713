@@ -149,10 +149,6 @@ $csrf_token = generateCSRFToken(); // Tạo token cho form Xóa
 
 
 <script>
-$(document).ready(function() {
-    $('#tblKhachHang').DataTable();
-});
-
 function xacNhanXoa(ma, ten) {
     document.getElementById('deleteKhName').innerText = ten;
     document.getElementById('deleteKhId').value = ma;

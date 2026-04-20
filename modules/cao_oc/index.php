@@ -160,10 +160,6 @@ $dsCaoOc = $db->query($sql)->fetchAll();
 <!-- Scripts -->
 
 <script>
-$(document).ready(function() {
-    $('#tblCaoOc').DataTable();
-});
-
 function xacNhanXoa(ma, ten) {
     document.getElementById('deleteBuildingName').innerText = ten;
     document.getElementById('btnConfirmDelete').href = 'xoa.php?id=' + encodeURIComponent(ma);

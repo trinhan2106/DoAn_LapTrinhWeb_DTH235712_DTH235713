@@ -207,14 +207,6 @@ $csrf_token = generateCSRFToken();
 <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-$(document).ready(function() {
-    $('#tblTranhChap').DataTable({
-        "language": { "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/vi.json" },
-        "order": [[3, "desc"]],
-        "pageLength": 10
-    });
-});
-
 function moModalXuLy(id, soHD, tenKH, noiDung, trangThai) {
     $('#modal_id').val(id);
     $('#modal_noiDung').text(noiDung);

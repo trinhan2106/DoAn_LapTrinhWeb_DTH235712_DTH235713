@@ -55,7 +55,10 @@ function hideLoading() {
 document.addEventListener("DOMContentLoaded", function() {
     const forms = document.querySelectorAll('form:not(.no-loader)');
     forms.forEach(form => {
-        form.addEventListener('submit', function() {
+        form.addEventListener('submit', function(e) {
+            // Nếu sự kiện đã bị cancel (ví dụ qua confirm() trả về false) thì không hiện loader
+            if (e.defaultPrevented) return;
+            
             // Chỉ show loader nếu form đã qua vòng validate của HTML5
             if (this.checkValidity()) {
                 showLoading();

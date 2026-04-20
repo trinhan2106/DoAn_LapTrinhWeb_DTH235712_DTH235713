@@ -129,8 +129,6 @@ $dsTang = $stmt->fetchAll();
 
 
 <script>
-    $('#tblTang').DataTable();
-
 function xacNhanXoa(maTang, tenTang) {
     document.getElementById('deleteFloorName').innerText = tenTang;
     document.getElementById('btnConfirmDelete').href = 'xoa.php?id=' + maTang;
