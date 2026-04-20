@@ -188,3 +188,35 @@ body {
     padding-top: 8px !important;
     padding-bottom: 8px !important;
 }
+
+/* --- LOADING SPINNER --- */
+#global-loader {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(3px); /* Hi?u ?ng m? n?n cao c?p */
+    transition: opacity 0.3s ease;
+}
+
+/* --- RESPONSIVE POLISH --- */
+/* Ð?m b?o t?t c? các b?ng không phá v? layout trên thi?t b? nh? */@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem 0.5rem; /* Gi?m padding trên mobile */
+    }
+    
+    /* Ép các table ph?i cu?n ngang n?u quá dài */
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Ch?nh l?i font-size cho nh? g?n hon trên Mobile */
+    h1.page-header {
+        font-size: 1.5rem;
+    }
+}
