@@ -11,6 +11,29 @@ let currentLockedRoom = null;
 let heartbeatInterval = null;
 
 /**
+ * FIX CSRF (final): Lấy token từ window.PHP_CSRF_TOKEN (PHP inject trực tiếp vào JS).
+ * Đây là nguồn đáng tin cậy nhất — PHP print thẳng giá trị vào code JS trước khi file này chạy.
+ * Fallback sang meta tag và input#csrf_token nếu cần.
+ */
+function getCsrfToken() {
+    // 1. PHP đã inject thẳng vào global variable — không cần DOM query
+    if (typeof window.PHP_CSRF_TOKEN !== 'undefined' && window.PHP_CSRF_TOKEN !== '') {
+        return window.PHP_CSRF_TOKEN;
+    }
+    // 2. Fallback: meta tag
+    const metaToken = document.querySelector('meta[name="csrf-token"]');
+    if (metaToken && metaToken.getAttribute('content')) {
+        return metaToken.getAttribute('content');
+    }
+    // 3. Fallback: input hidden
+    const inputToken = document.getElementById('csrf_token');
+    if (inputToken && inputToken.value) {
+        return inputToken.value;
+    }
+    return '';
+}
+
+/**
  * Gửi Fetch API Yêu cầu Khóa phòng vào CSDL Memory Backend
  * @param {string} maPhong 
  */
@@ -33,6 +56,7 @@ function lockRoom(maPhong) {
     const formData = new FormData();
     formData.append('action', 'lock');
     formData.append('maPhong', maPhong);
+    formData.append('csrf_token', getCsrfToken()); // FIX: đính kèm token
 
     // Endpoint Base URL lấy điểm neo File gọi JS tới
     // Ghi chú đếm path từ UI Form hd_them.php ../../modules/phong/phong_lock.php
@@ -75,6 +99,7 @@ function unlockRoom(maPhong) {
     const formData = new FormData();
     formData.append('action', 'unlock');
     formData.append('maPhong', maPhong);
+    formData.append('csrf_token', getCsrfToken()); // FIX: đính kèm token
 
     // Kỹ thuật Cứng: Sử dụng navigator.sendBeacon 
     // Kỹ thuật này chuyên xử lý các Request đâm nền lúc sự kiện beforeunload xảy ra (Tắt tab, Load tab). 
@@ -114,6 +139,7 @@ function startHeartbeat(maPhong) {
         const fd = new FormData();
         fd.append('action', 'lock');
         fd.append('maPhong', maPhong);
+        fd.append('csrf_token', getCsrfToken()); // FIX: heartbeat cũng phải gửi token
         
         fetch('../../modules/phong/phong_lock.php', { 
             method: 'POST', 

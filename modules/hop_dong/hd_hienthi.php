@@ -62,10 +62,12 @@ function formatTrangThaiHD($tt) {
             <h4 class="m-0 fw-bold text-navy">
                 <i class="fa-solid fa-folder-open me-2"></i> QUẢN TRỊ HỒ SƠ HỢP ĐỒNG
             </h4>
-        <a href="hd_them.php" class="btn btn-primary" style="background-color: var(--primary); border: none;">
-            <i class="fa-solid fa-plus me-1"></i> Tân Tạo Hợp Đồng Mới
-        </a>
-    </div>
+            <div class="mb-3">
+                <a href="<?php echo BASE_URL; ?>modules/hop_dong/hd_them.php" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i>  Lập hợp đồng mới
+                </a>
+            </div>
+        </div>
 
     <!-- Alert Block -->
     <?php if(isset($_GET['msg']) && $_GET['msg'] === 'giahan_success'): ?>

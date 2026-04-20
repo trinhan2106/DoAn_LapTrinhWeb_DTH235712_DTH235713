@@ -12,19 +12,28 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../../config/roles.php';
 require_once __DIR__ . '/../../includes/common/db.php';
-require_once __DIR__ . '/../../includes/common/csrf.php';
+require_once __DIR__ . '/../../includes/common/csrf.php'; // phải trước auth.php
 require_once __DIR__ . '/../../includes/common/auth.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-// --- Authentication ---
-try {
-    kiemTraSession();
-} catch (\Exception $e) {
+// --- Authentication (AJAX-safe): kiểm tra thủ công thay vì gọi kiểmTraSession() ---
+// kiểmTraSession() dùng header(Location)+exit() không phù hợp AJAX — nó sẽ redirect thay vì JSON
+if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['status' => 'error', 'message' => 'Chua dang nhap hoac phien het han.']);
     exit();
 }
+
+// Kiểm tra session timeout thủ công
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > SESSION_TIMEOUT)) {
+    session_unset();
+    session_destroy();
+    http_response_code(401);
+    echo json_encode(['status' => 'error', 'message' => 'Phien lam viec het han. Vui long dang nhap lai.']);
+    exit();
+}
+$_SESSION['last_activity'] = time(); // Cập nhật timestamp
 
 $userRole = (int)($_SESSION['user_role'] ?? 0);
 if (!in_array($userRole, [ROLE_ADMIN, ROLE_QUAN_LY_NHA, ROLE_KE_TOAN], true)) {
@@ -40,11 +49,23 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-// --- CSRF: header X-CSRF-Token hoac POST field ---
-$csrf = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ($_POST['csrf_token'] ?? '');
-if (!$csrf || !validateCSRFToken($csrf)) {
+// --- CSRF Validation ---
+// DEBUG: Log để xác nhận token nhận được khớp với session
+$token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+if (empty($token)) {
     http_response_code(403);
-    echo json_encode(['status' => 'error', 'message' => 'CSRF token khong hop le.']);
+    echo json_encode(['status' => 'error', 'message' => 'Thiếu CSRF token. Vui lòng tải lại trang.']);
+    exit();
+}
+if (!isset($_SESSION['csrf_token'])) {
+    // Session có user_id nhưng không có csrf_token — có thể session mới re-generate
+    http_response_code(403);
+    echo json_encode(['status' => 'error', 'message' => 'Session chưa có CSRF token. Vui lòng tải lại trang lập hợp đồng.']);
+    exit();
+}
+if (!validateCSRFToken($token)) {
+    http_response_code(403);
+    echo json_encode(['status' => 'error', 'message' => 'CSRF token không hợp lệ. Vui lòng tải lại trang.']);
     exit();
 }
 

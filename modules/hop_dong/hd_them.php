@@ -4,9 +4,14 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/auth.php';
+require_once __DIR__ . '/../../includes/common/csrf.php';
 
 // Auth native an ninh
 kiemTraSession();
+kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA, ROLE_KE_TOAN]); // Ngăn tài khoản KHACH_HANG (role=4) truy cập
+
+// Phát sinh CSRF token và lưu vào biến để dùng xuyên suốt trang
+$csrf_token = generateCSRFToken();
 
 $pdo = Database::getInstance()->getConnection();
 
@@ -32,6 +37,10 @@ try {
     <!-- Phân Hệ Bootstrap 5 CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Bootstrap Icons (dùng cho bi bi-arrow-left trên nút Quay lại) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- FIX CSRF: expose token vào meta để room-lock.js đọc được -->
+    <meta name="csrf-token" content="<?php echo $csrf_token; ?>">
     
     <style>
         /* CSS Gốc Thương Hiệu Tôn Nghiêm */
@@ -160,6 +169,10 @@ try {
 
 <div class="container">
     <div class="wizard-card">
+        <!-- Nút quay lại danh sách hợp đồng -->
+        <a href="<?php echo BASE_URL; ?>modules/hop_dong/hd_hienthi.php" class="btn btn-secondary btn-sm mb-3">
+            <i class="bi bi-arrow-left"></i> Quay về Danh sách Hợp đồng
+        </a>
         <h3 class="text-center mb-5 fw-bold" style="color: var(--primary);">
             <i class="fa-solid fa-file-contract me-2 text-warning"></i> TRUNG TÂM KHỞI TẠO HỢP ĐỒNG MƯỚN BUILDING
         </h3>
@@ -186,8 +199,8 @@ try {
 
         <!-- ENDPOINT GỬI ĐẾN BACKEND hd_them_submit.php MÀ SAU NÀY BẠN LÀM -->
         <form id="frmWizard" action="hd_them_submit.php" method="POST">
-            <!-- CSRF Block -->
-            <input type="hidden" name="csrf_token" value="<?= function_exists('generateCSRFToken') ? generateCSRFToken() : '' ?>">
+            <!-- CSRF Block: gửi kèm khi submit form đến hd_them_submit.php -->
+            <input type="hidden" id="csrf_token" name="csrf_token" value="<?php echo $csrf_token; ?>">
 
             <!-- STEP 1: KHÁCH HÀNG (PANEL) -->
             <div class="wizard-pane active" id="pane-step-1">
@@ -236,6 +249,7 @@ try {
                     <div class="col-md-12">
                         <label class="form-label fw-bold">Tọa độ Phòng Trống Hiện Thời</label>
                         
+                        <!-- CHUYỂN MẠCH SỰ KIỆN: ONCHANGE BẮN JS JAVASCRIPT GỌI ROOM-LOCK.JS -->
                         <!-- CHUYỂN MẠCH SỰ KIỆN: ONCHANGE BẮN JS JAVASCRIPT GỌI ROOM-LOCK.JS -->
                         <select class="form-select form-select-lg border-2 border-primary" name="maPhong" id="maPhong" onchange="lockRoom(this.value)">
                             <option value="">-- Dò Cự Ly Hầm Số DSN BĐS (Phòng Trực Chiến) --</option>
@@ -321,8 +335,12 @@ try {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<!-- TẢI GÓI VANILLA JS BẮT SỰ KIỆN API PING LOCK TỪ THƯ MỤC ROOT SYSTEM -->
-<script src="../../assets/js/room-lock.js"></script>
+<!-- PHP inject CSRF token trực tiếp vào JS global — đáng tin cậy hơn querySelector -->
+<script>
+    window.PHP_CSRF_TOKEN = "<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>";
+</script>
+<!-- Cache-buster: buộc browser reload file JS mới nhất, tránh chạy bản cũ còn trong cache -->
+<script src="../../assets/js/room-lock.js?v=<?php echo filemtime(__DIR__ . '/../../assets/js/room-lock.js'); ?>"></script>
 
 <script>
     /**
