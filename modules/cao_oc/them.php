@@ -1,20 +1,20 @@
-<?php
+﻿<?php
 /**
  * modules/cao_oc/them.php
- * Giao diện thêm mới Cao ốc - Thiết kế đồng nhất hệ thống
+ * Giao diá»‡n thÃªm má»›i Cao á»‘c - Thiáº¿t káº¿ Ä‘á»“ng nháº¥t há»‡ thá»‘ng
  */
 
-// 1. KHỞI TẠO & BẢO MẬT
+// 1. KHá»žI Táº O & Báº¢O Máº¬T
 require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
 
-// Xác thực Session & Phân quyền
+// XÃ¡c thá»±c Session & PhÃ¢n quyá»n
 kiemTraSession();
 kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
-// Tạo CSRF Token cho form
+// Táº¡o CSRF Token cho form
 $csrf_token = generateCSRFToken();
 ?>
 <!DOCTYPE html>
@@ -64,24 +64,23 @@ $csrf_token = generateCSRFToken();
     
     <div class="admin-main-wrapper flex-grow-1">
         <?php include __DIR__ . '/../../includes/admin/topbar.php'; ?>
-        <?php include __DIR__ . '/../../includes/admin/notifications.php'; ?>
         
         <main class="admin-main-content p-4">
             <!-- Breadcrumbs -->
             <nav aria-label="breadcrumb" class="mb-4 d-flex justify-content-center">
                 <ol class="breadcrumb mb-0" style="width: 800px;">
                     <li class="breadcrumb-item"><a href="<?= BASE_URL ?>admin_layout.php" class="text-decoration-none">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="index.php" class="text-decoration-none">Quản lý Cao ốc</a></li>
-                    <li class="breadcrumb-item active">Thêm cao ốc mới</li>
+                    <li class="breadcrumb-item"><a href="index.php" class="text-decoration-none">Quáº£n lÃ½ Cao á»‘c</a></li>
+                    <li class="breadcrumb-item active">ThÃªm cao á»‘c má»›i</li>
                 </ol>
             </nav>
 
             <div class="card form-card shadow-sm border-0">
                 <div class="form-header">
                     <h2 class="h4 mb-0 fw-bold">
-                        <i class="bi bi-plus-circle me-2"></i>THÊM CAO ỐC MỚI
+                        <i class="bi bi-plus-circle me-2"></i>THÃŠM CAO á»C Má»šI
                     </h2>
-                    <p class="mb-0 text-white-50 small mt-1">Khởi tạo dữ liệu tòa nhà mới vào hệ thống vận hành.</p>
+                    <p class="mb-0 text-white-50 small mt-1">Khá»Ÿi táº¡o dá»¯ liá»‡u tÃ²a nhÃ  má»›i vÃ o há»‡ thá»‘ng váº­n hÃ nh.</p>
                 </div>
                 <div class="card-body p-4 p-md-5">
                     <form action="them_submit.php" method="POST">
@@ -89,35 +88,35 @@ $csrf_token = generateCSRFToken();
                         <input type="hidden" name="csrf_token" value="<?= e($csrf_token) ?>">
 
                         <div class="row g-4">
-                            <!-- Tên Cao ốc -->
+                            <!-- TÃªn Cao á»‘c -->
                             <div class="col-md-12">
-                                <label for="tenCaoOc" class="form-label">Tên Cao ốc <span class="text-danger">*</span></label>
+                                <label for="tenCaoOc" class="form-label">TÃªn Cao á»‘c <span class="text-danger">*</span></label>
                                 <input type="text" name="tenCaoOc" id="tenCaoOc" class="form-control py-2" 
-                                       placeholder="Ví dụ: SAPPHIRE Tower - Khối A" required autofocus>
+                                       placeholder="VÃ­ dá»¥: SAPPHIRE Tower - Khá»‘i A" required autofocus>
                             </div>
 
-                            <!-- Địa chỉ -->
+                            <!-- Äá»‹a chá»‰ -->
                             <div class="col-md-12">
-                                <label for="diaChi" class="form-label">Địa chỉ <span class="text-danger">*</span></label>
+                                <label for="diaChi" class="form-label">Äá»‹a chá»‰ <span class="text-danger">*</span></label>
                                 <textarea name="diaChi" id="diaChi" class="form-control py-2" rows="3" 
-                                          placeholder="Số... Đường... Phường... Quận..." required></textarea>
+                                          placeholder="Sá»‘... ÄÆ°á»ng... PhÆ°á»ng... Quáº­n..." required></textarea>
                             </div>
 
-                            <!-- Số tầng -->
+                            <!-- Sá»‘ táº§ng -->
                             <div class="col-md-6">
-                                <label for="soTang" class="form-label">Số tầng <span class="text-danger">*</span></label>
+                                <label for="soTang" class="form-label">Sá»‘ táº§ng <span class="text-danger">*</span></label>
                                 <input type="number" name="soTang" id="soTang" class="form-control py-2" 
                                        min="1" max="250" value="1" required>
-                                <div class="form-text">Tổng số tầng khai thác của tòa nhà.</div>
+                                <div class="form-text">Tá»•ng sá»‘ táº§ng khai thÃ¡c cá»§a tÃ²a nhÃ .</div>
                             </div>
 
                             <div class="col-12 mt-5 border-top pt-4">
                                 <div class="d-flex justify-content-end gap-2">
                                     <a href="index.php" class="btn btn-outline-secondary px-4 py-2">
-                                        <i class="bi bi-x-circle me-2"></i>Hủy bỏ
+                                        <i class="bi bi-x-circle me-2"></i>Há»§y bá»
                                     </a>
                                     <button type="submit" class="btn btn-gold px-5 py-2">
-                                        <i class="bi bi-check-circle me-2"></i>Lưu thông tin
+                                        <i class="bi bi-check-circle me-2"></i>LÆ°u thÃ´ng tin
                                     </a>
                                 </div>
                             </div>

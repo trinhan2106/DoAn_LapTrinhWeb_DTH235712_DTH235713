@@ -1,11 +1,11 @@
-<?php
+﻿<?php
 /**
- * PROJECT: Quản lý Cao ốc (Office Rental Management)
- * PAGE: phong_trong.php (Danh sách phòng trống)
- * DESCRIPTION: Hiển thị danh sách phòng theo Grid, có bộ lọc và phân trang.
+ * PROJECT: Quáº£n lÃ½ Cao á»‘c (Office Rental Management)
+ * PAGE: phong_trong.php (Danh sÃ¡ch phÃ²ng trá»‘ng)
+ * DESCRIPTION: Hiá»ƒn thá»‹ danh sÃ¡ch phÃ²ng theo Grid, cÃ³ bá»™ lá»c vÃ  phÃ¢n trang.
  */
 
-// 1. Khởi tạo session & CSRF bảo mật
+// 1. Khá»Ÿi táº¡o session & CSRF báº£o máº­t
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -13,27 +13,27 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-// 2. Kết nối Database
+// 2. Káº¿t ná»‘i Database
 require_once 'includes/common/db.php';
 $pdo = Database::getInstance()->getConnection();
 
-// 3. Xử lý logic lọc (Filter state)
+// 3. Xá»­ lÃ½ logic lá»c (Filter state)
 $f_tang = $_GET['tang'] ?? '';
 $f_gia  = $_GET['khoangGia'] ?? '';
 $f_loai = $_GET['loaiPhong'] ?? '';
 
-// Tính toán phân trang
+// TÃ­nh toÃ¡n phÃ¢n trang
 $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) $page = 1;
 $limit = 6;
 $offset = ($page - 1) * $limit;
 
-// Xây dựng điều kiện WHERE
+// XÃ¢y dá»±ng Ä‘iá»u kiá»‡n WHERE
 $whereConditions = ["p.trangThai = 1", "p.deleted_at IS NULL"];
 $params = [];
 
 if (!empty($f_tang)) {
-    // Dùng LIKE để hỗ trợ cả trường hợp CSDL lưu 'Tầng 1' hay '1'
+    // DÃ¹ng LIKE Ä‘á»ƒ há»— trá»£ cáº£ trÆ°á»ng há»£p CSDL lÆ°u 'Táº§ng 1' hay '1'
     $whereConditions[] = "t.tenTang LIKE :tang";
     $params[':tang'] = "%$f_tang%";
 }
@@ -50,7 +50,7 @@ if (!empty($f_loai)) {
 
 $whereSQL = implode(' AND ', $whereConditions);
 
-// Đếm tổng số bản ghi và tính tổng số trang
+// Äáº¿m tá»•ng sá»‘ báº£n ghi vÃ  tÃ­nh tá»•ng sá»‘ trang
 $total_records = 0;
 $total_pages = 1;
 try {
@@ -69,7 +69,7 @@ try {
     error_log("Database count error: " . $e->getMessage());
 }
 
-// Truy vấn lấy dữ liệu theo offset và limit
+// Truy váº¥n láº¥y dá»¯ liá»‡u theo offset vÃ  limit
 $rooms = [];
 try {
     if (isset($pdo)) {
@@ -91,13 +91,13 @@ try {
     error_log("Database query error: " . $e->getMessage());
 }
 
-// Giữ lại tham số url hiện tại cho thẻ chuyển trang
+// Giá»¯ láº¡i tham sá»‘ url hiá»‡n táº¡i cho tháº» chuyá»ƒn trang
 $query_params = $_GET;
 unset($query_params['page']);
 $query_string = http_build_query($query_params);
 $query_string = $query_string ? '&' . $query_string : '';
 
-// 4. Nhúng Header & Navbar
+// 4. NhÃºng Header & Navbar
 include_once 'includes/public/header.php';
 include_once 'includes/public/navbar.php';
 ?>
@@ -135,7 +135,7 @@ include_once 'includes/public/navbar.php';
         position: relative;
     }
 
-    /* Đảm bảo ảnh không bị méo và tỷ lệ quy chuẩn */
+    /* Äáº£m báº£o áº£nh khÃ´ng bá»‹ mÃ©o vÃ  tá»· lá»‡ quy chuáº©n */
     .card-brand__img-wrapper img {
         width: 100%;
         object-fit: cover;
@@ -147,7 +147,7 @@ include_once 'includes/public/navbar.php';
         transform: scale(1.08);
     }
     
-    /* Giao diện nút nhấn brand */
+    /* Giao diá»‡n nÃºt nháº¥n brand */
     .btn-brand-primary {
         background-color: #1e3a5f;
         color: #ffffff;
@@ -160,7 +160,7 @@ include_once 'includes/public/navbar.php';
         color: #ffffff;
     }
 
-    /* Giao diện thanh phân trang */
+    /* Giao diá»‡n thanh phÃ¢n trang */
     .pagination .page-link {
         color: #1e3a5f;
         border: none;
@@ -179,15 +179,14 @@ include_once 'includes/public/navbar.php';
 <!-- Hero Section -->
 <section class="phong-trong-hero text-center">
     <div class="container">
-        <h1 class="display-5 fw-bold text-uppercase mb-2">Không Gian Làm Việc Chuyên Nghiệp</h1>
-        <p class="lead opacity-75 mb-0">Khám phá các văn phòng trống tốt nhất tại The Sapphire</p>
+        <h1 class="display-5 fw-bold text-uppercase mb-2">KhÃ´ng Gian LÃ m Viá»‡c ChuyÃªn Nghiá»‡p</h1>
+        <p class="lead opacity-75 mb-0">KhÃ¡m phÃ¡ cÃ¡c vÄƒn phÃ²ng trá»‘ng tá»‘t nháº¥t táº¡i The Sapphire</p>
     </div>
 </section>
 
 <div class="container pb-5">
     <!-- Flash Notifications -->
     <div class="mb-4">
-        <?php include_once 'includes/admin/notifications.php'; ?>
     </div>
 
     <div class="row g-4">
@@ -196,25 +195,25 @@ include_once 'includes/public/navbar.php';
             <div class="filter-sidebar">
                 <div class="card card-brand p-4 shadow-sm">
                     <h5 class="fw-bold mb-4 border-bottom pb-3" style="color: #1e3a5f;">
-                        <i class="fa-solid fa-sliders me-2" style="color: #c9a66b;"></i>Bộ Lọc Tìm Kiếm
+                        <i class="fa-solid fa-sliders me-2" style="color: #c9a66b;"></i>Bá»™ Lá»c TÃ¬m Kiáº¿m
                     </h5>
                     
                     <form action="phong_trong.php" method="GET">
                         <!-- Floor Filter -->
                         <div class="mb-3">
-                            <label for="tang" class="form-label small fw-bold text-muted text-uppercase">Tầng</label>
+                            <label for="tang" class="form-label small fw-bold text-muted text-uppercase">Táº§ng</label>
                             <select name="tang" id="tang" class="form-select border-0 bg-light shadow-none py-2 px-3">
-                                <option value="">Tất cả tầng</option>
-                                <option value="Trệt" <?php echo ($f_tang === 'Trệt') ? 'selected' : ''; ?>>Trệt</option>
+                                <option value="">Táº¥t cáº£ táº§ng</option>
+                                <option value="Trá»‡t" <?php echo ($f_tang === 'Trá»‡t') ? 'selected' : ''; ?>>Trá»‡t</option>
                                 <?php for($i=1; $i<=10; $i++): ?>
-                                    <option value="<?php echo $i; ?>" <?php echo ($f_tang == $i && $f_tang !== 'Trệt') ? 'selected' : ''; ?>>Tầng <?php echo $i; ?></option>
+                                    <option value="<?php echo $i; ?>" <?php echo ($f_tang == $i && $f_tang !== 'Trá»‡t') ? 'selected' : ''; ?>>Táº§ng <?php echo $i; ?></option>
                                 <?php endfor; ?>
                             </select>
                         </div>
 
                         <!-- Price Filter -->
                         <div class="mb-3">
-                            <label for="khoangGia" class="form-label small fw-bold text-muted text-uppercase">Giá thuê tối đa (VNĐ)</label>
+                            <label for="khoangGia" class="form-label small fw-bold text-muted text-uppercase">GiÃ¡ thuÃª tá»‘i Ä‘a (VNÄ)</label>
                             <input type="number" name="khoangGia" id="khoangGia" 
                                    class="form-control border-0 bg-light shadow-none py-2 px-3" 
                                    placeholder="VD: 20000000" 
@@ -223,31 +222,31 @@ include_once 'includes/public/navbar.php';
 
                         <!-- Type Filter -->
                         <div class="mb-4">
-                            <label for="loaiPhong" class="form-label small fw-bold text-muted text-uppercase">Loại phòng</label>
+                            <label for="loaiPhong" class="form-label small fw-bold text-muted text-uppercase">Loáº¡i phÃ²ng</label>
                             <select name="loaiPhong" id="loaiPhong" class="form-select border-0 bg-light shadow-none py-2 px-3">
-                                <option value="">Chọn loại phòng</option>
-                                <option value="Văn phòng riêng" <?php echo ($f_loai == 'Văn phòng riêng') ? 'selected' : ''; ?>>Văn phòng riêng</option>
-                                <option value="Mặt bằng kinh doanh" <?php echo ($f_loai == 'Mặt bằng kinh doanh') ? 'selected' : ''; ?>>Mặt bằng kinh doanh</option>
-                                <option value="Văn phòng ảo" <?php echo ($f_loai == 'Văn phòng ảo') ? 'selected' : ''; ?>>Văn phòng ảo</option>
+                                <option value="">Chá»n loáº¡i phÃ²ng</option>
+                                <option value="VÄƒn phÃ²ng riÃªng" <?php echo ($f_loai == 'VÄƒn phÃ²ng riÃªng') ? 'selected' : ''; ?>>VÄƒn phÃ²ng riÃªng</option>
+                                <option value="Máº·t báº±ng kinh doanh" <?php echo ($f_loai == 'Máº·t báº±ng kinh doanh') ? 'selected' : ''; ?>>Máº·t báº±ng kinh doanh</option>
+                                <option value="VÄƒn phÃ²ng áº£o" <?php echo ($f_loai == 'VÄƒn phÃ²ng áº£o') ? 'selected' : ''; ?>>VÄƒn phÃ²ng áº£o</option>
                             </select>
                         </div>
 
                         <!-- Submit Button -->
                         <button type="submit" class="btn w-100 py-2 fw-bold text-uppercase shadow-sm" style="background-color: #c9a66b; color: #1f2a44; border: none;">
-                            <i class="fa-solid fa-magnifying-glass me-2"></i>Lọc ngay
+                            <i class="fa-solid fa-magnifying-glass me-2"></i>Lá»c ngay
                         </button>
                         
                         <a href="phong_trong.php" class="btn btn-link w-100 mt-3 text-muted small text-decoration-none border-0">
-                            <i class="fa-solid fa-rotate-right me-1"></i> Làm mới bộ lọc
+                            <i class="fa-solid fa-rotate-right me-1"></i> LÃ m má»›i bá»™ lá»c
                         </a>
                     </form>
                 </div>
 
                 <!-- Assistance Card -->
                 <div class="card card-brand mt-4 p-4 text-white border-0" style="background-color: #1e3a5f;">
-                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-headset me-2" style="color: #c9a66b;"></i>Cần hỗ trợ tư vấn?</h6>
-                    <p class="small opacity-75 mb-3">Đội ngũ chuyên gia của chúng tôi luôn sẵn sàng hỗ trợ bạn tìm được văn phòng ưng ý nhất.</p>
-                    <a href="tel:0123456789" class="btn w-100 py-2 fw-bold" style="background-color: #c9a66b; color: #1f2a44;">Gọi: 0123 456 789</a>
+                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-headset me-2" style="color: #c9a66b;"></i>Cáº§n há»— trá»£ tÆ° váº¥n?</h6>
+                    <p class="small opacity-75 mb-3">Äá»™i ngÅ© chuyÃªn gia cá»§a chÃºng tÃ´i luÃ´n sáºµn sÃ ng há»— trá»£ báº¡n tÃ¬m Ä‘Æ°á»£c vÄƒn phÃ²ng Æ°ng Ã½ nháº¥t.</p>
+                    <a href="tel:0123456789" class="btn w-100 py-2 fw-bold" style="background-color: #c9a66b; color: #1f2a44;">Gá»i: 0123 456 789</a>
                 </div>
             </div>
         </aside>
@@ -255,9 +254,9 @@ include_once 'includes/public/navbar.php';
         <!-- == MAIN CONTENT (9/12) == -->
         <main class="col-12 col-lg-9">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <p class="mb-0 text-muted">Hiển thị <span class="fw-bold" style="color: #1e3a5f;"><?php echo $total_records; ?></span> kết quả phù hợp</p>
+                <p class="mb-0 text-muted">Hiá»ƒn thá»‹ <span class="fw-bold" style="color: #1e3a5f;"><?php echo $total_records; ?></span> káº¿t quáº£ phÃ¹ há»£p</p>
                 <div class="d-none d-md-block">
-                    <!-- Khu vực chèn dropdown sắp xếp sau này -->
+                    <!-- Khu vá»±c chÃ¨n dropdown sáº¯p xáº¿p sau nÃ y -->
                 </div>
             </div>
 
@@ -266,7 +265,7 @@ include_once 'includes/public/navbar.php';
                 <?php if (!empty($rooms)): ?>
                     <?php foreach ($rooms as $room): ?>
                         <?php 
-                            // Xử lý placeholder ảnh
+                            // Xá»­ lÃ½ placeholder áº£nh
                             $hinhAnh = !empty($room['hinhAnh']) ? $room['hinhAnh'] : 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80'; 
                         ?>
                         <div class="col-12 col-md-6 col-xl-4">
@@ -275,7 +274,7 @@ include_once 'includes/public/navbar.php';
                                     <img src="<?php echo htmlspecialchars($hinhAnh); ?>" 
                                          alt="<?php echo htmlspecialchars($room['tenPhong']); ?>">
                                     <span class="position-absolute top-0 start-0 m-3 badge shadow-sm" style="background-color: #28a745; color: white;">
-                                        <i class="fa-solid fa-check-circle me-1"></i> <?php echo $room['trangThai'] == 1 ? 'Phòng Trống' : 'Khác'; ?>
+                                        <i class="fa-solid fa-check-circle me-1"></i> <?php echo $room['trangThai'] == 1 ? 'PhÃ²ng Trá»‘ng' : 'KhÃ¡c'; ?>
                                     </span>
                                 </div>
                                 
@@ -285,19 +284,19 @@ include_once 'includes/public/navbar.php';
                                     </h5>
                                     <p class="small text-muted mb-3">
                                         <i class="fa-solid fa-location-dot me-1" style="color: #c9a66b;"></i> 
-                                        <?php echo htmlspecialchars($room['tang']); ?> • Mã: <?php echo htmlspecialchars($room['maPhong']); ?>
+                                        <?php echo htmlspecialchars($room['tang']); ?> â€¢ MÃ£: <?php echo htmlspecialchars($room['maPhong']); ?>
                                     </p>
                                     
                                     <div class="row g-2 mb-4">
                                         <div class="col-6">
                                             <div class="bg-light p-2 rounded-2 text-center h-100 d-flex flex-column justify-content-center">
-                                                <span class="d-block small text-muted mb-1"><i class="fa-solid fa-clone"></i> Diện tích</span>
-                                                <span class="fw-bold small" style="color: #1e3a5f;"><?php echo htmlspecialchars($room['dienTich']); ?> m²</span>
+                                                <span class="d-block small text-muted mb-1"><i class="fa-solid fa-clone"></i> Diá»‡n tÃ­ch</span>
+                                                <span class="fw-bold small" style="color: #1e3a5f;"><?php echo htmlspecialchars($room['dienTich']); ?> mÂ²</span>
                                             </div>
                                         </div>
                                         <div class="col-6">
                                             <div class="bg-light p-2 rounded-2 text-center h-100 d-flex flex-column justify-content-center">
-                                                <span class="d-block small text-muted mb-1"><i class="fa-solid fa-tag"></i> Loại phòng</span>
+                                                <span class="d-block small text-muted mb-1"><i class="fa-solid fa-tag"></i> Loáº¡i phÃ²ng</span>
                                                 <span class="fw-bold small text-truncate d-block w-100" style="color: #1e3a5f;" title="<?php echo htmlspecialchars($room['loaiPhong']); ?>">
                                                     <?php echo htmlspecialchars($room['loaiPhong']); ?>
                                                 </span>
@@ -307,16 +306,16 @@ include_once 'includes/public/navbar.php';
 
                                     <div class="d-flex justify-content-between align-items-center mb-3">
                                         <div>
-                                            <span class="d-block small text-muted lh-1 mb-1">Giá thuê từ</span>
-                                            <span class="fw-bold fs-5" style="color: #c9a66b;"><?php echo number_format($room['giaThue'], 0, ',', '.'); ?> đ</span>
-                                            <span class="small text-muted">/tháng</span>
+                                            <span class="d-block small text-muted lh-1 mb-1">GiÃ¡ thuÃª tá»«</span>
+                                            <span class="fw-bold fs-5" style="color: #c9a66b;"><?php echo number_format($room['giaThue'], 0, ',', '.'); ?> Ä‘</span>
+                                            <span class="small text-muted">/thÃ¡ng</span>
                                         </div>
                                     </div>
                                     
                                     <div class="border-top pt-3 mt-auto">
                                         <a href="chi_tiet_phong.php?maPhong=<?php echo urlencode($room['maPhong']); ?>" 
                                            class="btn btn-brand-primary w-100 py-2 rounded-2 fw-semibold">
-                                            Xem Chi Tiết <i class="fa-solid fa-arrow-right-long ms-2"></i>
+                                            Xem Chi Tiáº¿t <i class="fa-solid fa-arrow-right-long ms-2"></i>
                                         </a>
                                     </div>
                                 </div>
@@ -326,23 +325,23 @@ include_once 'includes/public/navbar.php';
                 <?php else: ?>
                     <div class="col-12 text-center py-5">
                         <i class="fa-regular fa-folder-open text-muted mb-3" style="font-size: 3rem;"></i>
-                        <h5 class="text-muted">Không tìm thấy phòng nào phù hợp.</h5>
-                        <p class="text-muted"><a href="phong_trong.php" class="text-decoration-none">Nhấn vào đây để xóa bộ lọc</a></p>
+                        <h5 class="text-muted">KhÃ´ng tÃ¬m tháº¥y phÃ²ng nÃ o phÃ¹ há»£p.</h5>
+                        <p class="text-muted"><a href="phong_trong.php" class="text-decoration-none">Nháº¥n vÃ o Ä‘Ã¢y Ä‘á»ƒ xÃ³a bá»™ lá»c</a></p>
                     </div>
                 <?php endif; ?>
             </div>
 
             <!-- Pagination -->
             <?php if ($total_pages > 1): ?>
-            <nav class="mt-5 pb-4" aria-label="Phân trang danh sách phòng">
+            <nav class="mt-5 pb-4" aria-label="PhÃ¢n trang danh sÃ¡ch phÃ²ng">
                 <ul class="pagination justify-content-center">
                     <?php if ($page > 1): ?>
                     <li class="page-item">
-                        <a class="page-link shadow-none px-3" href="?page=<?php echo $page - 1 . $query_string; ?>">Trước</a>
+                        <a class="page-link shadow-none px-3" href="?page=<?php echo $page - 1 . $query_string; ?>">TrÆ°á»›c</a>
                     </li>
                     <?php else: ?>
                     <li class="page-item disabled">
-                        <a class="page-link shadow-none px-3" href="#" tabindex="-1" aria-disabled="true">Trước</a>
+                        <a class="page-link shadow-none px-3" href="#" tabindex="-1" aria-disabled="true">TrÆ°á»›c</a>
                     </li>
                     <?php endif; ?>
 

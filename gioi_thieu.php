@@ -23,9 +23,6 @@ include_once 'includes/public/navbar.php';
         </div>
     </section>
 
-    <div class="container mt-4">
-        <?php include_once 'includes/admin/notifications.php'; ?>
-    </div>
 
     <!-- Phần Giới Thiệu (About Us) -->
     <section class="about-section py-5 my-5">

@@ -209,10 +209,6 @@ include_once 'includes/public/navbar.php';
     </button>
 </section>
 
-<!-- Tích hợp Flash Messages bên dưới Banner -->
-<div class="container mt-3">
-    <?php include_once 'includes/admin/notifications.php'; ?>
-</div>
 
 <!-- == 2. QUICK SEARCH == -->
 <section class="container px-3 px-md-4">
