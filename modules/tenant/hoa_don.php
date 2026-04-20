@@ -73,6 +73,17 @@ $stmtList = $pdo->prepare($sqlList);
 $stmtList->execute($params);
 $hoaDonList = $stmtList->fetchAll(PDO::FETCH_ASSOC);
 
+// 4. Lấy danh sách các khiếu nại (Tranh chấp) đã gửi để hiển thị (Fix-UI: Theo dõi tiến độ)
+$sqlDisputes = "SELECT tc.*, hd.kyThanhToan, hd.tongTien
+                FROM TRANH_CHAP_HOA_DON tc
+                JOIN HOA_DON hd ON tc.maHoaDon = hd.soHoaDon
+                JOIN HOP_DONG hp ON hd.soHopDong = hp.soHopDong
+                WHERE hp.maKH = ? AND hp.deleted_at IS NULL
+                ORDER BY tc.ngayTao DESC";
+$stmtD = $pdo->prepare($sqlDisputes);
+$stmtD->execute([$maKH]);
+$myDisputes = $stmtD->fetchAll(PDO::FETCH_ASSOC);
+
 // Giao diện
 include __DIR__ . '/../../includes/tenant/header.php';
 ?>
@@ -254,13 +265,10 @@ include __DIR__ . '/../../includes/tenant/header.php';
                                     </td>
                                     <td class="text-center pe-4">
                                         <?php if (!in_array($row['trangThai'], ['Void', 'Huy'])): ?>
-                                            <button type="button" 
-                                                    class="btn btn-sm btn-outline-danger rounded-pill px-3 dispute-btn" 
-                                                    data-id="<?= e($row['soHoaDon']) ?>"
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#disputeModal">
+                                            <a href="tranh_chap.php?soHoaDon=<?= e($row['soHoaDon']) ?>" 
+                                               class="btn btn-sm btn-outline-danger rounded-pill px-3">
                                                 <i class="bi bi-exclamation-octagon me-1"></i>Khiếu nại
-                                            </button>
+                                            </a>
                                         <?php else: ?>
                                             <span class="text-muted small">-</span>
                                         <?php endif; ?>
@@ -273,53 +281,63 @@ include __DIR__ . '/../../includes/tenant/header.php';
             </div>
         </div>
     </div>
-</div>
 
-<!-- Modal Tranh Chấp (Dispute) -->
-<div class="modal fade" id="disputeModal" tabindex="-1" aria-labelledby="disputeModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <form action="tranh_chap_submit.php" method="POST">
-                <div class="modal-header bg-navy border-0 py-3">
-                    <h5 class="modal-title text-white fw-bold" id="disputeModalLabel"><i class="bi bi-send-exclamation me-2"></i>Khiếu nại hóa đơn</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <!-- CSRF Protection -->
-                    <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
-                    
-                    <div class="mb-4">
-                        <label class="form-label fw-bold text-muted small text-uppercase ls-1">Mã hóa đơn</label>
-                        <input type="text" name="maHoaDon" id="modalMaHoaDon" class="form-control border-0 bg-light fw-bold" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-muted small text-uppercase ls-1">Lý do khiếu nại <span class="text-danger">*</span></label>
-                        <textarea name="noiDung" class="form-control border-opacity-50" rows="5" placeholder="Vui lòng mô tả chi tiết vấn đề bạn gặp phải..." required></textarea>
-                    </div>
-                    <div class="alert alert-warning py-2 small border-0 bg-warning bg-opacity-10 text-dark">
-                        <i class="bi bi-info-circle me-2"></i>Yêu cầu của bạn sẽ được Bộ phận Kế toán tiếp nhận và phản hồi sớm nhất.
-                    </div>
-                </div>
-                <div class="modal-footer border-0 p-4 pt-0">
-                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Hủy bỏ</button>
-                    <button type="submit" class="btn btn-navy rounded-pill px-4 fw-bold shadow-sm">Gửi khiếu nại</button>
-                </div>
-            </form>
+    <!-- Danh sách Khiếu nại (Theo dõi tiến độ) -->
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden mt-5">
+        <div class="card-header bg-white py-3 border-bottom border-danger">
+            <h5 class="mb-0 fw-bold text-danger"><i class="bi bi-chat-dots me-2"></i>Khiếu nại & Yêu cầu kiểm tra lại</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4 py-3">Mã đơn</th>
+                            <th class="py-3">Hóa đơn / Kỳ</th>
+                            <th class="py-3">Nội dung khiếu nại</th>
+                            <th class="py-3">Ngày gửi</th>
+                            <th class="text-center pe-4 py-3">Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($myDisputes)): ?>
+                            <tr><td colspan="5" class="text-center py-4 text-muted">Bạn chưa có khiếu nại nào.</td></tr>
+                        <?php else: ?>
+                            <?php foreach ($myDisputes as $tc): ?>
+                                <tr>
+                                    <td class="ps-4 fw-bold text-navy"><?= e($tc['id']) ?></td>
+                                    <td>
+                                        <div class="fw-bold"><?= e($tc['maHoaDon']) ?></div>
+                                        <div class="small text-muted">Kỳ: <?= e($tc['kyThanhToan']) ?></div>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 300px;" title="<?= e($tc['noiDung']) ?>">
+                                            <?= e($tc['noiDung']) ?>
+                                        </div>
+                                    </td>
+                                    <td><?= date('d/m/Y H:i', strtotime($tc['ngayTao']) ) ?></td>
+                                    <td class="text-center pe-4">
+                                        <?php 
+                                            $badge = match((int)$tc['trangThai']){
+                                                0 => ['bg-warning text-dark', 'Mới tạo'],
+                                                1 => ['bg-info text-dark', 'Đang xử lý'],
+                                                2 => ['bg-success', 'Hoàn thành'],
+                                                3 => ['bg-danger', 'Đã bác bỏ'],
+                                                default => ['bg-secondary', 'N/A']
+                                            };
+                                        ?>
+                                        <span class="badge rounded-pill <?= $badge[0] ?> px-3"><?= $badge[1] ?></span>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const disputeBtns = document.querySelectorAll('.dispute-btn');
-    const modalInput = document.getElementById('modalMaHoaDon');
-    
-    disputeBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            modalInput.value = this.getAttribute('data-id');
-        });
-    });
-});
-</script>
+
 
 <?php include __DIR__ . '/../../includes/tenant/footer.php'; ?>
