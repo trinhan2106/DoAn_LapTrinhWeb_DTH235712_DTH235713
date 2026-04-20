@@ -78,7 +78,7 @@ if (!defined('BASE_URL')) {
                 <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2 text-muted"></i>Hồ sơ cá nhân</a></li>
                 <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2 text-muted"></i>Cài đặt</a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item text-danger" href="<?= BASE_URL ?>dangxuat.php"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</a></li>
+                <li><a class="dropdown-item text-danger logout-link" href="<?= BASE_URL ?>dangxuat.php"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</a></li>
             </ul>
         </div>
     </div>

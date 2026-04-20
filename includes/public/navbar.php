@@ -82,7 +82,7 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
                             <li><a class="dropdown-item py-2" href="#"><i class="fa-solid fa-user-pen me-2 text-muted"></i> Hồ sơ cá nhân</a></li>
                             <li><hr class="dropdown-divider opacity-50"></li>
                             <li>
-                                <a class="dropdown-item py-2 text-danger fw-bold" href="<?= BASE_URL ?>dangxuat.php">
+                                <a class="dropdown-item py-2 text-danger fw-bold logout-link" href="<?= BASE_URL ?>dangxuat.php">
                                     <i class="fa-solid fa-power-off me-2"></i> Đăng xuất
                                 </a>
                             </li>

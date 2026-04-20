@@ -301,7 +301,7 @@ include __DIR__ . '/../../includes/public/header.php';
                                 </a>
                             </div>
                             <div class="col-12 mt-2">
-                                <a href="<?= BASE_URL ?>dangxuat.php" class="btn btn-outline-danger w-100 rounded-pill btn-sm py-2 fw-bold">
+                                <a href="<?= BASE_URL ?>dangxuat.php" class="btn btn-outline-danger w-100 rounded-pill btn-sm py-2 fw-bold logout-link">
                                     <i class="fa-solid fa-power-off me-2"></i>Đăng xuất
                                 </a>
                             </div>
@@ -335,6 +335,37 @@ include __DIR__ . '/../../includes/public/header.php';
         </div>
     </div>
 </main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const logoutLinks = document.querySelectorAll('.logout-link');
+    logoutLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const href = this.getAttribute('href');
+            
+            Swal.fire({
+                title: 'Xác nhận đăng xuất?',
+                text: "Bạn có chắc chắn muốn rời khỏi hệ thống THE SAPPHIRE?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#1e3a5f',
+                cancelButtonColor: '#d33',
+                confirmButtonText: '<i class="fa-solid fa-power-off me-2"></i>Đăng xuất',
+                cancelButtonText: 'Hủy',
+                background: '#fff',
+                color: '#1e3a5f',
+                iconColor: '#c9a66b',
+                borderRadius: '15px'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = href;
+                }
+            });
+        });
+    });
+});
+</script>
 
 <!-- Dùng Footer chung -->
 <?php include __DIR__ . '/../../includes/public/footer.php'; ?>
