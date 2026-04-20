@@ -25,7 +25,10 @@ try {
     $danhSachHD = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (PDOException $e) {
-    die("Lỗi tải danh sách hợp đồng: " . $e->getMessage());
+    error_log("DB Error in hd_hienthi: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Lỗi hệ thống. Vui lòng liên hệ quản trị viên.";
+    header("Location: ../dashboard/admin.php");
+    exit();
 }
 
 // Map Trạng Thái thành Badge Bootstrap (Theme Mới)

@@ -13,7 +13,11 @@ require_once __DIR__ . '/../../includes/common/auth.php';
 kiemTraSession();
 
 $soHD = trim($_GET['id'] ?? $_GET['soHopDong'] ?? '');
-if (empty($soHD)) die("Mất Dấu vết URL Tham Số.");
+if (empty($soHD)) {
+    $_SESSION['error_msg'] = "Lỗi dữ liệu: Không tìm thấy mã hợp đồng.";
+    header("Location: hd_hienthi.php");
+    exit();
+}
 
 $pdo = Database::getInstance()->getConnection();
 
@@ -23,7 +27,11 @@ try {
     $stmtHD->execute([$soHD]);
     $thongTinHD = $stmtHD->fetch(PDO::FETCH_ASSOC);
 
-    if (!$thongTinHD) die("Tệp Khống: Không truy được file SQL Core của Hợp Đồng này.");
+    if (!$thongTinHD) {
+        $_SESSION['error_msg'] = "Lỗi dữ liệu: Không tìm thấy hợp đồng này trong hệ thống.";
+        header("Location: hd_hienthi.php");
+        exit();
+    }
 
     // Kiểm tra Nợ Tiền Tỷ của cả 1 Hợp Đồng (Nhiều phòng gộp chung)
     $hasDebt = false;
@@ -42,7 +50,10 @@ try {
     }
 
 } catch (PDOException $e) {
-    die("Lỗi PDO Exception Lõi UC11: " . $e->getMessage());
+    error_log("DB Error in hd_huy: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Lỗi hệ thống. Vui lòng liên hệ quản trị viên.";
+    header("Location: hd_hienthi.php");
+    exit();
 }
 
 $alertMsg = $_GET['msg'] ?? '';

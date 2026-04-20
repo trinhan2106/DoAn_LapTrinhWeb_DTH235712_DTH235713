@@ -29,7 +29,11 @@ if (!in_array($role, [1, 2])) {
 }
 
 $idBill = trim($_GET['id'] ?? '');
-if (empty($idBill)) die("Loss Access: Trống Mã Bill Kế Toán Tồn Tương.");
+if (empty($idBill)) {
+    $_SESSION['error_msg'] = "Lỗi dữ liệu: Không tìm thấy mã hóa đơn.";
+    header("Location: ../dashboard/admin.php");
+    exit();
+}
 
 $pdo = Database::getInstance()->getConnection();
 
@@ -53,7 +57,10 @@ try {
     }
 
 } catch (PDOException $e) {
-    die("Xung đột CSDL: " . $e->getMessage());
+    error_log("DB Error in tt_void: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Lỗi hệ thống. Vui lòng liên hệ quản trị viên.";
+    header("Location: tt_hienthi.php");
+    exit();
 }
 ?>
 <!DOCTYPE html>

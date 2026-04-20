@@ -11,7 +11,9 @@ kiemTraSession();
 $soHD = trim($_GET['id'] ?? '');
 
 if (empty($soHD)) {
-    die("URL Thiếu mã Tham Số Hợp Đồng.");
+    $_SESSION['error_msg'] = "Lỗi dữ liệu: Thiếu mã hợp đồng.";
+    header("Location: hd_hienthi.php");
+    exit();
 }
 
 $pdo = Database::getInstance()->getConnection();
@@ -33,7 +35,9 @@ try {
     $thongTinHD = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$thongTinHD) {
-        die("Không Thể Lấy Dữ Liệu! Lỗi mã số hoặc hồ sơ đã bị Hủy.");
+        $_SESSION['error_msg'] = "Lỗi dữ liệu: Không tìm thấy hợp đồng hoặc hợp đồng đã bị hủy.";
+        header("Location: hd_hienthi.php");
+        exit();
     }
 
     // QUERY FETCH LIST CHI TIẾT CÁC PHÒNG THUỘC TỜA HĐ NÀY
@@ -47,7 +51,10 @@ try {
     $listCP = $stmtPh->fetchAll(PDO::FETCH_ASSOC);
 
 } catch(PDOException $e) {
-    die("Lỗi Truy Xuất Ký HD: " . $e->getMessage());
+    error_log("DB Error in hd_ky: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Lỗi hệ thống. Vui lòng liên hệ quản trị viên.";
+    header("Location: hd_hienthi.php");
+    exit();
 }
 ?>
 <!DOCTYPE html>

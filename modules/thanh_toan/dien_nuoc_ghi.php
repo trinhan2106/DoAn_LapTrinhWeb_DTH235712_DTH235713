@@ -49,7 +49,10 @@ try {
     $dgNuocDefault = 18000;
 
 } catch (PDOException $e) {
-    die("Lỗi Truy Xuất Backend Điện Nước: " . $e->getMessage());
+    error_log("DB Error in dien_nuoc_ghi: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Lỗi hệ thống. Vui lòng liên hệ quản trị viên.";
+    header("Location: dien_nuoc_hienthi.php");
+    exit();
 }
 
 $pageTitle = "Ghi Chỉ Số Điện Nước - Admin";

@@ -68,7 +68,7 @@ function lockRoom(maPhong) {
     .then(data => {
         if (data.status === 'success') {
             currentLockedRoom = maPhong;
-            console.log("🔓 PING TRACE: " + data.message);
+
             // Lock thành công, truyền máu nhịp tim đập đều đặn duy trì phiên 10 phút
             startHeartbeat(maPhong); 
         } else {
