@@ -1,53 +1,80 @@
 <?php
+/**
+ * modules/khach_hang/kh_xoa_submit.php
+ * Xử lý Xóa Mềm Khách hàng - Áp dụng CSRF, Anti-IDOR, Ràng buộc Hợp Đồng & Audit Log
+ */
+
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/auth.php';
+require_once __DIR__ . '/../../includes/common/csrf.php';
+require_once __DIR__ . '/../../includes/common/functions.php';
+
 kiemTraSession();
-kiemTraRole([1, 2]); // Chỉ Admin (1) và Quản lý Nhà (2) được thao tác
-$pdo = Database::getInstance()->getConnection();
+kiemTraRole([1, 2]); // Admin & Quản lý Nhà
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $maKH = $_POST['maKH'] ?? '';
-
-    if (empty($maKH)) {
-        $_SESSION['error_msg'] = "Thao tác không hợp lệ: Mã khách hàng trống!";
-        header("Location: kh_hienthi.php");
-        exit();
-    }
-
-    try {
-        // Kiểm tra Khách hàng có Hợp đồng đang Hiệu Lực hay không 
-        // trangThai = 1 tương đương với Hợp Đồng Hiệu Lực, theo cấu trúc SQL (1: Hieu luc, 0: Ket thuc, 2: Huy, 3: ChoDuyet)
-        $stmtCheck = $pdo->prepare("SELECT COUNT(*) FROM HOP_DONG WHERE maKH = ? AND trangThai = 1 AND deleted_at IS NULL");
-        $stmtCheck->execute([$maKH]);
-        $countActiveContracts = $stmtCheck->fetchColumn();
-
-        if ($countActiveContracts > 0) {
-            // Chặn xóa (Ràng buộc nghiệp vụ)
-            $_SESSION['error_msg'] = "KHÔNG THỂ XÓA: Khách hàng [{$maKH}] đang có {$countActiveContracts} hợp đồng ĐANG HIỆU LỰC!";
-        } else {
-            // Cho phép Soft Delete
-            $stmtDelete = $pdo->prepare("UPDATE KHACH_HANG SET deleted_at = CURRENT_TIMESTAMP WHERE maKH = ? AND deleted_at IS NULL");
-            $result = $stmtDelete->execute([$maKH]);
-
-            if ($result && $stmtDelete->rowCount() > 0) {
-                $_SESSION['success_msg'] = "Đã ẩn (xóa mềm) Khách hàng [{$maKH}] ra khỏi danh sách!";
-                // Tùy chọn: Log vào AUDIT_LOG nếu cần thiết
-                $stmtAudit = $pdo->prepare("INSERT INTO AUDIT_LOG (maNguoiDung, hanhDong, bangBiTacDong, recordId, chiTiet) VALUES (?, ?, ?, ?, ?)");
-                $stmtAudit->execute([$_SESSION['user_id'] ?? 'System', 'Soft Delete', 'KHACH_HANG', $maKH, 'Xóa mềm Khách hàng vì không có hợp đồng hiệu lực']);
-            } else {
-                $_SESSION['error_msg'] = "Khách hàng không tồn tại hoặc đã bị xóa trước đó!";
-            }
-        }
-    } catch (PDOException $e) {
-         $_SESSION['error_msg'] = "Lỗi hệ thống khi xóa Khách hàng!";
-         error_log("Lỗi Xóa Khách Hàng: " . $e->getMessage());
-    }
-
-    // Chuyển hướng về trang danh sách
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $_SESSION['error_msg'] = "Phương thức không hợp lệ!";
     header("Location: kh_hienthi.php");
     exit();
 }
 
-// Nếu truy cập trực tiếp bằng GET -> Đẩy về hiển thị
+$maKH = $_POST['maKH'] ?? '';
+$csrfToken = $_POST['csrf_token'] ?? '';
+
+// 1. Chống CSRF
+if (!validateCSRFToken($csrfToken)) {
+    $_SESSION['error_msg'] = "Lỗi bảo mật (CSRF). Vui lòng thử lại!";
+    header("Location: kh_hienthi.php");
+    exit();
+}
+
+if (empty($maKH)) {
+    $_SESSION['error_msg'] = "Thiếu thông tin mã khách hàng cần xóa!";
+    header("Location: kh_hienthi.php");
+    exit();
+}
+
+try {
+    $pdo = Database::getInstance()->getConnection();
+
+    // 2. Chống IDOR: Xác minh maKH tồn tại và chưa bị soft delete
+    $stmtCheck = $pdo->prepare("SELECT maKH FROM KHACH_HANG WHERE maKH = ? AND deleted_at IS NULL");
+    $stmtCheck->execute([$maKH]);
+    if (!$stmtCheck->fetch()) {
+        $_SESSION['error_msg'] = "Khách hàng không tồn tại hoặc đã bị xóa trước đó!";
+        header("Location: kh_hienthi.php");
+        exit();
+    }
+
+    // 3. Nghiệp vụ: Kiểm tra bảng HOP_DONG. KHÔNG cho xóa nếu có hợp đồng 'Hiệu lực' (trangThai = 1)
+    $stmtHD = $pdo->prepare("SELECT COUNT(*) FROM HOP_DONG WHERE maKH = ? AND trangThai = 1 AND deleted_at IS NULL");
+    $stmtHD->execute([$maKH]);
+    if ($stmtHD->fetchColumn() > 0) {
+        $_SESSION['error_msg'] = "Không thể xóa Khách hàng [{$maKH}] vì đang còn Hợp đồng Đang hiệu lực!";
+        header("Location: kh_hienthi.php");
+        exit();
+    }
+
+    // 4. Thực hiện xóa mềm
+    $stmtDelete = $pdo->prepare("UPDATE KHACH_HANG SET deleted_at = NOW() WHERE maKH = ?");
+    $result = $stmtDelete->execute([$maKH]);
+
+    if ($result) {
+        // 5. Ghi Audit Log
+        ghiAuditLog($pdo, $_SESSION['user_id'] ?? null, 'SOFT_DELETE', 'KHACH_HANG', $maKH);
+        
+        // 6. Rotate Token sau khi submit thành công
+        rotateCSRFToken();
+
+        $_SESSION['success_msg'] = "Đã xóa khách hàng [{$maKH}] thành công.";
+    } else {
+        $_SESSION['error_msg'] = "Xóa thất bại. Vui lòng kiểm tra lại hệ thống!";
+    }
+
+} catch (PDOException $e) {
+    $_SESSION['error_msg'] = "Lỗi CSDL khi xóa khách hàng!";
+    error_log("Soft Delete Khach Hang Error: " . $e->getMessage());
+}
+
 header("Location: kh_hienthi.php");
 exit();

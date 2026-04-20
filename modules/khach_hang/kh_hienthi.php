@@ -1,14 +1,24 @@
 <?php
+/**
+ * modules/khach_hang/kh_hienthi.php
+ * Giao diện Quản lý Khách hàng - Sử dụng CSRF, Anti-XSS (hàm e)
+ */
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/auth.php';
+require_once __DIR__ . '/../../includes/common/csrf.php';
+require_once __DIR__ . '/../../includes/common/functions.php';
+
 kiemTraSession();
 kiemTraRole([1, 2]); // Chỉ Admin (1) và Quản lý Nhà (2) được thao tác
+
 $pdo = Database::getInstance()->getConnection();
 
 // Lấy danh sách Khách hàng chưa bị xóa (Soft Delete)
 $stmt = $pdo->prepare("SELECT maKH, tenKH, cccd, sdt, email, diaChi FROM KHACH_HANG WHERE deleted_at IS NULL ORDER BY maKH DESC");
 $stmt->execute();
 $khachHangs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$csrf_token = generateCSRFToken(); // Tạo token cho form Xóa
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -30,7 +40,6 @@ $khachHangs = $stmt->fetchAll(PDO::FETCH_ASSOC);
             transition: all 0.3s;
         }
         .btn-gold:hover { background-color: #b5925a; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
-        
         .filter-section {
             background-color: #fff;
             border-radius: 10px;
@@ -55,7 +64,7 @@ $khachHangs = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </ol>
             </nav>
 
-            <!-- Bộ lọc & Header giống Phòng -->
+            <!-- Header -->
             <div class="card filter-section shadow-sm border-0 mb-4">
                 <div class="card-body p-4">
                     <div class="row align-items-center g-3">
@@ -65,7 +74,7 @@ $khachHangs = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </h2>
                         </div>
                         <div class="col-md-3 text-md-end">
-                            <a href="#" class="btn btn-gold w-100 fw-bold">
+                            <a href="kh_them.php" class="btn btn-gold w-100 fw-bold">
                                 <i class="bi bi-plus-lg me-1"></i> Thêm Khách hàng
                             </a>
                         </div>
@@ -91,17 +100,18 @@ $khachHangs = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <tbody>
                                 <?php foreach ($khachHangs as $kh): ?>
                                     <tr>
-                                        <td class="fw-bold text-navy"><?= htmlspecialchars($kh['maKH'], ENT_QUOTES, 'UTF-8') ?></td>
-                                        <td class="fw-semibold text-dark"><?= htmlspecialchars($kh['tenKH'], ENT_QUOTES, 'UTF-8') ?></td>
-                                        <td><?= htmlspecialchars($kh['cccd'], ENT_QUOTES, 'UTF-8') ?></td>
-                                        <td><?= htmlspecialchars($kh['sdt'], ENT_QUOTES, 'UTF-8') ?></td>
-                                        <td><?= htmlspecialchars($kh['email'], ENT_QUOTES, 'UTF-8') ?></td>
+                                        <!-- Chống XSS toàn diện qua e() -->
+                                        <td class="fw-bold text-navy"><?= e($kh['maKH']) ?></td>
+                                        <td class="fw-semibold text-dark"><?= e($kh['tenKH']) ?></td>
+                                        <td><?= e($kh['cccd']) ?></td>
+                                        <td><?= e($kh['sdt']) ?></td>
+                                        <td><?= e($kh['email']) ?></td>
                                         <td class="text-center">
                                             <div class="btn-group btn-group-sm">
                                                 <a href="kh_sua.php?id=<?= urlencode($kh['maKH']) ?>" class="btn btn-outline-primary" title="Sửa thông tin">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </a>
-                                                 <button type="button" class="btn btn-outline-danger" title="Xóa khách hàng" onclick="xacNhanXoa('<?= htmlspecialchars($kh['maKH'], ENT_QUOTES, 'UTF-8') ?>', '<?= htmlspecialchars($kh['tenKH'], ENT_QUOTES, 'UTF-8') ?>')">
+                                                <button type="button" class="btn btn-outline-danger" title="Xóa khách hàng" onclick="xacNhanXoa('<?= e($kh['maKH']) ?>', '<?= e($kh['tenKH']) ?>')">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </div>
@@ -134,6 +144,7 @@ $khachHangs = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <div class="modal-footer bg-light border-0">
                 <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Hủy bỏ</button>
                 <form action="kh_xoa_submit.php" method="POST" class="m-0">
+                    <input type="hidden" name="csrf_token" value="<?= e($csrf_token) ?>">
                     <input type="hidden" name="maKH" id="deleteKhId" value="">
                     <button type="submit" class="btn btn-danger px-4 shadow-sm">Đồng ý Xóa</button>
                 </form>
@@ -151,7 +162,7 @@ $khachHangs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $(document).ready(function() {
     $('#tblKhachHang').DataTable({
         "language": { "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/vi.json" },
-        "order": [[0, "desc"]], // Sắp xếp theo mã KH giảm dần
+        "order": [[0, "desc"]],
         "pageLength": 10
     });
 });
