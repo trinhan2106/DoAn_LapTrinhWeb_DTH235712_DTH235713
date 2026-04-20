@@ -156,7 +156,7 @@
 | **9.9** | **`feature/realtime-js`**     | **JS real-time: tính giá thuê, bù trừ nợ, validate delta điện/nước >= 0, cảnh báo delta bất thường** | **`assets/js/realtime-calc.js`**                                      | **Nhân** | **Vanilla JS, oninput**      | 🔴      | ✅ "Đã xong (BE)"     |
 | 9.10    | `feature/lang-toggle`         | Toggle Tiếng Việt / English                                                                          | `config/lang_vi.php`, `lang.js`                                       | Nhân     | PHP Session, JS              | 🔴      | ✅ "Đã xong (BE)"     |
 | 9.11    | `feature/ui-polish`           | Responsive hoàn thiện, toast, loading spinner                                                        | `assets/css/style.css`, `main.js`                                     | Nhật     | CSS3, Bootstrap Toast        | 🔴      | ✅ "Đã xong (Full)"  |
-| 9.12    | `feature/chatbot`             | Rule-based chatbot tra cứu phòng                                                                     | `modules/chatbot/bot.php`, `chatbot.js`                               | Nhật     | JS, PHP endpoint             | 🔴      | ⏳ "Chờ Nhật (FE)"    |
+| 9.12    | `feature/chatbot`             | Rule-based chatbot tra cứu phòng                                                                     | `modules/chatbot/bot.php`, `chatbot.js`                               | Nhật     | JS, PHP endpoint             | 🔴      | ✅ "Đã xong (Full)"  |
 | 9.13    | `feature/fix-bugs`            | Test toàn hệ thống, fix lỗi                                                                          | Toàn bộ                                                               | Cả 2     | Debug, Test case             | 🔴      | ✅ "Đã xong (BE)"     |
 
 ---

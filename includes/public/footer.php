@@ -88,5 +88,39 @@ document.addEventListener("DOMContentLoaded", function() {
         unset($_SESSION['flash_type']); 
     endif; ?>
 </div>
+<!-- CHATBOT UI -->
+<style>
+    #chatbot-widget { position: fixed; bottom: 20px; right: 20px; width: 320px; z-index: 9999; display: none; box-shadow: 0 5px 25px rgba(0,0,0,0.2); border-radius: 10px; overflow: hidden; background: #fff; }
+    #chatbot-header { background: #1e3a5f; color: #c9a66b; padding: 12px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; }
+    #chatbot-messages { height: 250px; overflow-y: auto; padding: 10px; background: #f8f9fa; font-size: 14px; }
+    .chat-bubble { max-width: 85%; margin-bottom: 10px; padding: 8px 12px; border-radius: 15px; clear: both; }
+    .bot-msg { background: #e9ecef; float: left; border-bottom-left-radius: 2px; color: #333; }
+    .user-msg { background: #1e3a5f; color: #fff; float: right; border-bottom-right-radius: 2px; }
+    #chatbot-input-area { display: flex; border-top: 1px solid #dee2e6; }
+    #chatbot-input { flex-grow: 1; border: none; padding: 10px; outline: none; }
+    #chatbot-send { background: #1e3a5f; color: #fff; border: none; padding: 0 15px; cursor: pointer; }
+    #chatbot-toggler { position: fixed; bottom: 20px; right: 20px; background: #1e3a5f; color: #c9a66b; width: 50px; height: 50px; border-radius: 50%; text-align: center; line-height: 50px; font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 10000; }
+</style>
+
+<!-- Nút bật tắt Chatbot -->
+<div id="chatbot-toggler" onclick="toggleChat()"><i class="bi bi-chat-dots-fill"></i></div>
+
+<!-- Khung Chatbot -->
+<div id="chatbot-widget">
+    <div id="chatbot-header" onclick="toggleChat()">
+        <span>Trợ lý Ảo Cao Ốc</span>
+        <i class="bi bi-x-lg"></i>
+    </div>
+    <div id="chatbot-messages">
+        <div class="chat-bubble bot-msg">Chào bạn! Tôi có thể giúp gì cho bạn? Hãy thử gõ "phòng trống" nhé!</div>
+    </div>
+    <div id="chatbot-input-area">
+        <input type="text" id="chatbot-input" placeholder="Gõ tin nhắn..." onkeypress="handleChatEnter(event)">
+        <button id="chatbot-send" onclick="sendChatMessage()"><i class="bi bi-send-fill"></i></button>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="assets/js/chatbot.js"></script>
 </body>
 </html>
