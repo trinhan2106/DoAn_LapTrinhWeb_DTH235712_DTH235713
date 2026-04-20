@@ -1,41 +1,41 @@
-<?php
+﻿<?php
 /**
  * modules/cao_oc/sua.php
- * Giao diện chỉnh sửa Cao ốc - Thiết kế đồng bộ
+ * Giao diá»‡n chá»‰nh sá»­a Cao á»‘c - Thiáº¿t káº¿ Ä‘á»“ng bá»™
  */
 
-// 1. KHỞI TẠO & BẢO MẬT
+// 1. KHá»žI Táº O & Báº¢O Máº¬T
 require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
 
-// Xác thực Session & Phân quyền
+// XÃ¡c thá»±c Session & PhÃ¢n quyá»n
 kiemTraSession();
 kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
-// 2. LẤY DỮ LIỆU CŨ PHỤC VỤ FORM
+// 2. Láº¤Y Dá»® LIá»†U CÅ¨ PHá»¤C Vá»¤ FORM
 $id = $_GET['id'] ?? '';
 if (empty($id)) {
-    $_SESSION['error_msg'] = "Mã cao ốc không hợp lệ.";
+    $_SESSION['error_msg'] = "MÃ£ cao á»‘c khÃ´ng há»£p lá»‡.";
     header("Location: index.php");
     exit();
 }
 
 $db = Database::getInstance()->getConnection();
 
-// Lấy thông tin Cao ốc hiện tại
+// Láº¥y thÃ´ng tin Cao á»‘c hiá»‡n táº¡i
 $stmt = $db->prepare("SELECT * FROM CAO_OC WHERE maCaoOc = ? AND deleted_at IS NULL");
 $stmt->execute([$id]);
 $caoOc = $stmt->fetch();
 
 if (!$caoOc) {
-    $_SESSION['error_msg'] = "Không tìm thấy dữ liệu cao ốc hoặc đã bị xóa.";
+    $_SESSION['error_msg'] = "KhÃ´ng tÃ¬m tháº¥y dá»¯ liá»‡u cao á»‘c hoáº·c Ä‘Ã£ bá»‹ xÃ³a.";
     header("Location: index.php");
     exit();
 }
 
-// Tạo CSRF Token cho form
+// Táº¡o CSRF Token cho form
 $csrf_token = generateCSRFToken();
 ?>
 <!DOCTYPE html>
@@ -85,15 +85,14 @@ $csrf_token = generateCSRFToken();
     
     <div class="admin-main-wrapper flex-grow-1">
         <?php include __DIR__ . '/../../includes/admin/topbar.php'; ?>
-        <?php include __DIR__ . '/../../includes/admin/notifications.php'; ?>
         
         <main class="admin-main-content p-4">
             <!-- Breadcrumbs -->
             <nav aria-label="breadcrumb" class="mb-4 d-flex justify-content-center">
                 <ol class="breadcrumb mb-0" style="width: 800px;">
                     <li class="breadcrumb-item"><a href="<?= BASE_URL ?>admin_layout.php" class="text-decoration-none">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="index.php" class="text-decoration-none">Quản lý Cao ốc</a></li>
-                    <li class="breadcrumb-item active">Cập nhật cao ốc</li>
+                    <li class="breadcrumb-item"><a href="index.php" class="text-decoration-none">Quáº£n lÃ½ Cao á»‘c</a></li>
+                    <li class="breadcrumb-item active">Cáº­p nháº­t cao á»‘c</li>
                 </ol>
             </nav>
 
@@ -101,9 +100,9 @@ $csrf_token = generateCSRFToken();
                 <div class="form-header d-flex justify-content-between align-items-center">
                     <div>
                         <h2 class="h4 mb-0 fw-bold">
-                            <i class="bi bi-pencil-square me-2"></i>CẬP NHẬT CAO ỐC
+                            <i class="bi bi-pencil-square me-2"></i>Cáº¬P NHáº¬T CAO á»C
                         </h2>
-                        <p class="mb-0 text-white-50 small mt-1">Sửa đổi thông tin chi tiết của tòa nhà.</p>
+                        <p class="mb-0 text-white-50 small mt-1">Sá»­a Ä‘á»•i thÃ´ng tin chi tiáº¿t cá»§a tÃ²a nhÃ .</p>
                     </div>
                     <span class="badge bg-white text-navy px-3 py-2 fw-bold"><?= e($caoOc['maCaoOc']) ?></span>
                 </div>
@@ -114,34 +113,34 @@ $csrf_token = generateCSRFToken();
                         <input type="hidden" name="csrf_token" value="<?= e($csrf_token) ?>">
 
                         <div class="row g-4">
-                            <!-- Tên Cao ốc -->
+                            <!-- TÃªn Cao á»‘c -->
                             <div class="col-md-12">
-                                <label for="tenCaoOc" class="form-label">Tên Cao ốc <span class="text-danger">*</span></label>
+                                <label for="tenCaoOc" class="form-label">TÃªn Cao á»‘c <span class="text-danger">*</span></label>
                                 <input type="text" name="tenCaoOc" id="tenCaoOc" class="form-control py-2" 
                                        value="<?= e($caoOc['tenCaoOc']) ?>" required>
                             </div>
 
-                            <!-- Địa chỉ -->
+                            <!-- Äá»‹a chá»‰ -->
                             <div class="col-md-12">
-                                <label for="diaChi" class="form-label">Địa chỉ <span class="text-danger">*</span></label>
+                                <label for="diaChi" class="form-label">Äá»‹a chá»‰ <span class="text-danger">*</span></label>
                                 <textarea name="diaChi" id="diaChi" class="form-control py-2" rows="3" required><?= e($caoOc['diaChi']) ?></textarea>
                             </div>
 
-                            <!-- Số tầng -->
+                            <!-- Sá»‘ táº§ng -->
                             <div class="col-md-6">
-                                <label for="soTang" class="form-label">Số tầng <span class="text-danger">*</span></label>
+                                <label for="soTang" class="form-label">Sá»‘ táº§ng <span class="text-danger">*</span></label>
                                 <input type="number" name="soTang" id="soTang" class="form-control py-2" 
                                        min="1" max="250" value="<?= e($caoOc['soTang']) ?>" required>
-                                <div class="form-text">Số tầng hiện tại của tòa nhà.</div>
+                                <div class="form-text">Sá»‘ táº§ng hiá»‡n táº¡i cá»§a tÃ²a nhÃ .</div>
                             </div>
 
                             <div class="col-12 mt-5 border-top pt-4">
                                 <div class="d-flex justify-content-end gap-2">
                                     <a href="index.php" class="btn btn-outline-secondary px-4 py-2">
-                                        <i class="bi bi-x-circle me-2"></i>Hủy bỏ
+                                        <i class="bi bi-x-circle me-2"></i>Há»§y bá»
                                     </a>
                                     <button type="submit" class="btn btn-gold px-5 py-2">
-                                        <i class="bi bi-check-circle me-2"></i>Cập nhật dữ liệu
+                                        <i class="bi bi-check-circle me-2"></i>Cáº­p nháº­t dá»¯ liá»‡u
                                     </a>
                                 </div>
                             </div>

@@ -1,26 +1,26 @@
-<?php
+﻿<?php
 /**
  * modules/phong/phong_hienthi.php
- * Trang danh sách Phòng - Tích hợp bộ lọc Cao ốc/Tầng
+ * Trang danh sÃ¡ch PhÃ²ng - TÃ­ch há»£p bá»™ lá»c Cao á»‘c/Táº§ng
  */
 
-// 1. KHỞI TẠO & BẢO MẬT
+// 1. KHá»žI Táº O & Báº¢O Máº¬T
 require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 
-// Xác thực Session & Role
+// XÃ¡c thá»±c Session & Role
 kiemTraSession();
 kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
-// Kết nối CSDL
+// Káº¿t ná»‘i CSDL
 $db = Database::getInstance()->getConnection();
 
-// Lấy danh sách Cao ốc và Tầng để phục vụ bộ lọc
+// Láº¥y danh sÃ¡ch Cao á»‘c vÃ  Táº§ng Ä‘á»ƒ phá»¥c vá»¥ bá»™ lá»c
 $dsCaoOc = $db->query("SELECT maCaoOc, tenCaoOc FROM CAO_OC WHERE deleted_at IS NULL ORDER BY tenCaoOc")->fetchAll();
 $dsTang = $db->query("SELECT maTang, tenTang, maCaoOc FROM TANG WHERE deleted_at IS NULL ORDER BY tenTang")->fetchAll();
 
-// Truy vấn danh sách phòng
+// Truy váº¥n danh sÃ¡ch phÃ²ng
 $sql = "
     SELECT 
         p.*, t.tenTang, c.tenCaoOc, c.maCaoOc
@@ -54,9 +54,9 @@ $dsPhong = $db->query($sql)->fetchAll();
         .btn-gold:hover { background-color: #b5925a; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
         
         /* Status Badges Custom */
-        .badge-status--1 { background-color: #27ae60; color: #fff; } /* Trống */
-        .badge-status--2 { background-color: #1e3a5f; color: #fff; } /* Đã thuê */
-        .badge-status--3 { background-color: #f39c12; color: #fff; } /* Sửa chữa */
+        .badge-status--1 { background-color: #27ae60; color: #fff; } /* Trá»‘ng */
+        .badge-status--2 { background-color: #1e3a5f; color: #fff; } /* ÄÃ£ thuÃª */
+        .badge-status--3 { background-color: #f39c12; color: #fff; } /* Sá»­a chá»¯a */
         .badge-status--4 { background-color: #e74c3c; color: #fff; } /* Lock */
         
         .filter-section {
@@ -73,29 +73,28 @@ $dsPhong = $db->query($sql)->fetchAll();
     
     <div class="admin-main-wrapper flex-grow-1">
         <?php include __DIR__ . '/../../includes/admin/topbar.php'; ?>
-        <?php include __DIR__ . '/../../includes/admin/notifications.php'; ?>
         
         <main class="admin-main-content p-4">
             <!-- Breadcrumbs -->
             <nav aria-label="breadcrumb" class="mb-4">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="<?= BASE_URL ?>admin_layout.php" class="text-decoration-none">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Quản lý Phòng</li>
+                    <li class="breadcrumb-item active">Quáº£n lÃ½ PhÃ²ng</li>
                 </ol>
             </nav>
 
-            <!-- Bộ lọc & Header -->
+            <!-- Bá»™ lá»c & Header -->
             <div class="card filter-section shadow-sm border-0 mb-4">
                 <div class="card-body p-4">
                     <div class="row align-items-center g-3">
                         <div class="col-md-4">
                             <h2 class="h4 mb-0 text-navy fw-bold">
-                                <i class="bi bi-grid-3x3-gap me-2"></i>QUẢN LÝ PHÒNG
+                                <i class="bi bi-grid-3x3-gap me-2"></i>QUáº¢N LÃ PHÃ’NG
                             </h2>
                         </div>
                         <div class="col-md-3">
                             <select id="filterCaoOc" class="form-select border-navy-subtle">
-                                <option value="">-- Tất cả Cao ốc --</option>
+                                <option value="">-- Táº¥t cáº£ Cao á»‘c --</option>
                                 <?php foreach ($dsCaoOc as $co): ?>
                                     <option value="<?= e($co['tenCaoOc']) ?>"><?= e($co['tenCaoOc']) ?></option>
                                 <?php endforeach; ?>
@@ -103,7 +102,7 @@ $dsPhong = $db->query($sql)->fetchAll();
                         </div>
                         <div class="col-md-3">
                             <select id="filterTang" class="form-select border-navy-subtle">
-                                <option value="">-- Tất cả Tầng --</option>
+                                <option value="">-- Táº¥t cáº£ Táº§ng --</option>
                                 <?php foreach ($dsTang as $t): ?>
                                     <option value="<?= e($t['tenTang']) ?>" data-caooc="<?= e($t['maCaoOc']) ?>"><?= e($t['tenTang']) ?></option>
                                 <?php endforeach; ?>
@@ -111,7 +110,7 @@ $dsPhong = $db->query($sql)->fetchAll();
                         </div>
                         <div class="col-md-2 text-md-end">
                             <a href="phong_them.php" class="btn btn-gold w-100 fw-bold">
-                                <i class="bi bi-plus-lg me-1"></i> Thêm Phòng
+                                <i class="bi bi-plus-lg me-1"></i> ThÃªm PhÃ²ng
                             </a>
                         </div>
                     </div>
@@ -124,18 +123,18 @@ $dsPhong = $db->query($sql)->fetchAll();
                         <table id="tblPhong" class="table table-hover align-middle table-navy">
                             <thead>
                                 <tr>
-                                    <th>Mã Phòng</th>
-                                    <th>Tên Phòng</th>
-                                    <th>Tòa nhà / Tầng</th>
-                                    <th class="text-end">Diện tích</th>
-                                    <th class="text-end">Giá thuê/tháng</th>
-                                    <th class="text-center">Trạng thái</th>
-                                    <th class="text-center">Thao tác</th>
+                                    <th>MÃ£ PhÃ²ng</th>
+                                    <th>TÃªn PhÃ²ng</th>
+                                    <th>TÃ²a nhÃ  / Táº§ng</th>
+                                    <th class="text-end">Diá»‡n tÃ­ch</th>
+                                    <th class="text-end">GiÃ¡ thuÃª/thÃ¡ng</th>
+                                    <th class="text-center">Tráº¡ng thÃ¡i</th>
+                                    <th class="text-center">Thao tÃ¡c</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($dsPhong as $p): 
-                                    $statusNames = [1 => 'Trống', 2 => 'Đã thuê', 3 => 'Bảo trì', 4 => 'Đã khóa'];
+                                    $statusNames = [1 => 'Trá»‘ng', 2 => 'ÄÃ£ thuÃª', 3 => 'Báº£o trÃ¬', 4 => 'ÄÃ£ khÃ³a'];
                                 ?>
                                     <tr>
                                         <td class="fw-bold text-navy"><?= e($p['maPhong']) ?></td>
@@ -144,7 +143,7 @@ $dsPhong = $db->query($sql)->fetchAll();
                                             <div class="small fw-bold text-navy"><?= e($p['tenCaoOc']) ?></div>
                                             <div class="small text-muted"><?= e($p['tenTang']) ?></div>
                                         </td>
-                                        <td class="text-end"><?= number_format($p['dienTich'], 1) ?> m²</td>
+                                        <td class="text-end"><?= number_format($p['dienTich'], 1) ?> mÂ²</td>
                                         <td class="text-end fw-bold text-navy"><?= formatTien($p['giaThue']) ?></td>
                                         <td class="text-center">
                                             <span class="badge badge-status--<?= $p['trangThai'] ?> px-3 py-2">
@@ -153,10 +152,10 @@ $dsPhong = $db->query($sql)->fetchAll();
                                         </td>
                                         <td class="text-center">
                                             <div class="btn-group btn-group-sm">
-                                                <a href="phong_sua.php?id=<?= e($p['maPhong']) ?>" class="btn btn-outline-primary" title="Sửa">
+                                                <a href="phong_sua.php?id=<?= e($p['maPhong']) ?>" class="btn btn-outline-primary" title="Sá»­a">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </a>
-                                                <a href="javascript:void(0)" onclick="xacNhanXoa('<?= e($p['maPhong']) ?>', '<?= e($p['tenPhong']) ?>')" class="btn btn-outline-danger" title="Xóa">
+                                                <a href="javascript:void(0)" onclick="xacNhanXoa('<?= e($p['maPhong']) ?>', '<?= e($p['tenPhong']) ?>')" class="btn btn-outline-danger" title="XÃ³a">
                                                     <i class="bi bi-trash"></i>
                                                 </a>
                                             </div>
@@ -174,21 +173,21 @@ $dsPhong = $db->query($sql)->fetchAll();
     </div>
 </div>
 
-<!-- Modal xác nhận xóa -->
+<!-- Modal xÃ¡c nháº­n xÃ³a -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>Xác nhận xóa</h5>
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>XÃ¡c nháº­n xÃ³a</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4 text-center">
-                Bạn có chắc chắn muốn xóa phòng <strong id="deleteRoomName" class="text-danger"></strong>?
-                <br><small class="text-muted">Hệ thống sẽ kiểm tra hợp đồng hiệu lực trước khi cho phép xóa mềm.</small>
+                Báº¡n cÃ³ cháº¯c cháº¯n muá»‘n xÃ³a phÃ²ng <strong id="deleteRoomName" class="text-danger"></strong>?
+                <br><small class="text-muted">Há»‡ thá»‘ng sáº½ kiá»ƒm tra há»£p Ä‘á»“ng hiá»‡u lá»±c trÆ°á»›c khi cho phÃ©p xÃ³a má»m.</small>
             </div>
             <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Hủy</button>
-                <a id="btnConfirmDelete" href="#" class="btn btn-danger px-4">Đồng ý Xóa</a>
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Há»§y</button>
+                <a id="btnConfirmDelete" href="#" class="btn btn-danger px-4">Äá»“ng Ã½ XÃ³a</a>
             </div>
         </div>
     </div>
@@ -207,12 +206,12 @@ $(document).ready(function() {
         "pageLength": 10
     });
 
-    // Lọc theo Cao ốc (Cột 2 - index 2)
+    // Lá»c theo Cao á»‘c (Cá»™t 2 - index 2)
     $('#filterCaoOc').on('change', function() {
         table.column(2).search(this.value).draw();
     });
 
-    // Lọc theo Tầng (Cột 2 - index 2 - search partial)
+    // Lá»c theo Táº§ng (Cá»™t 2 - index 2 - search partial)
     $('#filterTang').on('change', function() {
         table.column(2).search(this.value).draw();
     });

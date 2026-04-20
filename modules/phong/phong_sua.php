@@ -1,30 +1,30 @@
-<?php
+﻿<?php
 /**
  * modules/phong/phong_sua.php
- * Giao diện chỉnh sửa thông tin Phòng - IDOR Protection & Real-time Calc
+ * Giao diá»‡n chá»‰nh sá»­a thÃ´ng tin PhÃ²ng - IDOR Protection & Real-time Calc
  */
 
-// 1. KHỞI TẠO & BẢO MẬT
+// 1. KHá»žI Táº O & Báº¢O Máº¬T
 require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
 
-// Xác thực Session & Phân quyền
+// XÃ¡c thá»±c Session & PhÃ¢n quyá»n
 kiemTraSession();
 kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
-// 2. CHỐNG IDOR & LẤY DỮ LIỆU CŨ PHỤC VỤ FORM
+// 2. CHá»NG IDOR & Láº¤Y Dá»® LIá»†U CÅ¨ PHá»¤C Vá»¤ FORM
 $id = $_GET['id'] ?? '';
 if (empty($id)) {
-    $_SESSION['error_msg'] = "Mã phòng không hợp lệ.";
+    $_SESSION['error_msg'] = "MÃ£ phÃ²ng khÃ´ng há»£p lá»‡.";
     header("Location: phong_hienthi.php");
     exit();
 }
 
 $db = Database::getInstance()->getConnection();
 
-// Query xác minh bản ghi tồn tại và chưa bị xóa mềm
+// Query xÃ¡c minh báº£n ghi tá»“n táº¡i vÃ  chÆ°a bá»‹ xÃ³a má»m
 $sqlCheck = "
     SELECT p.*, t.maCaoOc, t.heSoGia 
     FROM PHONG p 
@@ -36,17 +36,17 @@ $stmtCheck->execute([$id]);
 $phong = $stmtCheck->fetch();
 
 if (!$phong) {
-    $_SESSION['error_msg'] = "Không tìm thấy phòng hoặc phòng đã bị xóa khỏi hệ thống.";
+    $_SESSION['error_msg'] = "KhÃ´ng tÃ¬m tháº¥y phÃ²ng hoáº·c phÃ²ng Ä‘Ã£ bá»‹ xÃ³a khá»i há»‡ thá»‘ng.";
     header("Location: phong_hienthi.php");
     exit();
 }
 
-// Lấy danh sách hình ảnh hiện tại của phòng
+// Láº¥y danh sÃ¡ch hÃ¬nh áº£nh hiá»‡n táº¡i cá»§a phÃ²ng
 $stmtImages = $db->prepare("SELECT id, urlHinhAnh, is_thumbnail FROM PHONG_HINH_ANH WHERE maPhong = ?");
 $stmtImages->execute([$id]);
 $currentImages = $stmtImages->fetchAll();
 
-// 3. LẤY DANH SÁCH CAO ỐC VÀ TẦNG PHỤC VỤ DROPDOWN
+// 3. Láº¤Y DANH SÃCH CAO á»C VÃ€ Táº¦NG PHá»¤C Vá»¤ DROPDOWN
 $dsCaoOc = $db->query("SELECT maCaoOc, tenCaoOc FROM CAO_OC WHERE deleted_at IS NULL ORDER BY tenCaoOc")->fetchAll();
 $dsTangRaw = $db->query("SELECT maTang, tenTang, maCaoOc, heSoGia FROM TANG WHERE deleted_at IS NULL ORDER BY tenTang")->fetchAll();
 
@@ -104,22 +104,21 @@ $csrf_token = generateCSRFToken();
     
     <div class="admin-main-wrapper flex-grow-1">
         <?php include __DIR__ . '/../../includes/admin/topbar.php'; ?>
-        <?php include __DIR__ . '/../../includes/admin/notifications.php'; ?>
         
         <main class="admin-main-content p-4">
             <nav aria-label="breadcrumb" class="mb-4 d-flex justify-content-center">
                 <ol class="breadcrumb mb-0" style="width: 900px;">
                     <li class="breadcrumb-item"><a href="<?= BASE_URL ?>admin_layout.php" class="text-decoration-none">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="phong_hienthi.php" class="text-decoration-none">Quản lý Phòng</a></li>
-                    <li class="breadcrumb-item active">Chỉnh sửa thông tin</li>
+                    <li class="breadcrumb-item"><a href="phong_hienthi.php" class="text-decoration-none">Quáº£n lÃ½ PhÃ²ng</a></li>
+                    <li class="breadcrumb-item active">Chá»‰nh sá»­a thÃ´ng tin</li>
                 </ol>
             </nav>
 
             <div class="card form-card shadow-sm border-0">
                 <div class="form-header d-flex justify-content-between align-items-center">
                     <div>
-                        <h2 class="h4 mb-0 fw-bold"><i class="bi bi-pencil-square me-2"></i>CẬP NHẬT PHÒNG</h2>
-                        <p class="mb-0 text-white-50 small mt-1">Sửa đổi thông số kỹ thuật và trạng thái của phòng.</p>
+                        <h2 class="h4 mb-0 fw-bold"><i class="bi bi-pencil-square me-2"></i>Cáº¬P NHáº¬T PHÃ’NG</h2>
+                        <p class="mb-0 text-white-50 small mt-1">Sá»­a Ä‘á»•i thÃ´ng sá»‘ ká»¹ thuáº­t vÃ  tráº¡ng thÃ¡i cá»§a phÃ²ng.</p>
                     </div>
                     <span class="badge bg-white text-navy px-3 py-2 fw-bold"><?= e($phong['maPhong']) ?></span>
                 </div>
@@ -128,13 +127,13 @@ $csrf_token = generateCSRFToken();
                         <input type="hidden" name="csrf_token" value="<?= e($csrf_token) ?>">
                         <input type="hidden" name="maPhong" value="<?= e($phong['maPhong']) ?>">
 
-                        <!-- Vị trí & Cơ bản -->
-                        <h5 class="text-navy fw-bold mb-4 border-bottom pb-2"><i class="bi bi-geo-alt me-2"></i>Vị Trí & Cơ Bản</h5>
+                        <!-- Vá»‹ trÃ­ & CÆ¡ báº£n -->
+                        <h5 class="text-navy fw-bold mb-4 border-bottom pb-2"><i class="bi bi-geo-alt me-2"></i>Vá»‹ TrÃ­ & CÆ¡ Báº£n</h5>
                         <div class="row g-4 mb-5">
                             <div class="col-md-6">
-                                <label for="maCaoOc" class="form-label">Tòa nhà <span class="text-danger">*</span></label>
+                                <label for="maCaoOc" class="form-label">TÃ²a nhÃ  <span class="text-danger">*</span></label>
                                 <select id="maCaoOc" class="form-select py-2" required>
-                                    <option value="">-- Chọn tòa nhà --</option>
+                                    <option value="">-- Chá»n tÃ²a nhÃ  --</option>
                                     <?php foreach ($dsCaoOc as $co): ?>
                                         <option value="<?= e($co['maCaoOc']) ?>" <?= ($co['maCaoOc'] == $phong['maCaoOc']) ? 'selected' : '' ?>>
                                             <?= e($co['tenCaoOc']) ?>
@@ -143,40 +142,40 @@ $csrf_token = generateCSRFToken();
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="maTang" class="form-label">Tầng <span class="text-danger">*</span></label>
+                                <label for="maTang" class="form-label">Táº§ng <span class="text-danger">*</span></label>
                                 <select name="maTang" id="maTang" class="form-select py-2" required>
-                                    <option value="">-- Chọn tầng --</option>
-                                    <!-- Sẽ được đổ bởi JS -->
+                                    <option value="">-- Chá»n táº§ng --</option>
+                                    <!-- Sáº½ Ä‘Æ°á»£c Ä‘á»• bá»Ÿi JS -->
                                 </select>
                             </div>
                             <div class="col-md-8">
-                                <label for="tenPhong" class="form-label">Tên Phòng <span class="text-danger">*</span></label>
+                                <label for="tenPhong" class="form-label">TÃªn PhÃ²ng <span class="text-danger">*</span></label>
                                 <input type="text" name="tenPhong" id="tenPhong" class="form-control py-2" value="<?= e($phong['tenPhong']) ?>" required>
                             </div>
                             <div class="col-md-4">
-                                <label for="trangThai" class="form-label">Trạng thái hiện tại</label>
+                                <label for="trangThai" class="form-label">Tráº¡ng thÃ¡i hiá»‡n táº¡i</label>
                                 <select name="trangThai" id="trangThai" class="form-select py-2">
-                                    <option value="1" <?= $phong['trangThai'] == 1 ? 'selected' : '' ?>>Trống</option>
-                                    <option value="2" <?= $phong['trangThai'] == 2 ? 'selected' : '' ?>>Đã thuê</option>
-                                    <option value="3" <?= $phong['trangThai'] == 3 ? 'selected' : '' ?>>Bảo trì</option>
-                                    <option value="4" <?= $phong['trangThai'] == 4 ? 'selected' : '' ?>>Đã khóa</option>
+                                    <option value="1" <?= $phong['trangThai'] == 1 ? 'selected' : '' ?>>Trá»‘ng</option>
+                                    <option value="2" <?= $phong['trangThai'] == 2 ? 'selected' : '' ?>>ÄÃ£ thuÃª</option>
+                                    <option value="3" <?= $phong['trangThai'] == 3 ? 'selected' : '' ?>>Báº£o trÃ¬</option>
+                                    <option value="4" <?= $phong['trangThai'] == 4 ? 'selected' : '' ?>>ÄÃ£ khÃ³a</option>
                                 </select>
                             </div>
                         </div>
 
-                        <!-- Thông số & Đơn giá -->
-                        <h5 class="text-navy fw-bold mb-4 border-bottom pb-2"><i class="bi bi-calculator me-2"></i>Thông Số & Đơn Giá</h5>
+                        <!-- ThÃ´ng sá»‘ & ÄÆ¡n giÃ¡ -->
+                        <h5 class="text-navy fw-bold mb-4 border-bottom pb-2"><i class="bi bi-calculator me-2"></i>ThÃ´ng Sá»‘ & ÄÆ¡n GiÃ¡</h5>
                         <div class="row g-4 mb-5 p-4 bg-light rounded-3">
                             <div class="col-md-4">
-                                <label for="dienTich" class="form-label">Diện tích (m²) <span class="text-danger">*</span></label>
+                                <label for="dienTich" class="form-label">Diá»‡n tÃ­ch (mÂ²) <span class="text-danger">*</span></label>
                                 <input type="number" name="dienTich" id="dienTich" class="form-control py-2 calc-trigger" step="0.1" min="0.1" value="<?= e($phong['dienTich']) ?>" required>
                             </div>
                             <div class="col-md-4">
-                                <label for="soChoLamViec" class="form-label">Số chỗ làm việc</label>
+                                <label for="soChoLamViec" class="form-label">Sá»‘ chá»— lÃ m viá»‡c</label>
                                 <input type="number" name="soChoLamViec" id="soChoLamViec" class="form-control py-2" min="1" value="<?= e($phong['soChoLamViec']) ?>">
                             </div>
                             <div class="col-md-4">
-                                <label for="donGiaM2" class="form-label">Đơn giá / m² <span class="text-danger">*</span></label>
+                                <label for="donGiaM2" class="form-label">ÄÆ¡n giÃ¡ / mÂ² <span class="text-danger">*</span></label>
                                 <input type="number" name="donGiaM2" id="donGiaM2" class="form-control py-2 calc-trigger" min="0" value="<?= e($phong['donGiaM2']) ?>" required>
                             </div>
                             
@@ -184,36 +183,36 @@ $csrf_token = generateCSRFToken();
                                 <div class="calc-box mt-2">
                                     <div class="row align-items-center">
                                         <div class="col-md-7 border-md-end">
-                                            <div class="small text-muted text-uppercase fw-bold">Giá thuê hàng tháng (vnđ)</div>
+                                            <div class="small text-muted text-uppercase fw-bold">GiÃ¡ thuÃª hÃ ng thÃ¡ng (vnÄ‘)</div>
                                             <div id="giaThueDisplay" class="readonly-val"><?= number_format($phong['giaThue'], 0, ',', '.') ?></div>
                                             <input type="hidden" name="giaThue" id="giaThue" value="<?= e($phong['giaThue']) ?>">
                                         </div>
                                         <div class="col-md-5 ps-md-4">
-                                            <div class="small text-muted">Hệ số tầng hiện tại: <span id="heSoDisplay" class="fw-bold text-navy"><?= number_format($phong['heSoGia'], 2) ?></span></div>
-                                            <div class="small text-muted mt-1">Giá thuê = Diện tích x Đơn giá x Hệ số</div>
+                                            <div class="small text-muted">Há»‡ sá»‘ táº§ng hiá»‡n táº¡i: <span id="heSoDisplay" class="fw-bold text-navy"><?= number_format($phong['heSoGia'], 2) ?></span></div>
+                                            <div class="small text-muted mt-1">GiÃ¡ thuÃª = Diá»‡n tÃ­ch x ÄÆ¡n giÃ¡ x Há»‡ sá»‘</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Quản lý Hình ảnh -->
-                        <h5 class="text-navy fw-bold mb-4 border-bottom pb-2"><i class="bi bi-images me-2"></i>Quản Lý Hình Ảnh</h5>
+                        <!-- Quáº£n lÃ½ HÃ¬nh áº£nh -->
+                        <h5 class="text-navy fw-bold mb-4 border-bottom pb-2"><i class="bi bi-images me-2"></i>Quáº£n LÃ½ HÃ¬nh áº¢nh</h5>
                         <div class="mb-5">
-                            <label class="form-label d-block mb-3">Hình ảnh hiện tại (Tích chọn để xóa)</label>
+                            <label class="form-label d-block mb-3">HÃ¬nh áº£nh hiá»‡n táº¡i (TÃ­ch chá»n Ä‘á»ƒ xÃ³a)</label>
                             <?php if (empty($currentImages)): ?>
                                 <div class="alert alert-light border text-center py-4 rounded-3">
                                     <i class="bi bi-image text-muted d-block h1"></i>
-                                    <span class="text-muted">Chưa có hình ảnh nào cho phòng này.</span>
+                                    <span class="text-muted">ChÆ°a cÃ³ hÃ¬nh áº£nh nÃ o cho phÃ²ng nÃ y.</span>
                                 </div>
                             <?php else: ?>
                                 <div class="gallery-grid mb-4">
                                     <?php foreach ($currentImages as $img): ?>
                                         <div class="gallery-item">
-                                            <input type="checkbox" name="delete_images[]" value="<?= e($img['id']) ?>" class="delete-check" title="Chọn để xóa">
+                                            <input type="checkbox" name="delete_images[]" value="<?= e($img['id']) ?>" class="delete-check" title="Chá»n Ä‘á»ƒ xÃ³a">
                                             <img src="<?= BASE_URL . e($img['urlHinhAnh']) ?>" alt="Room Image">
                                             <?php if ($img['is_thumbnail']): ?>
-                                                <div class="thumbnail-badge">ẢNH ĐẠI DIỆN</div>
+                                                <div class="thumbnail-badge">áº¢NH Äáº I DIá»†N</div>
                                             <?php endif; ?>
                                             <div class="delete-overlay"><i class="bi bi-trash"></i></div>
                                         </div>
@@ -222,15 +221,15 @@ $csrf_token = generateCSRFToken();
                             <?php endif; ?>
 
                             <div class="mt-4 p-4 border rounded-3 bg-white">
-                                <label for="hinhAnh" class="form-label fw-bold"><i class="bi bi-cloud-upload me-2"></i>Thêm hình ảnh mới</label>
+                                <label for="hinhAnh" class="form-label fw-bold"><i class="bi bi-cloud-upload me-2"></i>ThÃªm hÃ¬nh áº£nh má»›i</label>
                                 <input type="file" name="hinhAnh[]" id="hinhAnh" class="form-control" multiple accept=".jpg,.jpeg,.png,.webp">
-                                <div class="form-text mt-2">Định dạng hỗ trợ: JPG, PNG, WEBP (Tối đa 2MB/file).</div>
+                                <div class="form-text mt-2">Äá»‹nh dáº¡ng há»— trá»£: JPG, PNG, WEBP (Tá»‘i Ä‘a 2MB/file).</div>
                             </div>
                         </div>
 
                         <div class="col-12 pt-4 d-flex justify-content-end gap-2 border-top">
-                            <a href="phong_hienthi.php" class="btn btn-outline-secondary px-4 py-2">Hủy bỏ</a>
-                            <button type="submit" class="btn btn-gold px-5 py-2"><i class="bi bi-save me-2"></i>Cập nhật dữ liệu</button>
+                            <a href="phong_hienthi.php" class="btn btn-outline-secondary px-4 py-2">Há»§y bá»</a>
+                            <button type="submit" class="btn btn-gold px-5 py-2"><i class="bi bi-save me-2"></i>Cáº­p nháº­t dá»¯ liá»‡u</button>
                         </div>
                     </form>
                 </div>
@@ -242,7 +241,7 @@ $csrf_token = generateCSRFToken();
 </div>
 
 <script>
-// Dữ liệu tầng truyền từ PHP
+// Dá»¯ liá»‡u táº§ng truyá»n tá»« PHP
 const TANG_DATA = <?= json_encode($dsTangJS) ?>;
 const currentTangId = "<?= e($phong['maTang']) ?>";
 
@@ -256,7 +255,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const displayHeSo = document.getElementById('heSoDisplay');
 
     function updateTangList(maCO, selectedId = null) {
-        selectTang.innerHTML = '<option value="">-- Chọn tầng --</option>';
+        selectTang.innerHTML = '<option value="">-- Chá»n táº§ng --</option>';
         if (maCO) {
             const listTang = TANG_DATA.filter(t => t.maCaoOc === maCO);
             listTang.forEach(t => {
