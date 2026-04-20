@@ -71,6 +71,11 @@ if (!function_exists('is_nav_active')) {
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link text-white <?= is_nav_active('modules/thanh_toan/tranh_chap', $current_script) ?>" href="<?= BASE_URL ?>modules/thanh_toan/tranh_chap_hienthi.php">
+                    <i class="bi bi-shield-exclamation me-2"></i> Tranh chấp hóa đơn
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link text-white <?= is_nav_active('modules/tien_coc/', $current_script) ?>" href="<?= BASE_URL ?>modules/tien_coc/index.php">
                     <i class="bi bi-cash-stack me-2"></i> Tiền cọc (Tien Coc)
                 </a>
