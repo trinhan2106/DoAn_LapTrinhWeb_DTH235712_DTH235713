@@ -80,6 +80,11 @@ if (!function_exists('is_nav_active')) {
                     <i class="bi bi-cash-stack me-2"></i> Tiền cọc (Tien Coc)
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link text-white <?= is_nav_active('modules/bao_cao/', $current_script) ?>" href="<?= BASE_URL ?>modules/bao_cao/bao_cao.php">
+                    <i class="bi bi-graph-up-arrow me-2"></i> Báo cáo & Thống kê
+                </a>
+            </li>
         </ul>
     </div>
 </div>
