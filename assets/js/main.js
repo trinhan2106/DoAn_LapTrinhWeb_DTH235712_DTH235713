@@ -38,3 +38,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 });
+
+// Hiển thị loader (Task 9.11)
+function showLoading() {
+    const loader = document.getElementById('global-loader');
+    if (loader) loader.classList.remove('d-none');
+}
+
+// Ẩn loader (Task 9.11)
+function hideLoading() {
+    const loader = document.getElementById('global-loader');
+    if (loader) loader.classList.add('d-none');
+}
+
+// Tự động bật Loader khi submit các Form (Trừ form tìm kiếm)
+document.addEventListener("DOMContentLoaded", function() {
+    const forms = document.querySelectorAll('form:not(.no-loader)');
+    forms.forEach(form => {
+        form.addEventListener('submit', function() {
+            // Chỉ show loader nếu form đã qua vòng validate của HTML5
+            if (this.checkValidity()) {
+                showLoading();
+            }
+        });
+    });
+});
