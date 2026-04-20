@@ -3,8 +3,8 @@
         <div class="d-flex align-items-center justify-content-between small">
             <div class="text-muted">Bản quyền &copy; Hệ thống Quản lý Cao ốc <?php echo date('Y'); ?></div>
             <div>
-                <a href="#" class="text-secondary text-decoration-none me-3">Chính sách bảo mật</a>
-                <a href="#" class="text-secondary text-decoration-none">Điều khoản</a>
+                <a href="javascript:void(0);" class="text-secondary text-decoration-none me-3">Chính sách bảo mật</a>
+                <a href="javascript:void(0);" class="text-secondary text-decoration-none">Điều khoản</a>
             </div>
         </div>
     </div>

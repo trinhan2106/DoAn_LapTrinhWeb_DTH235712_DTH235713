@@ -1,11 +1,11 @@
 <?php
 /**
  * PROJECT: Quản lý Cao ốc (Office Rental Management)
- * PAGE: phong_trong.php (Danh sách phòng trống)
- * DESCRIPTION: Hiển thị danh sách phòng theo Grid, có bộ lọc và phân trang.
+ * PAGE: phong_trong.php (Danh sách phòng trống dành cho Public)
+ * ARCHITECT: Antigravity - Secure Dynamic Query Builder
  */
 
-// 1. Khởi tạo session & CSRF bảo mật
+// 1. Khởi tạo session & CSRF bảo mật hệ thống
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -13,14 +13,13 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-// 2. Kết nối Database
+// 2. Khởi tạo kết nối Database An Toàn
 require_once 'includes/common/db.php';
 $pdo = Database::getInstance()->getConnection();
 
-// 3. Xử lý logic lọc (Filter state)
-$f_tang = $_GET['tang'] ?? '';
-$f_gia  = $_GET['khoangGia'] ?? '';
-$f_loai = $_GET['loaiPhong'] ?? '';
+// Lấy danh sách các loại phòng đang TRỐNG để làm dữ liệu cho bộ lọc (Dynamic Filter)
+$stmtTypes = $pdo->query("SELECT DISTINCT loaiPhong FROM PHONG WHERE trangThai = 1 AND deleted_at IS NULL ORDER BY loaiPhong ASC");
+$availableTypes = $stmtTypes->fetchAll(PDO::FETCH_COLUMN);
 
 // Tính toán phân trang
 $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -28,67 +27,105 @@ if ($page < 1) $page = 1;
 $limit = 6;
 $offset = ($page - 1) * $limit;
 
-// Xây dựng điều kiện WHERE
+// 3. Khởi tạo Base Query & Nền tảng Builder
+$baseQuery = "
+    SELECT 
+        p.*, t.tenTang AS tang,
+        co.tenCaoOc,
+        (SELECT urlHinhAnh FROM PHONG_HINH_ANH pha WHERE pha.maPhong = p.maPhong ORDER BY pha.is_thumbnail DESC LIMIT 1) AS hinhAnh
+    FROM PHONG p
+    JOIN TANG t ON p.maTang = t.maTang
+    JOIN CAO_OC co ON t.maCaoOc = co.maCaoOc
+";
+
+$countBaseQuery = "
+    SELECT COUNT(*) 
+    FROM PHONG p
+    JOIN TANG t ON p.maTang = t.maTang
+    JOIN CAO_OC co ON t.maCaoOc = co.maCaoOc
+";
+
+// Ràng buộc TỐI THƯỢNG: Chỉ lấy phòng hệ thống đang báo Trống & Chưa xóa
 $whereConditions = ["p.trangThai = 1", "p.deleted_at IS NULL"];
 $params = [];
 
+// 4. Thuật toán Dynamic Where Builder (Chống SQL Injection)
+
+// Bắt lọc Tầng
+$f_tang = $_GET['tang'] ?? '';
 if (!empty($f_tang)) {
-    // Dùng LIKE để hỗ trợ cả trường hợp CSDL lưu 'Tầng 1' hay '1'
+    // Nếu db lưu 'Tầng 1' hay '1', dùng LIKE an toàn
     $whereConditions[] = "t.tenTang LIKE :tang";
     $params[':tang'] = "%$f_tang%";
 }
 
+// Bắt lọc Khoảng Giá (Tối đa) theo thiết kế select option HTML
+$f_gia = $_GET['khoangGia'] ?? '';
 if (!empty($f_gia) && is_numeric($f_gia)) {
     $whereConditions[] = "p.giaThue <= :gia";
     $params[':gia'] = $f_gia;
 }
 
+// Bắt lọc Loại Phòng
+$f_loai = $_GET['loaiPhong'] ?? '';
 if (!empty($f_loai)) {
-    $whereConditions[] = "p.loaiPhong = :loai";
-    $params[':loai'] = $f_loai;
+    $searchTerm = trim($f_loai);
+    $shortTerm = str_replace('Văn phòng ', '', $searchTerm);
+    $val = '%' . $searchTerm . '%';
+    $sVal = '%' . $shortTerm . '%';
+    
+    // Lưu ý bảo mật: Khi ATTR_EMULATE_PREPARES = false, không được dùng trùng tên Placeholder trong 1 query.
+    $whereConditions[] = "(p.loaiPhong LIKE :lp1 OR p.tenPhong LIKE :lp2 OR p.loaiPhong LIKE :st1 OR p.tenPhong LIKE :st2)";
+    $params[':lp1'] = $val;
+    $params[':lp2'] = $val;
+    $params[':st1'] = $sVal;
+    $params[':st2'] = $sVal;
 }
 
-$whereSQL = implode(' AND ', $whereConditions);
+// Nội suy (Implode) mảng thành chuỗi WHERE cuối cùng
+$whereClause = " WHERE " . implode(" AND ", $whereConditions);
 
-// Đếm tổng số bản ghi và tính tổng số trang
-$total_records = 0;
-$total_pages = 1;
 try {
-    if (isset($pdo)) {
-        $countSql = "SELECT COUNT(*) FROM PHONG p JOIN TANG t ON p.maTang = t.maTang WHERE " . $whereSQL;
-        $countStmt = $pdo->prepare($countSql);
-        foreach ($params as $key => $val) {
-            $countStmt->bindValue($key, $val);
-        }
-        $countStmt->execute();
-        $total_records = $countStmt->fetchColumn();
-        $total_pages = ceil($total_records / $limit);
-        if ($total_pages < 1) $total_pages = 1;
+    // ----------------------------------------------------
+    // XỬ LÝ 1: TRUY VẤN ĐẾM (COUNT) CỦA PHÂN TRANG
+    // ----------------------------------------------------
+    $sqlCount = $countBaseQuery . $whereClause;
+    $stmtCount = $pdo->prepare($sqlCount);
+    // Bind parameters for count query
+    foreach ($params as $key => $value) {
+        $stmtCount->bindValue($key, $value);
     }
-} catch (PDOException $e) {
-    error_log("Database count error: " . $e->getMessage());
-}
+    $stmtCount->execute();
+    
+    $total_records = $stmtCount->fetchColumn();
+    $total_pages = ceil($total_records / $limit);
+    if ($total_pages < 1) $total_pages = 1;
 
-// Truy vấn lấy dữ liệu theo offset và limit
-$rooms = [];
-try {
-    if (isset($pdo)) {
-        $sql = "SELECT p.*, t.tenTang AS tang,
-                       (SELECT urlHinhAnh FROM PHONG_HINH_ANH pha WHERE pha.maPhong = p.maPhong ORDER BY pha.is_thumbnail DESC LIMIT 1) AS hinhAnh
-                FROM PHONG p JOIN TANG t ON p.maTang = t.maTang WHERE " . $whereSQL . " LIMIT :limit OFFSET :offset";
-        $stmt = $pdo->prepare($sql);
-        
-        foreach ($params as $key => $val) {
-            $stmt->bindValue($key, $val);
-        }
-        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
-        
-        $stmt->execute();
-        $rooms = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // ----------------------------------------------------
+    // XỬ LÝ 2: TRUY VẤN DỮ LIỆU CHÍNH (DATA) CÓ LIMIT THU LƯỚI
+    // ----------------------------------------------------
+    $sqlData = $baseQuery . $whereClause . " ORDER BY p.giaThue ASC LIMIT :limit OFFSET :offset";
+    $stmtData = $pdo->prepare($sqlData);
+
+    // Bind các biến chuẩn theo nguyên tắc Prepared Statement khắt khe
+    foreach ($params as $key => $value) {
+        $stmtData->bindValue($key, $value);
     }
+    
+    // Bind cứng kiểu INT cho hàm LIMIT & OFFSET (Bảo mật ép kiểu)
+    $stmtData->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmtData->bindValue(':offset', $offset, PDO::PARAM_INT);
+
+    // Execute PDO
+    $stmtData->execute();
+    $rooms = $stmtData->fetchAll(PDO::FETCH_ASSOC);
+
 } catch (PDOException $e) {
-    error_log("Database query error: " . $e->getMessage());
+    // Log lỗi Server an toàn không rò rỉ cấu trúc DB ra màn hình
+    error_log("[phong_trong.php] Lỗi Truy vấn PDO: " . $e->getMessage());
+    $rooms = [];
+    $total_records = 0;
+    $total_pages = 1;
 }
 
 // Giữ lại tham số url hiện tại cho thẻ chuyển trang
@@ -97,7 +134,7 @@ unset($query_params['page']);
 $query_string = http_build_query($query_params);
 $query_string = $query_string ? '&' . $query_string : '';
 
-// 4. Nhúng Header & Navbar
+// 5. Nhúng Header & Navbar
 include_once 'includes/public/header.php';
 include_once 'includes/public/navbar.php';
 ?>
@@ -211,12 +248,13 @@ include_once 'includes/public/navbar.php';
 
                         <div class="mb-4">
                             <label class="form-label small fw-bold text-muted">Loại văn phòng</label>
-                            <select name="loaiPhong" class="form-select">
+                             <select name="loaiPhong" class="form-select">
                                 <option value="">Tất cả loại hình</option>
-                                <option value="Văn phòng hạng A" <?php echo $f_loai == 'Văn phòng hạng A' ? 'selected' : ''; ?>>Hạng A</option>
-                                <option value="Văn phòng hạng B" <?php echo $f_loai == 'Văn phòng hạng B' ? 'selected' : ''; ?>>Hạng B</option>
-                                <option value="Văn phòng hạng C" <?php echo $f_loai == 'Văn phòng hạng C' ? 'selected' : ''; ?>>Hạng C</option>
-                                <option value="Phòng họp" <?php echo $f_loai == 'Phòng họp' ? 'selected' : ''; ?>>Phòng họp</option>
+                                <?php foreach ($availableTypes as $type): ?>
+                                    <option value="<?php echo htmlspecialchars($type); ?>" <?php echo $f_loai == $type ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($type); ?>
+                                    </option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
 

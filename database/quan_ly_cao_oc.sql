@@ -293,6 +293,7 @@ CREATE TABLE TRANH_CHAP_HOA_DON (
     maHoaDon VARCHAR(50) NOT NULL,
     noiDung TEXT NOT NULL,
     trangThai TINYINT DEFAULT 0 COMMENT '0: Moi tao, 1: Dang xu ly, 2: Hoan thanh, 3: Da bac bo',
+    phanHoi TEXT NULL,
     ngayTao DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_tranh_chap_hd FOREIGN KEY (maHoaDon) REFERENCES HOA_DON(soHoaDon) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -367,6 +368,18 @@ CREATE TABLE MAINTENANCE_STATUS_LOG (
     CONSTRAINT fk_maintenacne_log_req FOREIGN KEY (request_id) REFERENCES MAINTENANCE_REQUEST(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+-- 26.5 Bảng LIEN_HE (Lưu thông tin khách hàng vãng lai liên hệ)
+CREATE TABLE IF NOT EXISTS LIEN_HE (
+    maLienHe INT AUTO_INCREMENT PRIMARY KEY,
+    hoTen VARCHAR(100) NOT NULL,
+    email VARCHAR(100),
+    soDienThoai VARCHAR(20),
+    noiDung TEXT,
+    ngayGui DATETIME DEFAULT CURRENT_TIMESTAMP,
+    trangThai TINYINT DEFAULT 0 COMMENT '0: Chưa xử lý, 1: Đã xử lý'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- 27. Bảng PHIEU_THU (Ledger giao dịch thanh toán)
 CREATE TABLE PHIEU_THU (
     soPhieuThu VARCHAR(50) PRIMARY KEY,
@@ -426,6 +439,7 @@ TRUNCATE TABLE HOA_DON;
 TRUNCATE TABLE CHI_SO_DIEN_NUOC;
 TRUNCATE TABLE MAINTENANCE_STATUS_LOG;
 TRUNCATE TABLE MAINTENANCE_REQUEST;
+TRUNCATE TABLE LIEN_HE;
 TRUNCATE TABLE YEU_CAU_GIA_HAN;
 TRUNCATE TABLE YEU_CAU_THUE;
 TRUNCATE TABLE CHI_TIET_GIA_HAN;
@@ -491,9 +505,9 @@ INSERT INTO PHONG (maPhong, maTang, tenPhong, loaiPhong, dienTich, soChoLamViec,
  'Khu vực kho phía sau, có thang chuyên dụng', 150000, 9000000, 1),                  -- Trống
 
 -- === KHỐI A TẦNG 2 (VP Hạng A) ===
-('A02-201', 'T-A02', 'Văn Phòng Hạng A — Suite 201', 'Văn phòng riêng', 150.00, 35,
+('A02-201', 'T-A02', 'Văn Phòng Hạng A — Suite 201', 'Văn phòng hạng A', 150.00, 35,
  'View nhìn thẳng ra sông Sài Gòn, nội thất cao cấp sẵn', 350000, 52500000, 2),     -- Đang thuê
-('A02-202', 'T-A02', 'Văn Phòng Hạng A — Suite 202', 'Văn phòng riêng', 120.00, 28,
+('A02-202', 'T-A02', 'Văn Phòng Hạng A — Suite 202', 'Văn phòng hạng A', 120.00, 28,
  'Phòng góc, 2 mặt kính trong suốt, ánh sáng tự nhiên tốt', 350000, 42000000, 2),   -- Đang thuê
 ('A02-203', 'T-A02', 'Văn Phòng Mở A203',            'Không gian làm việc mở', 200.00, 50,
  'Thiết kế open-office, phù hợp startup công nghệ', 320000, 64000000, 1),            -- Trống
@@ -517,11 +531,11 @@ INSERT INTO PHONG (maPhong, maTang, tenPhong, loaiPhong, dienTich, soChoLamViec,
  'Phù hợp salon, spa, phòng khám chuyên khoa nhỏ', 320000, 17600000, 3),             -- Sửa chữa
 
 -- === KHỐI B TẦNG 2 (VP Tiêu Chuẩn) ===
-('B02-201', 'T-B02', 'Văn Phòng Tiêu Chuẩn B201',   'Văn phòng riêng', 80.00, 18,
+('B02-201', 'T-B02', 'Văn Phòng Hạng C — B201',   'Văn phòng hạng C', 80.00, 18,
  'Bố trí gọn gàng, phù hợp văn phòng 15-20 nhân sự', 280000, 22400000, 1),          -- Trống
-('B02-202', 'T-B02', 'Văn Phòng Tiêu Chuẩn B202',   'Văn phòng riêng', 100.00, 22,
+('B02-202', 'T-B02', 'Văn Phòng Hạng B — B202',   'Văn phòng hạng B', 100.00, 22,
  'Đã lắp sẵn vách ngăn và kệ lưu trữ', 280000, 28000000, 2),                        -- Đang thuê
-('B02-203', 'T-B02', 'Văn Phòng Tiêu Chuẩn B203',   'Văn phòng riêng', 75.00, 16,
+('B02-203', 'T-B02', 'Văn Phòng Hạng C — B203',   'Văn phòng hạng C', 75.00, 16,
  'Phòng yên tĩnh, phù hợp văn phòng tư vấn, luật sư', 280000, 21000000, 1),         -- Trống
 ('B02-204', 'T-B02', 'Phòng Kho B204 — Lối Sau',    'Kho lưu trữ', 40.00, 5,
  'Kho phụ kết hợp phòng server, điều kiện không khí ổn định', 130000, 5200000, 1),  -- Trống
@@ -541,7 +555,7 @@ INSERT INTO PHONG (maPhong, maTang, tenPhong, loaiPhong, dienTich, soChoLamViec,
  'Phòng góc tầng 8, nội thất gỗ tự nhiên cao cấp nguyên bản', 450000, 72000000, 4), -- Lock
 
 -- === TRUNG TÂM TẦNG 10 (Penthouse) ===
-('C10-1001', 'T-C03', 'Penthouse Corporate 1001',    'Văn phòng cao cấp', 350.00, 80,
+('C10-1001', 'T-C03', 'Penthouse Corporate 1001',    'Văn phòng hạng A', 350.00, 80,
  'Tầng thượng penthouse, sân thượng riêng nhìn 360 độ TP.HCM', 600000, 210000000, 1), -- Trống
 ('C10-1002', 'T-C03', 'Penthouse Sky Lounge 1002',   'Không gian đa chức năng', 200.00, 60,
  'Kết hợp văn phòng & lounge VIP, bar counter, phù hợp làm showroom thương hiệu', 580000, 116000000, 1), -- Trống

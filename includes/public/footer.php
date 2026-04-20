@@ -18,9 +18,9 @@
             <div class="col-md-4">
                 <h5 class="text-white fw-bold mb-3">Về Chúng Tôi</h5>
                 <ul class="list-unstyled small">
-                    <li class="mb-2"><a href="#" class="text-light text-decoration-none" style="opacity: 0.9; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.9'">Giới thiệu tòa nhà</a></li>
-                    <li class="mb-2"><a href="#" class="text-light text-decoration-none" style="opacity: 0.9; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.9'">Chính sách thuê</a></li>
-                    <li class="mb-2"><a href="#" class="text-light text-decoration-none" style="opacity: 0.9; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.9'">Bảo mật thông tin</a></li>
+                    <li class="mb-2"><a href="<?= BASE_URL ?>gioi_thieu.php" class="text-light text-decoration-none" style="opacity: 0.9; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.9'">Giới thiệu tòa nhà</a></li>
+                    <li class="mb-2"><a href="javascript:void(0);" class="text-light text-decoration-none" style="opacity: 0.9; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.9'">Chính sách thuê</a></li>
+                    <li class="mb-2"><a href="javascript:void(0);" class="text-light text-decoration-none" style="opacity: 0.9; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.9'">Bảo mật thông tin</a></li>
                 </ul>
             </div>
         </div>

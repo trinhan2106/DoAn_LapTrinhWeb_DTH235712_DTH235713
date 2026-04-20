@@ -13,35 +13,43 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
             <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
                 <?php 
                     $currentUri = $_SERVER['REQUEST_URI'];
+                    $currentFile = basename($_SERVER['PHP_SELF']);
                     $isTenant = (strpos($currentUri, 'modules/tenant/') !== false);
                 ?>
-                <?php if ($isTenant): 
-                    $currentFile = basename($_SERVER['PHP_SELF']);
-                ?>
+                <?php if ($isTenant): ?>
                     <li class="nav-item">
-                        <a class="nav-link fw-semibold <?= $currentFile == 'dashboard.php' ? 'active text-white' : 'text-white-50' ?>" href="<?= BASE_URL ?>modules/tenant/dashboard.php">Bảng Điều Khiển</a>
+                        <a class="nav-link fw-semibold <?= $currentFile == 'dashboard.php' ? 'active text-white' : 'text-white-50' ?>" href="<?= BASE_URL ?>modules/tenant/dashboard.php">Tổng Quan</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold <?= $currentFile == 'hop_dong.php' ? 'active text-white' : 'text-white-50' ?>" href="<?= BASE_URL ?>modules/tenant/hop_dong.php">Hợp Đồng</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link fw-semibold <?= $currentFile == 'hoa_don.php' ? 'active text-white' : 'text-white-50' ?>" href="<?= BASE_URL ?>modules/tenant/hoa_don.php">Hóa Đơn</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link fw-semibold <?= $currentFile == 'hop_dong.php' ? 'active text-white' : 'text-white-50' ?>" href="<?= BASE_URL ?>modules/tenant/hop_dong.php">Hợp Đồng</a>
+                        <a class="nav-link fw-semibold <?= $currentFile == 'dien_nuoc.php' ? 'active text-white' : 'text-white-50' ?>" href="<?= BASE_URL ?>modules/tenant/dien_nuoc.php">Điện Nước</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold <?= $currentFile == 'yeu_cau_giahan.php' ? 'active text-white' : 'text-white-50' ?>" href="<?= BASE_URL ?>modules/tenant/yeu_cau_giahan.php">Gia Hạn</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold <?= $currentFile == 'tranh_chap.php' ? 'active text-white' : 'text-white-50' ?>" href="<?= BASE_URL ?>modules/tenant/tranh_chap.php">Tranh Chấp</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link fw-semibold <?= $currentFile == 'maintenance.php' ? 'active text-white' : 'text-white-50' ?>" href="<?= BASE_URL ?>modules/tenant/maintenance.php">Bảo Trì</a>
                     </li>
                 <?php else: ?>
                     <li class="nav-item">
-                        <a class="nav-link fw-semibold active text-white" href="<?= BASE_URL ?>index.php">Trang Chủ</a>
+                        <a class="nav-link fw-semibold <?= in_array($currentFile, ['index.php', '']) ? 'active text-white' : 'text-white-50' ?>" href="<?= BASE_URL ?>index.php">Trang Chủ</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link fw-semibold text-white-50" href="<?= BASE_URL ?>phong_trong.php" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Danh Sách Phòng</a>
+                        <a class="nav-link fw-semibold <?= $currentFile == 'phong_trong.php' ? 'active text-white' : 'text-white-50' ?>" href="<?= BASE_URL ?>phong_trong.php" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="<?= $currentFile == 'phong_trong.php' ? '' : "this.classList.replace('text-white', 'text-white-50')" ?>">Danh Sách Phòng</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link fw-semibold text-white-50" href="<?= BASE_URL ?>tien_ich.php" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Tiện Ích</a>
+                        <a class="nav-link fw-semibold <?= $currentFile == 'tien_ich.php' ? 'active text-white' : 'text-white-50' ?>" href="<?= BASE_URL ?>tien_ich.php" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="<?= $currentFile == 'tien_ich.php' ? '' : "this.classList.replace('text-white', 'text-white-50')" ?>">Tiện Ích</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link fw-semibold text-white-50" href="<?= BASE_URL ?>gioi_thieu.php" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Liên Hệ</a>
+                        <a class="nav-link fw-semibold <?= $currentFile == 'gioi_thieu.php' ? 'active text-white' : 'text-white-50' ?>" href="<?= BASE_URL ?>gioi_thieu.php" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="<?= $currentFile == 'gioi_thieu.php' ? '' : "this.classList.replace('text-white', 'text-white-50')" ?>">Liên Hệ</a>
                     </li>
                 <?php endif; ?>
             </ul>
@@ -49,7 +57,7 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
                 <?php if (isset($_SESSION['user_id']) && ($_SESSION['user_role'] ?? 0) == 4): ?>
                     <!-- Chuông thông báo cho Khách hàng -->
                     <div class="dropdown">
-                        <a class="position-relative d-flex align-items-center justify-content-center rounded-circle" href="#" id="tenantNotiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="width:38px;height:38px;background:rgba(201,166,107,0.15);border:1px solid rgba(201,166,107,0.3);text-decoration:none;transition:all 0.3s;">
+                        <a class="position-relative d-flex align-items-center justify-content-center rounded-circle" href="javascript:void(0);" id="tenantNotiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="width:38px;height:38px;background:rgba(201,166,107,0.15);border:1px solid rgba(201,166,107,0.3);text-decoration:none;transition:all 0.3s;">
                             <i class="bi bi-bell-fill" style="color:#c9a66b;font-size:1.1rem;"></i>
                             <span id="tenantNotiBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size:0.6rem;border:2px solid #1e3a5f;padding:0.3em 0.55em;">0</span>
                         </a>

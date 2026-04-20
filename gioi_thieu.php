@@ -121,6 +121,22 @@ include_once __DIR__ . '/includes/public/navbar.php';
                     <!-- Form Liên Hệ -->
                     <div class="contact-form bg-white p-4 p-md-5 shadow-sm card-brand" style="border-radius: 8px;">
                         <h4 class="fw-bold mb-4" style="color: #1e3a5f;">Gửi Tin Nhắn</h4>
+                        
+                        <!-- Hiển thị thông báo (Flash Message) -->
+                        <?php if (isset($_SESSION['success_msg'])): ?>
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="bi bi-check-circle-fill me-2"></i> <?php echo $_SESSION['success_msg']; unset($_SESSION['success_msg']); ?>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php if (isset($_SESSION['error_msg'])): ?>
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i> <?php echo $_SESSION['error_msg']; unset($_SESSION['error_msg']); ?>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        <?php endif; ?>
+
                         <form action="lien_he_submit.php" method="POST" class="needs-validation" novalidate>
                             <!-- Chống CSRF -->
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
@@ -140,10 +156,10 @@ include_once __DIR__ . '/includes/public/navbar.php';
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label for="subject" class="form-label fw-semibold">Tiêu Đề</label>
+                                <label for="phone" class="form-label fw-semibold">Số Điện Thoại</label>
                                 <div class="has-validation">
-                                    <input type="text" class="form-control form-control-lg bg-light border-0" id="subject" name="subject" placeholder="Bạn cần hỗ trợ vấn đề gì?" required>
-                                    <div class="invalid-feedback">Vui lòng nhập tiêu đề.</div>
+                                    <input type="text" class="form-control form-control-lg bg-light border-0" id="phone" name="phone" placeholder="Số điện thoại cá nhân" required>
+                                    <div class="invalid-feedback">Vui lòng nhập số điện thoại.</div>
                                 </div>
                             </div>
                             <div class="mb-4">

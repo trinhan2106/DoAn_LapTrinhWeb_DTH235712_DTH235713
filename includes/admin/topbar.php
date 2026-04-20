@@ -52,7 +52,7 @@ if (!defined('BASE_URL')) {
 
         <!-- Chuông thông báo Dropdown (Glassmorphism & Pulse Style) -->
         <div class="dropdown">
-            <a class="btn btn-light rounded-circle shadow-sm position-relative" href="#" id="notiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;">
+            <a class="btn btn-light rounded-circle shadow-sm position-relative" href="javascript:void(0);" id="notiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;">
                 <i class="bi bi-bell-fill text-navy fs-5"></i>
                 <span id="notiBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none badge-pulse" style="font-size: 0.65rem; border: 2px solid white; padding: 0.35em 0.6em;">
                     0
@@ -75,8 +75,8 @@ if (!defined('BASE_URL')) {
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="userMenuButton">
                 <li><a class="dropdown-item" href="<?= BASE_URL ?>index.php"><i class="bi bi-house-door me-2 text-muted"></i>Trang chủ hệ thống</a></li>
-                <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2 text-muted"></i>Hồ sơ cá nhân</a></li>
-                <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2 text-muted"></i>Cài đặt</a></li>
+                <li><a class="dropdown-item" href="<?= BASE_URL ?>modules/ho_so/index.php"><i class="bi bi-person me-2 text-muted"></i>Hồ sơ cá nhân</a></li>
+                <li><a class="dropdown-item" href="javascript:void(0);"><i class="bi bi-gear me-2 text-muted"></i>Cài đặt</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item text-danger logout-link" href="<?= BASE_URL ?>dangxuat.php"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</a></li>
             </ul>
