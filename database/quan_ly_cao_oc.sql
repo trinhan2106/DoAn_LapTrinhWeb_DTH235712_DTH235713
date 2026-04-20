@@ -286,14 +286,15 @@ CREATE TABLE LOGIN_ATTEMPT (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- 20. Bảng TRANH_CHAP_HOA_DON (Giải quyết khiếu nại của khách)
+-- 20. Bảng TRANH_CHAP_HOA_DON (Giải quyết khiếu nại/Kiểm tra lại hóa đơn từ khách thuê)
+DROP TABLE IF EXISTS TRANH_CHAP_HOA_DON;
 CREATE TABLE TRANH_CHAP_HOA_DON (
     id VARCHAR(50) PRIMARY KEY,
     maHoaDon VARCHAR(50) NOT NULL,
     noiDung TEXT NOT NULL,
-    trangThai TINYINT DEFAULT 0 COMMENT '0: Moi tao, 1: Dang xu ly, 2: Da giai quyet',
+    trangThai TINYINT DEFAULT 0 COMMENT '0: Moi tao, 1: Dang xu ly, 2: Hoan thanh, 3: Da bac bo',
     ngayTao DATETIME DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_tranhchap_hd FOREIGN KEY (maHoaDon) REFERENCES HOA_DON(soHoaDon)
+    CONSTRAINT fk_tranh_chap_hd FOREIGN KEY (maHoaDon) REFERENCES HOA_DON(soHoaDon) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -389,6 +390,9 @@ CREATE TABLE PHIEU_THU_CHI_TIET (
     CONSTRAINT fk_ptct_pt FOREIGN KEY (soPhieuThu) REFERENCES PHIEU_THU(soPhieuThu),
     CONSTRAINT fk_ptct_hd FOREIGN KEY (soHoaDon) REFERENCES HOA_DON(soHoaDon)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
 
 
 -- ==========================================================
