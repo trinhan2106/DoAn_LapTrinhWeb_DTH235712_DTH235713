@@ -123,7 +123,7 @@
 | **7.3** | **`feature/tenant-hoadon`**         | **Lịch sử hóa đơn: từng kỳ, số tiền, trạng thái, nút "Yêu cầu kiểm tra lại"**          | **`modules/tenant/hoa_don.php`**        | **Nhật** | **PDO, Bootstrap Tabs**  | 🔴      | ✅ "Đã xong (Full)"  |
 | **7.4** | **`feature/tenant-yeu-cau-giahan`** | **Form gửi yêu cầu gia hạn online: chọn số tháng từng phòng → INSERT YEU_CAU_GIA_HAN** | **`modules/tenant/yeu_cau_giahan.php`** | **Nhật** | **JS, PDO**              | 🔴      | ✅ "Đã xong (Full)"  |
 | **7.5** | **`feature/tenant-tranh-chap`**     | **Gửi tranh chấp hóa đơn → INSERT TRANH_CHAP_HOA_DON**                                 | **`modules/tenant/tranh_chap.php`**     | **Nhật** | **PDO, Validate**        | 🔴      | ✅ "Đã xong (Full)"  |
-| **7.6** | **`feature/tenant-maintenance`**    | **Gửi yêu cầu sửa chữa + xem tiến độ timeline (từ tenant side)**                       | **`modules/tenant/maintenance.php`**    | **Nhật** | **PDO, Bootstrap Steps** | 🔴      | ⏳ "Chờ Nhật (FE)" |
+| **7.6** | **`feature/tenant-maintenance`**    | **Gửi yêu cầu sửa chữa + xem tiến độ timeline (từ tenant side)**                       | **`modules/tenant/maintenance.php`**    | **Nhật** | **PDO, Bootstrap Steps** | 🔴      | ✅ "Đã xong (Full)"  |
 | **7.7** | **`feature/tenant-dien-nuoc`**      | **Lịch sử tiêu thụ điện/nước theo tháng + biểu đồ**                                    | **`modules/tenant/dien_nuoc.php`**      | **Nhật** | **Chart.js, PDO**        | 🔴      | ⏳ "Chờ Nhật (FE)" |
 
 ---

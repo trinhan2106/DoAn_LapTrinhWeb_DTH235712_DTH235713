@@ -15,18 +15,20 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
                     $currentUri = $_SERVER['REQUEST_URI'];
                     $isTenant = (strpos($currentUri, 'modules/tenant/') !== false);
                 ?>
-                <?php if ($isTenant): ?>
+                <?php if ($isTenant): 
+                    $currentFile = basename($_SERVER['PHP_SELF']);
+                ?>
                     <li class="nav-item">
-                        <a class="nav-link fw-semibold active text-white" href="<?= BASE_URL ?>modules/tenant/dashboard.php">Bảng Điều Khiển</a>
+                        <a class="nav-link fw-semibold <?= $currentFile == 'dashboard.php' ? 'active text-white' : 'text-white-50' ?>" href="<?= BASE_URL ?>modules/tenant/dashboard.php">Bảng Điều Khiển</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link fw-semibold text-white-50" href="<?= BASE_URL ?>modules/tenant/hoa_don.php" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Hóa Đơn</a>
+                        <a class="nav-link fw-semibold <?= $currentFile == 'hoa_don.php' ? 'active text-white' : 'text-white-50' ?>" href="<?= BASE_URL ?>modules/tenant/hoa_don.php">Hóa Đơn</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link fw-semibold text-white-50" href="<?= BASE_URL ?>modules/tenant/hop_dong.php" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Hợp Đồng</a>
+                        <a class="nav-link fw-semibold <?= $currentFile == 'hop_dong.php' ? 'active text-white' : 'text-white-50' ?>" href="<?= BASE_URL ?>modules/tenant/hop_dong.php">Hợp Đồng</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link fw-semibold text-white-50" href="<?= BASE_URL ?>modules/tenant/maintenance.php" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Bảo Trì</a>
+                        <a class="nav-link fw-semibold <?= $currentFile == 'maintenance.php' ? 'active text-white' : 'text-white-50' ?>" href="<?= BASE_URL ?>modules/tenant/maintenance.php">Bảo Trì</a>
                     </li>
                 <?php else: ?>
                     <li class="nav-item">
