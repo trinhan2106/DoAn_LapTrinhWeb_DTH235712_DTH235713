@@ -30,7 +30,6 @@ $dsTang = $stmt->fetchAll();
 <html lang="vi">
 <head>
     <?php include __DIR__ . '/../../includes/admin/admin-header.php'; ?>
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <style>
         .table-navy thead th { background-color: #1e3a5f !important; color: #ffffff !important; font-weight: 600; }
         .text-navy { color: #1e3a5f !important; }
@@ -70,7 +69,7 @@ $dsTang = $stmt->fetchAll();
                 </div>
                 <div class="card-body p-4">
                     <div class="table-responsive">
-                        <table id="tblTang" class="table table-hover align-middle table-navy">
+                        <table id="tblTang" class="table table-hover align-middle table-navy table-datatable">
                             <thead>
                                 <tr>
                                     <th width="120">Mã Tầng</th>
@@ -134,20 +133,9 @@ $dsTang = $stmt->fetchAll();
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-$(document).ready(function() {
-    $('#tblTang').DataTable({
-        "language": {
-            "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/vi.json"
-        },
-        "order": [[2, "asc"], [1, "asc"]], 
-        "pageLength": 10
-    });
-});
+    $('#tblTang').DataTable();
 
 function xacNhanXoa(maTang, tenTang) {
     document.getElementById('deleteFloorName').innerText = tenTang;

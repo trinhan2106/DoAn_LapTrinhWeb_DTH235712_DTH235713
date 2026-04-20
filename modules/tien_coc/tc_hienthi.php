@@ -37,25 +37,22 @@ function renderBadge($stt) {
     }
 }
 ?>
-<!DOCTYPE html>
-<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sổ Quản Lý Tiền Cọc Hợp Đồng</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <?php include __DIR__ . '/../../includes/admin/admin-header.php'; ?>
     <style>
-        :root { --primary: #1e3a5f; --accent: #c9a66b; --bg: #f4f7f9; }
-        body { background-color: var(--bg); }
-        .page-header { background: var(--primary); border-bottom: 4px solid var(--accent); color: #fff; }
-        .table-custom th { background-color: #e9ecef; }
+        .page-header { background: var(--color-primary); border-bottom: 4px solid var(--color-accent); color: #fff; }
+        .table-custom thead th { background-color: #1e3a5f !important; color: white !important; }
         .amount-text { font-family: 'Courier New', Courier, monospace; font-weight: bold; color: #198754; font-size: 1.1rem; }
     </style>
 </head>
-<body class="p-4">
-
-<div class="container shadow p-0 bg-white rounded overflow-hidden">
+<div class="admin-layout">
+    <?php include __DIR__ . '/../../includes/admin/sidebar.php'; ?>
+    
+    <div class="admin-main-wrapper flex-grow-1">
+        <?php include __DIR__ . '/../../includes/admin/topbar.php'; ?>
+        
+        <main class="admin-main-content">
+            <div class="container shadow p-0 bg-white rounded overflow-hidden">
     <!-- Header -->
     <div class="page-header p-4 d-flex justify-content-between align-items-center">
         <div>
@@ -75,7 +72,7 @@ function renderBadge($stt) {
 
     <!-- Table Danh Sách -->
     <div class="p-4">
-        <table class="table table-bordered table-hover align-middle table-custom">
+        <table class="table table-bordered table-hover align-middle table-custom table-datatable">
             <thead>
                 <tr>
                     <th>Mã Phiếu Cọc</th>
@@ -116,9 +113,13 @@ function renderBadge($stt) {
                 <?php endif; ?>
             </tbody>
         </table>
+        </table>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        </main>
+        
+        <?php include __DIR__ . '/../../includes/admin/admin-footer.php'; ?>
+    </div>
+</div>
 </body>
 </html>

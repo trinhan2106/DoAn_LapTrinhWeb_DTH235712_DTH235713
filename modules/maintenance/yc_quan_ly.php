@@ -48,14 +48,20 @@ function calculateSLADeadline($createdAt, $mucDoUT) {
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Điều hành SLA Yêu Cầu Kỹ Thuật</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <?php include __DIR__ . '/../../includes/admin/admin-header.php'; ?>
+    <style>
+        .overdue- violated { color: var(--color-danger); font-weight: bold; }
+        .table-custom thead th { background: #1e3a5f !important; color: white !important; }
+    </style>
 </head>
-<body class="bg-light p-4">
-
-<div class="container-fluid bg-white p-4 shadow rounded">
+<div class="admin-layout">
+    <?php include __DIR__ . '/../../includes/admin/sidebar.php'; ?>
+    
+    <div class="admin-main-wrapper flex-grow-1">
+        <?php include __DIR__ . '/../../includes/admin/topbar.php'; ?>
+        
+        <main class="admin-main-content">
+            <div class="container-fluid bg-white p-4 shadow rounded">
     <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
         <h3 class="mb-0 fw-bold text-primary">SLA Maintenance Tracker</h3>
         <a href="../../modules/dashboard/admin.php" class="btn btn-secondary btn-sm">Quay về Backoffice</a>
@@ -69,7 +75,7 @@ function calculateSLADeadline($createdAt, $mucDoUT) {
     <?php endif; ?>
 
     <div class="table-responsive">
-        <table class="table table-bordered table-hover align-middle">
+        <table class="table table-bordered table-hover align-middle table-datatable">
             <thead class="table-light">
                 <tr>
                     <th>Mã Rq</th>
@@ -145,6 +151,10 @@ function calculateSLADeadline($createdAt, $mucDoUT) {
     </div>
 
 </div>
-
+        </main>
+        
+        <?php include __DIR__ . '/../../includes/admin/admin-footer.php'; ?>
+    </div>
+</div>
 </body>
 </html>

@@ -32,8 +32,6 @@ $dsCaoOc = $db->query($sql)->fetchAll();
 <html lang="vi">
 <head>
     <?php include __DIR__ . '/../../includes/admin/admin-header.php'; ?>
-    <!-- DataTables BS5 CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <style>
         .table-navy thead th {
             background-color: #1e3a5f !important;
@@ -102,7 +100,7 @@ $dsCaoOc = $db->query($sql)->fetchAll();
                 </div>
                 <div class="card-body p-4">
                     <div class="table-responsive">
-                        <table id="tblCaoOc" class="table table-hover align-middle table-navy">
+                        <table id="tblCaoOc" class="table table-hover align-middle table-navy table-datatable">
                             <thead>
                                 <tr>
                                     <th width="120">MÃ</th>
@@ -167,19 +165,10 @@ $dsCaoOc = $db->query($sql)->fetchAll();
 </div>
 
 <!-- Scripts -->
-<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
 $(document).ready(function() {
-    $('#tblCaoOc').DataTable({
-        "language": {
-            "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/vi.json"
-        },
-        "order": [[1, "asc"]],
-        "pageLength": 10
-    });
+    $('#tblCaoOc').DataTable();
 });
 
 function xacNhanXoa(ma, ten) {

@@ -31,12 +31,9 @@ try {
     die("Lỗi truy vấn: " . $e->getMessage());
 }
 
-// 5. Tích hợp Master Layout - Header
+// ... 
 include_once __DIR__ . '/../../includes/admin/admin-header.php';
 ?>
-
-<!-- DataTables CSS -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 
 <style>
     .table-navy thead th {
@@ -243,7 +240,7 @@ include_once __DIR__ . '/../../includes/admin/admin-header.php';
             <div class="card shadow-lg border-0" style="border-radius: 15px;">
                 <div class="card-body p-4">
                     <div class="table-responsive rounded-3 overflow-hidden">
-                        <table id="tableYeuCau" class="table table-hover align-middle table-navy w-100 border-0 mb-0">
+                        <table id="tableYeuCau" class="table table-hover align-middle table-navy w-100 border-0 mb-0 table-datatable">
                             <thead>
                                 <tr>
                                     <th class="ps-4" style="width: 30%;">Thông tin Khách hàng</th>
@@ -393,24 +390,11 @@ include_once __DIR__ . '/../../includes/admin/admin-header.php';
     </div>
 </div>
 
-<!-- DataTables JS & jQuery (if not in footer already) -->
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
 $(document).ready(function() {
     // 3. Quy tắc 3 cú nhấp chuột: DataTables tiếng Việt & tương tác nhanh
-    $('#tableYeuCau').DataTable({
-        "language": {
-            "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/vi.json"
-        },
-        "order": [[2, "desc"]],
-        "pageLength": 10,
-        "columnDefs": [
-            { "orderable": false, "targets": [3, 4] }
-        ]
-    });
+    $('#tableYeuCau').DataTable();
 });
 
 function xemChiTiet(data) {

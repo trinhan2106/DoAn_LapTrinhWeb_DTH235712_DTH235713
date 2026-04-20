@@ -37,20 +37,19 @@ try {
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thùng Rác - Phục Hồi Dữ Liệu</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <?php include __DIR__ . '/../../includes/admin/admin-header.php'; ?>
     <style>
-        :root { --primary: #1e3a5f; --accent: #c9a66b; --bg-color: #f4f7f9; }
-        body { background-color: var(--bg-color); }
-        .hero-bar { background: var(--primary); color: white; border-bottom: 4px solid var(--accent); }
+        .hero-bar { background: var(--color-primary); color: white; border-bottom: 4px solid var(--color-accent); }
     </style>
 </head>
-<body class="p-4">
-
-<div class="container shadow-lg bg-white p-0 rounded overflow-hidden">
+<div class="admin-layout">
+    <?php include __DIR__ . '/../../includes/admin/sidebar.php'; ?>
+    
+    <div class="admin-main-wrapper flex-grow-1">
+        <?php include __DIR__ . '/../../includes/admin/topbar.php'; ?>
+        
+        <main class="admin-main-content">
+            <div class="container shadow-lg bg-white p-0 rounded overflow-hidden">
     
     <div class="hero-bar p-4 d-flex justify-content-between align-items-center">
         <div>
@@ -71,7 +70,7 @@ try {
     <div class="p-4">
         <h5 class="fw-bold mb-3 text-secondary border-bottom pb-2">Danh mục Căn Phòng chờ Hồi Sinh</h5>
         
-        <table class="table table-hover table-bordered align-middle">
+        <table class="table table-hover table-bordered align-middle table-datatable">
             <thead class="table-light">
                 <tr>
                     <th>Mã PK</th>
@@ -108,7 +107,10 @@ try {
         </table>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        </main>
+        
+        <?php include __DIR__ . '/../../includes/admin/admin-footer.php'; ?>
+    </div>
+</div>
 </body>
 </html>

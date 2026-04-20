@@ -37,28 +37,20 @@ try {
     die("Lỗi kết xuất Audit Log: " . $e->getMessage());
 }
 ?>
-<!DOCTYPE html>
-<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Kiểm Toán (Audit Trail)</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <?php include __DIR__ . '/../../includes/admin/admin-header.php'; ?>
     <style>
-        :root {
-            --primary: #1e3a5f; 
-            --accent: #c9a66b; 
-            --bg-color: #f4f7f9; 
-            --text-color: #1f2a44;
-        }
-        body { background-color: var(--bg-color); color: var(--text-color); }
         .audit-header { background: #343a40; color: #fff; padding: 20px; border-radius: 8px 8px 0 0; }
-        .log-table th { background-color: var(--primary); color: #fff; border-bottom: 2px solid var(--accent); }
-        .log-table tbody tr:hover { background-color: #e9ecef; }
+        .log-table thead th { background-color: var(--color-primary) !important; color: #fff !important; border-bottom: 2px solid var(--color-accent); }
     </style>
 </head>
-<body class="p-4">
+<div class="admin-layout">
+    <?php include __DIR__ . '/../../includes/admin/sidebar.php'; ?>
+    
+    <div class="admin-main-wrapper flex-grow-1">
+        <?php include __DIR__ . '/../../includes/admin/topbar.php'; ?>
+        
+        <main class="admin-main-content">
 
 <div class="container-fluid">
     <div class="audit-header d-flex justify-content-between align-items-center shadow-sm mb-0">
@@ -71,7 +63,7 @@ try {
 
     <div class="bg-white p-3 shadow-sm border border-top-0 rounded-bottom">
         <div class="table-responsive">
-            <table class="table table-bordered table-striped log-table align-middle">
+            <table class="table table-bordered table-striped log-table align-middle table-datatable">
                 <thead>
                     <tr>
                         <th class="text-center" width="5%">#</th>
@@ -110,9 +102,12 @@ try {
                 </tbody>
             </table>
         </div>
+        </div>
+    </div>
+        </main>
+        
+        <?php include __DIR__ . '/../../includes/admin/admin-footer.php'; ?>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

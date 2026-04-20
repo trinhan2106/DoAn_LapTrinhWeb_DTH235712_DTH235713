@@ -43,61 +43,25 @@ function formatTrangThaiHD($tt) {
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Danh Sách Hợp Đồng</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
+    <?php include __DIR__ . '/../../includes/admin/admin-header.php'; ?>
     <style>
-        :root {
-            --primary: #1e3a5f;
-            --accent: #c9a66b;
-            --bg-color: #f4f7f9;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            padding: 20px;
-        }
-
-        .header-box {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #fff;
-            padding: 20px 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
-            border-left: 5px solid var(--primary);
-        }
-
-        .table-custom thead {
-            background-color: #f8f9fa;
-        }
-        
-        .table-custom th {
-            color: var(--primary);
-            font-weight: 700;
-        }
-
-        .btn-action {
-            width: 32px; height: 32px;
-            padding: 0;
-            display: inline-flex; justify-content: center; align-items: center;
-            border-radius: 6px;
-        }
+        .header-box { border-left: 5px solid var(--color-primary); }
+        .table-custom thead th { background: var(--color-primary) !important; color: white !important; }
     </style>
 </head>
-<body>
-
-<div class="container-fluid">
+<div class="admin-layout">
+    <?php include __DIR__ . '/../../includes/admin/sidebar.php'; ?>
     
-    <div class="header-box">
-        <h4 class="m-0 fw-bold" style="color: var(--primary)">
-            <i class="fa-solid fa-folder-open me-2"></i> QUẢN TRỊ HỒ SƠ HỢP ĐỒNG
-        </h4>
+    <div class="admin-main-wrapper flex-grow-1">
+        <?php include __DIR__ . '/../../includes/admin/topbar.php'; ?>
+        
+        <main class="admin-main-content">
+            <div class="container-fluid">
+    
+        <div class="header-box bg-white shadow-sm p-4 rounded-3 d-flex justify-content-between align-items-center mb-4">
+            <h4 class="m-0 fw-bold text-navy">
+                <i class="fa-solid fa-folder-open me-2"></i> QUẢN TRỊ HỒ SƠ HỢP ĐỒNG
+            </h4>
         <a href="hd_them.php" class="btn btn-primary" style="background-color: var(--primary); border: none;">
             <i class="fa-solid fa-plus me-1"></i> Tân Tạo Hợp Đồng Mới
         </a>
@@ -114,7 +78,7 @@ function formatTrangThaiHD($tt) {
     <div class="card border-0 shadow-sm rounded-3">
         <div class="card-body p-4">
             <div class="table-responsive">
-                <table class="table table-hover table-custom align-middle mb-0">
+                <table class="table table-hover table-custom align-middle mb-0 table-datatable">
                     <thead>
                         <tr>
                             <th width="15%">Số Đăng Ký (ID)</th>
@@ -171,11 +135,12 @@ function formatTrangThaiHD($tt) {
                         <?php endif; ?>
                     </tbody>
                 </table>
+                </div>
             </div>
-        </div>
+        </main>
+        
+        <?php include __DIR__ . '/../../includes/admin/admin-footer.php'; ?>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

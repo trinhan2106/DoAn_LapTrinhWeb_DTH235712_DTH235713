@@ -13,6 +13,16 @@
 <!-- Bootstrap 5 JS Bundle with Popper -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- jQuery (Required for DataTables) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- DataTables JS Core & Bootstrap 5 Integration -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<!-- Gọi file cấu hình DataTables của hệ thống -->
+<script src="<?= BASE_URL ?>assets/js/datatables-init.js"></script>
+
 <!-- Modal Xem Tất Cả Thông Báo (Global) -->
 <div class="modal fade" id="modalAllNotifications" tabindex="-1" aria-labelledby="modalAllNotificationsLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">

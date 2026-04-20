@@ -31,33 +31,34 @@ try {
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Danh Mục Nhân Viên (HRM)</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <?php include __DIR__ . '/../../includes/admin/admin-header.php'; ?>
     <style>
-        body { background-color: #f4f7f9; }
         .hero { background: #1e3a5f; color: #fff; padding: 20px; border-bottom: 4px solid #c9a66b; }
-        .table-custom th { background: #e9ecef; }
+        .table-custom thead th { background: #1e3a5f !important; color: white !important; }
     </style>
 </head>
 <body class="p-4">
 
-<div class="container shadow p-0 bg-white rounded overflow-hidden">
-    <!-- Header -->
-    <div class="hero d-flex justify-content-between align-items-center">
-        <div>
-            <h3 class="mb-0 fw-bold"><i class="fa-solid fa-users-tie me-2 text-warning"></i>TRẠM QUẢN TRỊ NHÂN SỰ</h3>
-            <p class="mb-0 text-light opacity-75">Quản lý Tài khoản, Phân quyền Lõi và Điều phối Nhân Viên Cao Ốc</p>
-        </div>
-        <div>
-            <a href="them.php" class="btn btn-warning fw-bold shadow-sm me-2"><i class="fa-solid fa-user-plus me-1"></i>Thêm Mới NV</a>
-            <a href="../../index.php" class="btn btn-outline-light"><i class="fa-solid fa-house"></i> Dashboard</a>
-        </div>
-    </div>
+<div class="admin-layout">
+    <?php include __DIR__ . '/../../includes/admin/sidebar.php'; ?>
+    
+    <div class="admin-main-wrapper flex-grow-1">
+        <?php include __DIR__ . '/../../includes/admin/topbar.php'; ?>
+        
+        <main class="admin-main-content">
+            <div class="container shadow p-0 bg-white rounded overflow-hidden">
+                <!-- Header -->
+                <div class="hero d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-0 fw-bold"><i class="fa-solid fa-users-tie me-2 text-warning"></i>TRẠM QUẢN TRỊ NHÂN SỰ</h3>
+                        <p class="mb-0 text-light opacity-75">Quản lý Tài khoản, Phân quyền Lõi và Điều phối Nhân Viên Cao Ốc</p>
+                    </div>
+                    <div>
+                        <a href="them.php" class="btn btn-warning fw-bold shadow-sm me-2"><i class="fa-solid fa-user-plus me-1"></i>Thêm Mới NV</a>
+                    </div>
+                </div>
 
-    <!-- Alert Thông báo -->
+                <!-- Alert Thông báo -->
     <?php if(isset($_SESSION['success_msg'])): ?>
         <div class="alert alert-success m-3 rounded-0"><i class="fa-solid fa-check-circle me-2"></i><?= $_SESSION['success_msg']; unset($_SESSION['success_msg']); ?></div>
     <?php endif; ?>
@@ -65,8 +66,8 @@ try {
         <div class="alert alert-danger m-3 rounded-0"><i class="fa-solid fa-triangle-exclamation me-2"></i><?= $_SESSION['error_msg']; unset($_SESSION['error_msg']); ?></div>
     <?php endif; ?>
 
-    <div class="p-4 table-responsive">
-        <table class="table table-bordered table-hover align-middle table-custom">
+        <div class="p-4 table-responsive">
+            <table class="table table-bordered table-hover align-middle table-custom table-datatable">
             <thead>
                 <tr>
                     <th>Mã NV</th>
@@ -125,9 +126,12 @@ try {
                 <?php endif; ?>
             </tbody>
         </table>
+                </div>
+            </div>
+        </main>
+        
+        <?php include __DIR__ . '/../../includes/admin/admin-footer.php'; ?>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

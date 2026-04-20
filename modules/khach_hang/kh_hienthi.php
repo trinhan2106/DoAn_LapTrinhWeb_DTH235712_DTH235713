@@ -24,8 +24,6 @@ $csrf_token = generateCSRFToken(); // Tạo token cho form Xóa
 <html lang="vi">
 <head>
     <?php require_once __DIR__ . '/../../includes/admin/admin-header.php'; ?>
-    <!-- DataTables BS5 CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <style>
         .table-navy thead th {
             background-color: #1e3a5f !important;
@@ -86,7 +84,7 @@ $csrf_token = generateCSRFToken(); // Tạo token cho form Xóa
             <div class="card shadow-sm border-0">
                 <div class="card-body p-4">
                     <div class="table-responsive">
-                        <table id="tblKhachHang" class="table table-hover align-middle table-navy w-100 border">
+                        <table id="tblKhachHang" class="table table-hover align-middle table-navy table-datatable w-100 border">
                             <thead>
                                 <tr>
                                     <th>Mã KH</th>
@@ -156,18 +154,10 @@ $csrf_token = generateCSRFToken(); // Tạo token cho form Xóa
     </div>
 </div>
 
-<!-- DataTables & Scripts -->
-<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
 $(document).ready(function() {
-    $('#tblKhachHang').DataTable({
-        "language": { "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/vi.json" },
-        "order": [[0, "desc"]],
-        "pageLength": 10
-    });
+    $('#tblKhachHang').DataTable();
 });
 
 function xacNhanXoa(ma, ten) {
