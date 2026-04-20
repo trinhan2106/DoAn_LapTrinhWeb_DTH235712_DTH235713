@@ -26,7 +26,6 @@
         min-height: 100vh; 
     }
     .admin-sidebar { 
-        width: 280px; 
         z-index: 1045; /* Bootstrap offcanvas z-index */
     }
     .admin-main-wrapper { 
@@ -38,24 +37,13 @@
     }
     .admin-main-content { 
         flex-grow: 1; 
-        padding: 1.5rem; 
+        padding: 0.5rem 1.5rem 1.5rem; /* Giảm padding trên cùng để tránh dư khoảng trắng */
         max-width: 1440px; 
         margin: 0 auto; 
         width: 100%; 
     }
     
     /* Responsive Adjustments */
-    @media (min-width: 992px) {
-        .admin-sidebar { 
-            position: fixed; 
-            top: 0; 
-            bottom: 0; 
-            left: 0; 
-        }
-        .admin-main-wrapper { 
-            margin-left: 280px; 
-        }
-    }
     @media (max-width: 375px) {
         .admin-main-content {
             padding: 1rem;
