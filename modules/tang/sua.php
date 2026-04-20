@@ -53,6 +53,7 @@ $csrf_token = generateCSRFToken();
         .btn-gold:hover { background-color: #b5925a; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(201, 166, 107, 0.4); }
         .form-label { font-weight: 600; color: #1e3a5f; margin-bottom: 0.5rem; }
         .form-control:focus, .form-select:focus { border-color: #c9a66b; box-shadow: 0 0 0 0.25rem rgba(201, 166, 107, 0.15); }
+        .text-navy { color: #1e3a5f !important; }
     </style>
 </head>
 <body class="bg-light">
