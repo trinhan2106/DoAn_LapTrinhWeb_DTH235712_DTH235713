@@ -31,7 +31,11 @@ try {
     ");
     $listPhongXoa = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    die("Lỗi kết xuất Thùng Rác: " . $e->getMessage());
+    if (session_status() === PHP_SESSION_NONE) { session_start(); }
+    error_log("[" . basename(__FILE__) . "] Lỗi DB: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Đã xảy ra lỗi hệ thống. Vui lòng liên hệ quản trị viên.";
+    header("Location: " . BASE_URL . "modules/dashboard/admin.php");
+    exit();
 }
 ?>
 <!DOCTYPE html>

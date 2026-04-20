@@ -17,7 +17,11 @@ try {
     $stmt = $pdo->query("SELECT tc.maTienCoc, tc.soHopDong, tc.soTien, tc.trangThai, kh.tenKH FROM TIEN_COC tc JOIN HOP_DONG hd ON tc.soHopDong = hd.soHopDong JOIN KHACH_HANG kh ON hd.maKH = kh.maKH ORDER BY tc.maTienCoc DESC");
     $listCoc = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    die("Lỗi truy vấn: " . $e->getMessage());
+    if (session_status() === PHP_SESSION_NONE) { session_start(); }
+    error_log("[" . basename(__FILE__) . "] Lỗi DB: " . $e->getMessage());
+    $_SESSION['error_msg'] = "Đã xảy ra lỗi hệ thống. Vui lòng liên hệ quản trị viên.";
+    header("Location: " . BASE_URL . "modules/dashboard/admin.php");
+    exit();
 }
 
 include __DIR__ . '/../../includes/admin/admin-header.php';
