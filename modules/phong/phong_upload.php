@@ -11,23 +11,50 @@ require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
 
-// Xác thực Session & Phân quyền
-kiemTraSession();
-kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
+header('Content-Type: application/json; charset=utf-8');
+
+// Xác thực Session & Phân quyền (AJAX-safe logic)
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Chưa đăng nhập hoặc phiên hết hạn.']);
+    exit();
+}
+
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > SESSION_TIMEOUT)) {
+    session_unset();
+    session_destroy();
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Phiên làm việc hết hạn. Vui lòng đăng nhập lại.']);
+    exit();
+}
+$_SESSION['last_activity'] = time();
+
+$userRole = (int)($_SESSION['user_role'] ?? 0);
+if (!in_array($userRole, [ROLE_ADMIN, ROLE_QUAN_LY_NHA], true)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Không có quyền thực hiện thao tác này.']);
+    exit();
+}
 
 // 2. NHẬN DỮ LIỆU & KIỂM TRA CSRF
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    die(json_encode(['success' => false, 'message' => 'Yêu cầu không hợp lệ.']));
+    http_response_code(405);
+    echo json_encode(['success' => false, 'message' => 'Yêu cầu không hợp lệ.']);
+    exit();
 }
 
 $csrf_token = $_POST['csrf_token'] ?? '';
 if (!validateCSRFToken($csrf_token)) {
-    die(json_encode(['success' => false, 'message' => 'Lỗi bảo mật: CSRF Token không hợp lệ.']));
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Lỗi bảo mật: CSRF Token không hợp lệ.']);
+    exit();
 }
 
 $maPhong = $_POST['maPhong'] ?? '';
 if (empty($maPhong)) {
-    die(json_encode(['success' => false, 'message' => 'Mã phòng không được để trống.']));
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Mã phòng không được để trống.']);
+    exit();
 }
 
 // 3. XỬ LÝ UPLOAD
@@ -120,9 +147,13 @@ if (!empty($_FILES['hinhAnh']['name'][0])) {
             $db->rollBack();
         }
         error_log("Lỗi upload gallery: " . $e->getMessage());
+        http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Lỗi xử lý cơ sở dữ liệu.']);
+        exit();
     }
 } else {
+    http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Không tìm thấy tệp tin được tải lên.']);
+    exit();
 }
 ?>

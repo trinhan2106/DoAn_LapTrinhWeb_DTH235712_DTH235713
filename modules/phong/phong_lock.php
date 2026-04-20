@@ -75,6 +75,7 @@ $maPhong   = trim($_POST['maPhong'] ?? '');
 $sessionId = session_id();
 
 if (empty($maPhong) || strlen($maPhong) > 50) {
+    http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => 'Ma phong khong hop le.']);
     exit();
 }
@@ -138,6 +139,7 @@ try {
         exit();
 
     } else {
+        http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Action khong hop le. Chi chap nhan: lock, unlock.']);
         exit();
     }
