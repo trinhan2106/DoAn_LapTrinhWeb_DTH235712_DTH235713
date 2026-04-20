@@ -90,7 +90,7 @@ $stmt4 = $pdo->query("
         <!-- TABS Điều Hướng -->
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-header bg-white border-0 pt-3 px-3">
-                <ul class="nav nav-pills nav-fill" id="reportTabs" role="tablist">
+                <ul class="nav nav-pills nav-fill gap-3" id="reportTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active rounded-pill fw-bold" id="phongtrong-tab" data-bs-toggle="tab" data-bs-target="#phongtrong" type="button" role="tab">
                             Phòng Đang Trống <span class="badge bg-danger ms-2"><?= count($dsPhongTrong) ?></span>

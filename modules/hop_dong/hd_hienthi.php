@@ -112,19 +112,19 @@ function formatTrangThaiHD($tt) {
                                         <?= formatTrangThaiHD($row['trangThai']) ?>
                                     </td>
                                     <td class="text-center">
-                                        <a href="hd_chitiet.php?id=<?= urlencode($row['soHopDong']) ?>" class="btn btn-outline-secondary btn-sm btn-action me-1" title="Xem Chi Tiết">
-                                            <i class="fa-regular fa-eye"></i>
+                                        <a href="hd_chitiet.php?id=<?= urlencode($row['soHopDong']) ?>" class="btn btn-secondary btn-sm px-2 text-white fw-bold shadow-sm me-1" style="border-radius: 4px;" title="Xem Chi Tiết">
+                                            <i class="fa-regular fa-eye"></i> Xem
                                         </a>
                                         
                                         <!-- Task 5.6: Nút Điều Hướng Sang Gia Hạn -->
-                                        <a href="hd_gia_han.php?soHopDong=<?= urlencode($row['soHopDong']) ?>" class="btn btn-outline-info btn-sm btn-action me-1" title="Tiến hành thủ tục Gia Hạn">
-                                            <i class="fa-solid fa-timeline"></i>
+                                        <a href="hd_gia_han.php?soHopDong=<?= urlencode($row['soHopDong']) ?>" class="btn btn-info btn-sm px-2 text-dark fw-bold shadow-sm me-1" style="border-radius: 4px;" title="Tiến hành thủ tục Gia Hạn">
+                                            <i class="fa-solid fa-timeline"></i> Gia Hạn
                                         </a>
 
                                         <?php if((int)$row['trangThai'] === 3): ?>
                                             <!-- Chờ Ký -->
-                                            <a href="hd_ky.php?id=<?= urlencode($row['soHopDong']) ?>" class="btn btn-success btn-sm px-2 text-white fw-bold shadow-sm ms-1" style="border-radius: 4px;">
-                                                <i class="fa-solid fa-triangle-exclamation"></i> Ký Duyệt
+                                            <a href="hd_ky.php?id=<?= urlencode($row['soHopDong']) ?>" class="btn btn-success btn-sm px-2 text-white fw-bold shadow-sm" style="border-radius: 4px;">
+                                                <i class="fa-solid fa-file-signature"></i> Ký Duyệt
                                             </a>
                                         <?php endif; ?>
                                     </td>
