@@ -46,6 +46,19 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
                 <?php endif; ?>
             </ul>
             <div class="d-flex align-items-center gap-3">
+                <?php if (isset($_SESSION['user_id']) && ($_SESSION['user_role'] ?? 0) == 4): ?>
+                    <!-- Chuông thông báo cho Khách hàng -->
+                    <div class="dropdown">
+                        <a class="position-relative d-flex align-items-center justify-content-center rounded-circle" href="#" id="tenantNotiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="width:38px;height:38px;background:rgba(201,166,107,0.15);border:1px solid rgba(201,166,107,0.3);text-decoration:none;transition:all 0.3s;">
+                            <i class="bi bi-bell-fill" style="color:#c9a66b;font-size:1.1rem;"></i>
+                            <span id="tenantNotiBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size:0.6rem;border:2px solid #1e3a5f;padding:0.3em 0.55em;">0</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-3 p-0" aria-labelledby="tenantNotiDropdown" id="tenantNotiList" style="width:320px;border-radius:16px;max-height:480px;overflow-y:auto;background:rgba(255,255,255,0.95);backdrop-filter:blur(12px);">
+                            <li><span class="dropdown-item text-center text-muted py-4 small">Đang tải...</span></li>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+
                 <?php if (isset($_SESSION['user_id'])): ?>
                     <!-- Giao diện khi đã đăng nhập: Dropdown hiện đại -->
                     <div class="dropdown">
@@ -107,6 +120,55 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    <?php if (isset($_SESSION['user_id']) && ($_SESSION['user_role'] ?? 0) == 4): ?>
+    // Tenant notification bell
+    const tenantBadge = document.getElementById('tenantNotiBadge');
+    const tenantList  = document.getElementById('tenantNotiList');
+    const baseUrl     = '<?php echo defined("BASE_URL") ? BASE_URL : "/"; ?>';
+
+    function fetchTenantNoti() {
+        fetch(baseUrl + 'includes/tenant/notifications.php')
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data) return;
+                if (data.total > 0) {
+                    tenantBadge.textContent = data.total > 99 ? '99+' : data.total;
+                    tenantBadge.classList.remove('d-none');
+                } else {
+                    tenantBadge.classList.add('d-none');
+                }
+                tenantList.innerHTML = '';
+                if (data.items.length === 0) {
+                    tenantList.innerHTML = `<li><span class="dropdown-item text-center text-muted py-4 small"><i class="bi bi-bell-slash d-block mb-2 fs-4 opacity-25"></i>Không có thông báo mới</span></li>`;
+                } else {
+                    let html = `<li><div class="px-4 py-3 border-bottom fw-bold small" style="color:#1e3a5f;">Thông báo của bạn</div></li>`;
+                    const gradients = {
+                        'text-primary': 'linear-gradient(135deg,#0d6efd,#0a58ca)',
+                        'text-danger':  'linear-gradient(135deg,#dc3545,#a71d2a)',
+                        'text-warning': 'linear-gradient(135deg,#ffc107,#e0a800)',
+                        'text-info':    'linear-gradient(135deg,#0dcaf0,#0aa2c0)'
+                    };
+                    data.items.forEach(item => {
+                        const grad = gradients[item.color] || 'linear-gradient(135deg,#6c757d,#495057)';
+                        html += `<li>
+                            <a class="dropdown-item py-3 px-4 border-bottom d-flex align-items-start gap-3" href="${item.link}" style="white-space:normal;">
+                                <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center text-white" style="width:38px;height:38px;background:${grad};">
+                                    <i class="bi ${item.icon}"></i>
+                                </div>
+                                <div style="font-size:0.85rem;" class="fw-semibold text-dark">${item.title}</div>
+                            </a>
+                        </li>`;
+                    });
+                    tenantList.innerHTML = html;
+                }
+            })
+            .catch(() => {});
+    }
+
+    fetchTenantNoti();
+    setInterval(fetchTenantNoti, 60000);
+    <?php endif; ?>
+
     // Tự động ẩn các thông báo thành công sau 5 giây
     const alerts = document.querySelectorAll('.alert-success');
     alerts.forEach(function(alert) {

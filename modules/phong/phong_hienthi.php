@@ -62,14 +62,6 @@ try {
         <?php include __DIR__ . '/../../includes/admin/topbar.php'; ?>
         
         <main class="admin-main-content p-4">
-            <!-- Breadcrumbs -->
-            <nav aria-label="breadcrumb" class="mb-4">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="<?= BASE_URL ?>admin_layout.php" class="text-decoration-none">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Quản lý Phòng</li>
-                </ol>
-            </nav>
-
             <!-- Bộ lọc & Header -->
             <div class="card filter-section shadow-sm border-0 mb-4">
                 <div class="card-body p-4">

@@ -23,7 +23,7 @@ if (in_array($role, [1, 2])) {
         $notifications[] = [
             'id' => 'rent_' . time(),
             'title' => "Có <b>$count</b> yêu cầu thuê phòng chờ duyệt",
-            'link' => BASE_URL . 'modules/yeu_cau_thue/index.php',
+            'link' => BASE_URL . 'modules/yeu_cau_thue/yc_hienthi.php',
             'icon' => 'bi-person-lines-fill',
             'color' => 'text-primary'
         ];
@@ -53,7 +53,7 @@ if (in_array($role, [1, 3])) {
         $notifications[] = [
             'id' => 'dispute_' . time(),
             'title' => "Có <b>$count</b> khiếu nại hóa đơn mới",
-            'link' => BASE_URL . 'modules/thanh_toan/tranh_chap.php',
+            'link' => BASE_URL . 'modules/thanh_toan/tranh_chap_hienthi.php',
             'icon' => 'bi-receipt',
             'color' => 'text-warning'
         ];
@@ -81,4 +81,3 @@ echo json_encode([
     'items' => $notifications
 ]);
 exit();
-?>

@@ -96,14 +96,6 @@ $csrf_token = generateCSRFToken();
         <?php include __DIR__ . '/../../includes/admin/topbar.php'; ?>
         
         <main class="admin-main-content p-4">
-            <nav aria-label="breadcrumb" class="mb-4 d-flex justify-content-center">
-                <ol class="breadcrumb mb-0" style="width: 1000px;">
-                    <li class="breadcrumb-item"><a href="<?= BASE_URL ?>admin_layout.php" class="text-decoration-none">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="phong_hienthi.php" class="text-decoration-none">Quản lý Phòng</a></li>
-                    <li class="breadcrumb-item active">Chỉnh sửa phòng</li>
-                </ol>
-            </nav>
-
             <div class="card form-card shadow-sm border-0">
                 <div class="form-header d-flex justify-content-between align-items-center">
                     <div>
