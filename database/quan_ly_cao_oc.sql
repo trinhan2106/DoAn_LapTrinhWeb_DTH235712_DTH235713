@@ -87,6 +87,8 @@ CREATE TABLE HOP_DONG (
     maNV VARCHAR(20),
     ngayLap DATE,
     ngayBatDau DATE,
+    ngayThanhToanDauTien DATE NULL,
+    ngayHetHanCuoiCung DATE NULL,
     ngayKetThuc DATE,
     tienTienCoc DECIMAL(15,2) DEFAULT 0.00,
     trangThai TINYINT DEFAULT 1 COMMENT '1: Hieu luc, 0: Ket thuc, 2: Huy, 3: ChoDuyet',
@@ -107,6 +109,9 @@ CREATE TABLE CHI_TIET_HOP_DONG (
     soHopDong VARCHAR(50) NOT NULL,
     maPhong VARCHAR(50) NOT NULL,
     giaThue DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    ngayBatDau DATE NULL,
+    ngayHetHan DATE NULL,
+    trangThai VARCHAR(20) DEFAULT 'DangThue' COMMENT 'DangThue | DaKetThuc',
     CONSTRAINT fk_cthd_hd FOREIGN KEY (soHopDong) REFERENCES HOP_DONG(soHopDong) ON DELETE CASCADE,
     CONSTRAINT fk_cthd_phong FOREIGN KEY (maPhong) REFERENCES PHONG(maPhong)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

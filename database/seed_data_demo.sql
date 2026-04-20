@@ -195,35 +195,39 @@ INSERT INTO KHACH_HANG_ACCOUNT (accountId, maKH, username, password_hash, role_i
 -- PHẦN 5: HỢP ĐỒNG — 5 HĐ (3 Đang Hiệu Lực, 1 Chờ Duyệt, 1 Đã Hủy)
 -- trangThai: 1=Hiệu lực | 0=Kết thúc | 2=Hủy | 3=Chờ Duyệt
 -- =========================================================================
-INSERT INTO HOP_DONG (soHopDong, maKH, maNV, ngayLap, ngayBatDau, ngayKetThuc, tienTienCoc, trangThai, ngayHuy, lyDoHuy) VALUES
+INSERT INTO HOP_DONG (soHopDong, maKH, maNV, ngayLap, ngayBatDau, ngayThanhToanDauTien, ngayHetHanCuoiCung, ngayKetThuc, tienTienCoc, trangThai, ngayHuy, lyDoHuy) VALUES
 -- HD-2025-001: KH-01 (VietSoft) thuê Suite 201+202 Khối A Tầng 2 — Đang hiệu lực
-('HD-2025-001', 'KH-01', 'NV-02', '2025-01-03', '2025-01-10', '2026-01-10', 94500000.00, 1, NULL, NULL),
+('HD-2025-001', 'KH-01', 'NV-02', '2025-01-03', '2025-01-10', '2025-01-15', '2026-01-10', '2026-01-10', 94500000.00, 1, NULL, NULL),
 -- HD-2025-002: KH-02 (Phú Gia Hưng) thuê Suite 301 Khối A Tầng 3 — Đang hiệu lực
-('HD-2025-002', 'KH-02', 'NV-02', '2025-02-01', '2025-02-05', '2026-02-05', 75600000.00, 1, NULL, NULL),
+('HD-2025-002', 'KH-02', 'NV-02', '2025-02-01', '2025-02-05', '2025-02-10', '2026-02-05', '2026-02-05', 75600000.00, 1, NULL, NULL),
 -- HD-2025-003: KH-05 (MediaVN) thuê Executive Suite 801 — Đang hiệu lực
-('HD-2025-003', 'KH-05', 'NV-03', '2025-03-01', '2025-03-10', '2026-03-10', 90000000.00, 1, NULL, NULL),
+('HD-2025-003', 'KH-05', 'NV-03', '2025-03-01', '2025-03-10', '2025-03-15', '2026-03-10', '2026-03-10', 90000000.00, 1, NULL, NULL),
 -- HD-2025-004: KH-06 (SkyLab) thuê các phòng kinh doanh Khối A + Ẩm thực Khối B — CHỜ DUYỆT
-('HD-2025-004', 'KH-06', 'NV-02', '2025-04-15', '2025-05-01', '2026-05-01', 49000000.00, 3, NULL, NULL),
+('HD-2025-004', 'KH-06', 'NV-02', '2025-04-15', '2025-05-01', '2025-05-05', '2026-05-01', '2026-05-01', 49000000.00, 3, NULL, NULL),
 -- HD-2024-005: KH-03 (Ngon & Lành) thuê gian ẩm thực — ĐÃ HỦY (Trả phòng sớm)
-('HD-2024-005', 'KH-03', 'NV-03', '2024-06-01', '2024-06-15', '2025-06-15', 49000000.00, 2, '2024-11-20', 'Khách hàng thu hẹp quy mô hoạt động, đóng cửa nhà hàng trước hạn. Đã thỏa thuận bồi thường 2 tháng tiền thuê.');
+('HD-2024-005', 'KH-03', 'NV-03', '2024-06-01', '2024-06-15', '2024-06-20', '2025-06-15', '2025-06-15', 49000000.00, 2, '2024-11-20', 'Khách hàng thu hẹp quy mô hoạt động, đóng cửa nhà hàng trước hạn. Đã thỏa thuận bồi thường 2 tháng tiền thuê.');
 
 
 -- =========================================================================
--- PHẦN 6: CHI TIẾT HỢP ĐỒNG — Mapping phòng vào HĐ
+-- PHẦN 6: CHI TIẾT HỢP ĐỒNG — Mapping phòng vào HĐ (Đã bổ sung Ngày & Trạng thái)
 -- =========================================================================
-INSERT INTO CHI_TIET_HOP_DONG (maCTHD, soHopDong, maPhong, giaThue) VALUES
--- HD-2025-001: VietSoft thuê 2 phòng (A02-201 + A02-202)
-('CTHD-001', 'HD-2025-001', 'A02-201', 52500000.00),
-('CTHD-002', 'HD-2025-001', 'A02-202', 42000000.00),
--- HD-2025-002: Phú Gia Hưng thuê A03-301
-('CTHD-003', 'HD-2025-002', 'A03-301', 75600000.00),
--- HD-2025-003: MediaVN thuê Executive C08-801
-('CTHD-004', 'HD-2025-003', 'C08-801', 90000000.00),
--- HD-2025-004 (Chờ duyệt): SkyLab (A01-103 + B01-102)
-('CTHD-005', 'HD-2025-004', 'A01-103', 38000000.00),
-('CTHD-006', 'HD-2025-004', 'B01-102', 49000000.00),
--- HD-2024-005 (Đã hủy): Ngon & Lành thuê B01-102
-('CTHD-007', 'HD-2024-005', 'B01-102', 49000000.00);
+INSERT INTO CHI_TIET_HOP_DONG (maCTHD, soHopDong, maPhong, giaThue, ngayBatDau, ngayHetHan, trangThai) VALUES
+-- HD-2025-001: VietSoft thuê 2 phòng (Đang thuê)
+('CTHD-001', 'HD-2025-001', 'A02-201', 52500000.00, '2025-01-10', '2026-01-10', 'DangThue'),
+('CTHD-002', 'HD-2025-001', 'A02-202', 42000000.00, '2025-01-10', '2026-01-10', 'DangThue'),
+
+-- HD-2025-002: Phú Gia Hưng thuê A03-301 (Đang thuê)
+('CTHD-003', 'HD-2025-002', 'A03-301', 75600000.00, '2025-02-05', '2026-02-05', 'DangThue'),
+
+-- HD-2025-003: MediaVN thuê Executive C08-801 (Đang thuê)
+('CTHD-004', 'HD-2025-003', 'C08-801', 90000000.00, '2025-03-10', '2026-03-10', 'DangThue'),
+
+-- HD-2025-004 (Chờ duyệt): SkyLab (Ước tính ngày thuê tương lai)
+('CTHD-005', 'HD-2025-004', 'A01-103', 38000000.00, '2025-05-01', '2026-05-01', 'DangThue'),
+('CTHD-006', 'HD-2025-004', 'B01-102', 49000000.00, '2025-05-01', '2026-05-01', 'DangThue'),
+
+-- HD-2024-005 (Đã hủy): Ngon & Lành (Đã kết thúc)
+('CTHD-007', 'HD-2024-005', 'B01-102', 49000000.00, '2024-06-15', '2025-06-15', 'DaKetThuc');
 
 
 -- =========================================================================

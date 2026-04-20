@@ -101,7 +101,7 @@ include __DIR__ . '/../../includes/public/header.php';
         <ul class="nav nav-pills small gap-2">
             <li class="nav-item"><a href="dashboard.php" class="nav-link active" style="background-color: var(--tenant-navy);">Tổng quan</a></li>
             <li class="nav-item"><a href="hoa_don.php" class="nav-link text-secondary">Hóa đơn</a></li>
-            <li class="nav-item"><a href="hop_dong.php" class="nav-link text-secondary">Hợp đồng</a></li>
+            <li class="nav-item"><a href="hop_dong.php?soHopDong=<?php echo $hopDongList[0]['soHopDong'] ?? ''; ?>" class="nav-link text-secondary">Hợp đồng</a></li>
             <li class="nav-item"><a href="maintenance.php" class="nav-link text-secondary">Bảo trì</a></li>
         </ul>
     </div>
@@ -161,7 +161,7 @@ include __DIR__ . '/../../includes/public/header.php';
                 <div class="tenant-card mb-4">
                     <div class="tenant-card-header d-flex justify-content-between align-items-center">
                         <h5 class="m-0 fw-bold text-navy"><i class="fa-solid fa-file-contract me-2 text-warning"></i>Hợp đồng hiện tại</h5>
-                        <a href="hop_dong.php" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Chi tiết</a>
+                        <a href="hop_dong.php?soHopDong=<?php echo $hopDongList[0]['soHopDong'] ?? ''; ?>" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Chi tiết</a>
                     </div>
                     <div class="p-0">
                         <div class="table-responsive">
@@ -180,7 +180,7 @@ include __DIR__ . '/../../includes/public/header.php';
                                             <td class="fw-bold"><?php echo $hd['soHopDong']; ?></td>
                                             <td><span class="badge bg-light text-navy border"><?php echo $hd['danhSachPhong']; ?></span></td>
                                             <td class="text-danger"><?php echo date('d/m/Y', strtotime($hd['ngayKetThuc'])); ?></td>
-                                            <td class="text-end"><a href="hop_dong.php?id=<?php echo $hd['soHopDong']; ?>" class="text-link">Xem</a></td>
+                                            <td class="text-end"><a href="hop_dong.php?soHopDong=<?php echo $hd['soHopDong']; ?>" class="text-link">Xem</a></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
