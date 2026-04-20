@@ -67,14 +67,17 @@ try {
             "Gỡ bỏ quyền truy cập của khách hàng {$accInfo['maKH']} (Username: {$accInfo['username']})"
         );
         
-        $_SESSION['success_msg'] = "Đã xóa tài khoản login của khách hàng thành công.";
+        $_SESSION['flash_msg'] = "Đã gỡ bỏ quyền truy cập của khách hàng thành công.";
+        $_SESSION['flash_type'] = "success";
     } else {
-        $_SESSION['error_msg'] = "Lỗi khi thực hiện xóa bản ghi từ cơ sở dữ liệu.";
+        $_SESSION['flash_msg'] = "Lỗi khi thực hiện xóa bản ghi từ cơ sở dữ liệu.";
+        $_SESSION['flash_type'] = "danger";
     }
 
 } catch (PDOException $e) {
     error_log("Lỗi Xóa Account: " . $e->getMessage());
-    $_SESSION['error_msg'] = "Sự cố hệ thống: Không thể gỡ bỏ tài khoản.";
+    $_SESSION['flash_msg'] = "Sự cố hệ thống: Không thể gỡ bỏ tài khoản.";
+    $_SESSION['flash_type'] = "danger";
 }
 
 header("Location: index.php");

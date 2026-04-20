@@ -18,7 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $csrf = filter_input(INPUT_POST, 'csrf_token', FILTER_DEFAULT);
 if (!$csrf || !validateCSRFToken($csrf)) {
-    $_SESSION['error_msg'] = "Mã xác thực lỗi.";
+    $_SESSION['flash_msg'] = "Mã xác thực lỗi.";
+    $_SESSION['flash_type'] = "danger";
     header("Location: tao_taikhoan.php"); 
     exit();
 }
@@ -28,7 +29,8 @@ $username = trim($_POST['username'] ?? '');
 $adminId = $_SESSION['user_id'] ?? 'Admin_Sys';
 
 if (empty($maKH) || empty($username)) {
-    $_SESSION['error_msg'] = "Thông tin đăng ký thiếu.";
+    $_SESSION['flash_msg'] = "Thông tin đăng ký thiếu.";
+    $_SESSION['flash_type'] = "warning";
     header("Location: tao_taikhoan.php"); 
     exit();
 }
@@ -40,7 +42,8 @@ try {
     $stmtCheck = $pdo->prepare("SELECT COUNT(*) FROM KHACH_HANG_ACCOUNT WHERE username = ?");
     $stmtCheck->execute([$username]);
     if ($stmtCheck->fetchColumn() > 0) {
-        $_SESSION['error_msg'] = "Username {$username} đã bị đăng ký.";
+        $_SESSION['flash_msg'] = "Username {$username} đã bị đăng ký.";
+        $_SESSION['flash_type'] = "danger";
         header("Location: tao_taikhoan.php"); 
         exit();
     }
@@ -61,13 +64,15 @@ try {
     $logChiTiet = "Cấp tài khoản truy cập. Tên đăng nhập: {$username}. Khách Hàng Mapping: {$maKH}";
     ghiAuditLog($pdo, $adminId, 'CREATE_TENANT_ACCOUNT', 'KHACH_HANG_ACCOUNT', $accountId, $logChiTiet);
 
-    $_SESSION['success_msg'] = "Tạo tài khoản Tenant thành công [ID: {$accountId}]!";
+    $_SESSION['flash_msg'] = "Tạo tài khoản Tenant thành công [ID: {$accountId}]!";
+    $_SESSION['flash_type'] = "success";
     header("Location: index.php");
     exit();
 
 } catch (PDOException $e) {
     error_log("Lõi ghi nhận DB Lỗi: " . $e->getMessage());
-    $_SESSION['error_msg'] = "Sự cố chèn bản ghi: Database Error.";
+    $_SESSION['flash_msg'] = "Sự cố chèn bản ghi: Database Error.";
+    $_SESSION['flash_type'] = "danger";
     header("Location: tao_taikhoan.php");
     exit();
 }

@@ -1,27 +1,30 @@
 <?php
-// includes/common/mailer.php
 /**
- * Wrapper PHPMailer để gửi email qua SMTP.
- * SMTP credentials được đọc từ config/database.php (đã gitignore).
- *
- * Cài đặt PHPMailer (1 trong 2 cách):
- *   (a) Composer:  composer require phpmailer/phpmailer
- *       -> uncomment dòng require vendor/autoload bên dưới
- *   (b) Tải ZIP source, đặt vào includes/common/libs/PHPMailer/
- *       -> uncomment 3 dòng require_once libs bên dưới
+ * includes/common/mailer.php
+ * Wrapper PHPMailer để gửi email qua SMTP (Hỗ trợ UTF-8 Tiếng Việt).
  */
-require_once __DIR__ . '/../../config/constants.php'; // tự động include database.php
 
-// (a) Composer autoload
+// 1. Khai báo các Namespace cần dùng
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+
+// 2. Nạp thư viện PHPMailer (Hãy mở comment 1 trong 2 trường hợp dưới đây tùy thực tế)
+// -------------------------------------------------------------------------
+// TRƯỜNG HỢP 1: Nạp thủ công (Nếu bạn tải source PHPMailer về libs/)
+// Thư mục PHPMailer/src/ phải nằm tại: includes/common/libs/PHPMailer/src/
+// -------------------------------------------------------------------------
+require_once __DIR__ . '/libs/PHPMailer/src/Exception.php';
+require_once __DIR__ . '/libs/PHPMailer/src/PHPMailer.php';
+require_once __DIR__ . '/libs/PHPMailer/src/SMTP.php';
+
+// -------------------------------------------------------------------------
+// TRƯỜNG HỢP 2: Sử dụng Composer (Nếu project có thư mục vendor/autoload.php)
+// -------------------------------------------------------------------------
 // require_once __DIR__ . '/../../vendor/autoload.php';
 
-// (b) Source ZIP thủ công
-// require_once __DIR__ . '/libs/PHPMailer/src/Exception.php';
-// require_once __DIR__ . '/libs/PHPMailer/src/PHPMailer.php';
-// require_once __DIR__ . '/libs/PHPMailer/src/SMTP.php';
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+// 3. Nạp cấu hình hệ thống (Database, SMTP_HOST, SMTP_USER,...)
+require_once __DIR__ . '/../../config/constants.php';
 
 /**
  * Gửi email qua SMTP bằng PHPMailer.
@@ -33,6 +36,13 @@ use PHPMailer\PHPMailer\Exception;
  */
 function sendEmail(string $to, string $subject, string $body): bool
 {
+    // [KHẮC PHỤC LỖI FATAL ERROR] Kiểm tra xem Class có tồn tại không trước khi gọi
+    if (!class_exists('PHPMailer\PHPMailer\PHPMailer')) {
+        error_log("[CRITICAL MAILER ERROR] Class PHPMailer NOT FOUND. Hãy đảm bảo bạn đã mở comment require_once ở đầu file mailer.php và đã tải thư viện về đúng thư mục.");
+        // Trả về false thay vì để crash hệ thống (Fatal Error)
+        return false; 
+    }
+
     $mail = new PHPMailer(true);
 
     try {
@@ -68,7 +78,7 @@ function sendEmail(string $to, string $subject, string $body): bool
 
     } catch (Exception $e) {
         // Không echo/die trực tiếp - chỉ log để không làm gãy luồng Request của caller
-        error_log("[MAILER FAIL] to={$to}, subject={$subject}: " . $mail->ErrorInfo);
+        error_log("[MAILER FAIL] to={$to}, subject={$subject}: " . (isset($mail) ? $mail->ErrorInfo : $e->getMessage()));
         return false;
     }
 }

@@ -54,14 +54,17 @@ try {
         // Ghi Audit Log
         ghiAuditLog($pdo, $_SESSION['user_id'] ?? 'System', 'RESET_PASSWORD', 'KHACH_HANG_ACCOUNT', $accountId, "Đặt lại mật khẩu KH về 123456");
         
-        $_SESSION['success_msg'] = "Đã đặt lại mật khẩu cho tài khoản {$accountId} thành công. Mật khẩu mới là: 123456";
+        $_SESSION['flash_msg'] = "Đã đặt lại mật khẩu cho tài khoản {$accountId} thành công. Mật khẩu mặc định là: 123456";
+        $_SESSION['flash_type'] = "success";
     } else {
-        $_SESSION['error_msg'] = "Không tìm thấy tài khoản để cập nhật hoặc lỗi hệ thống.";
+        $_SESSION['flash_msg'] = "Không tìm thấy tài khoản để cập nhật hoặc lỗi hệ thống.";
+        $_SESSION['flash_type'] = "danger";
     }
 
 } catch (PDOException $e) {
     error_log("Lỗi Reset Password: " . $e->getMessage());
-    $_SESSION['error_msg'] = "Sự cố cơ sở dữ liệu: Không thể reset mật khẩu.";
+    $_SESSION['flash_msg'] = "Sự cố cơ sở dữ liệu: Không thể reset mật khẩu.";
+    $_SESSION['flash_type'] = "danger";
 }
 
 header("Location: index.php");

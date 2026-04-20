@@ -50,12 +50,6 @@ $csrf_token = generateCSRFToken();
                     </div>
                 </div>
 
-                <?php if (isset($_SESSION['success_msg'])): ?>
-                    <div class="alert alert-success fw-bold"><i class="bi bi-check-circle me-2"></i><?= $_SESSION['success_msg']; unset($_SESSION['success_msg']); ?></div>
-                <?php endif; ?>
-                <?php if (isset($_SESSION['error_msg'])): ?>
-                    <div class="alert alert-danger fw-bold"><i class="bi bi-exclamation-triangle me-2"></i><?= $_SESSION['error_msg']; unset($_SESSION['error_msg']); ?></div>
-                <?php endif; ?>
 
                 <div class="card shadow border-0 rounded-3">
                     <div class="card-body p-4">

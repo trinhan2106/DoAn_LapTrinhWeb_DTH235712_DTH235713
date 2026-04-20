@@ -60,8 +60,8 @@
     </div>
 </div>
 
-<!-- Vùng chứa Toast (Góc dưới bên phải) - Task 9.11 -->
-<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 10000;">
+<!-- Vùng chứa Toast (Giữa trên cùng) - Giao diện hiện đại -->
+<div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 10000; margin-top: 20px;">
     <?php if (isset($_SESSION['flash_msg'])): 
         $type = $_SESSION['flash_type'] ?? 'success'; // success, danger, warning, info
         $icon = $type === 'success' ? 'bi-check-circle-fill' : ($type === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill');
@@ -80,7 +80,7 @@
         document.addEventListener("DOMContentLoaded", function() {
             var toastEl = document.getElementById('systemToast');
             if (toastEl) {
-                var toast = new bootstrap.Toast(toastEl, { delay: 4000 }); // Tự tắt sau 4s
+                var toast = new bootstrap.Toast(toastEl, { delay: 5000 }); // Tự tắt sau 5s
                 toast.show();
             }
         });
