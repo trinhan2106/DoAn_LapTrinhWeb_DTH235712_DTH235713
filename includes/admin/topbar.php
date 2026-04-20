@@ -357,11 +357,45 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!-- Flash Messages Area (Nằm cố định bên dưới Topbar) -->
-<div class="admin-flash-messages px-4 pt-3 pb-0">
+<style>
+/* ── Toast-like Flash Messages ── */
+.admin-flash-messages {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 9999;
+    min-width: 300px;
+    max-width: 450px;
+    pointer-events: none; /* Let clicks pass through the container */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.admin-flash-messages .alert {
+    pointer-events: auto; /* Re-enable clicks for the alert itself (close button) */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+    margin-bottom: 0 !important;
+    animation: slideInRight 0.3s ease-out forwards;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+</style>
+
+<!-- Flash Messages Area -->
+<div class="admin-flash-messages">
     <!-- Màu Xanh cho thành công -->
     <?php if (isset($_SESSION['success_msg'])): ?>
-        <div class="alert alert-success alert-dismissible fade show mb-3 shadow-sm border-0" role="alert">
+        <div class="alert alert-success alert-dismissible fade show border-0" role="alert">
             <i class="bi bi-check-circle-fill me-2"></i> <?php echo htmlspecialchars($_SESSION['success_msg'], ENT_QUOTES, 'UTF-8'); ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
@@ -370,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <!-- Màu Đỏ cho lỗi -->
     <?php if (isset($_SESSION['error_msg'])): ?>
-        <div class="alert alert-danger alert-dismissible fade show mb-3 shadow-sm border-0" role="alert">
+        <div class="alert alert-danger alert-dismissible fade show border-0" role="alert">
             <i class="bi bi-exclamation-triangle-fill me-2"></i> <?php echo htmlspecialchars($_SESSION['error_msg'], ENT_QUOTES, 'UTF-8'); ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
@@ -379,10 +413,25 @@ document.addEventListener('DOMContentLoaded', function() {
     
     <!-- Màu Cam cho cảnh báo -->
     <?php if (isset($_SESSION['warning_msg'])): ?>
-        <div class="alert alert-warning alert-dismissible fade show mb-3 shadow-sm border-0" role="alert">
+        <div class="alert alert-warning alert-dismissible fade show border-0" role="alert">
             <i class="bi bi-exclamation-circle-fill me-2"></i> <?php echo htmlspecialchars($_SESSION['warning_msg'], ENT_QUOTES, 'UTF-8'); ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         <?php unset($_SESSION['warning_msg']); ?>
     <?php endif; ?>
 </div>
+
+<script>
+// Auto-dismiss Flash Messages sau 5 giây
+document.addEventListener('DOMContentLoaded', function() {
+    const flashMessages = document.querySelectorAll('.admin-flash-messages .alert');
+    flashMessages.forEach(function(alertEl) {
+        setTimeout(function() {
+            if (alertEl && alertEl.classList.contains('show')) {
+                const bsAlert = new bootstrap.Alert(alertEl);
+                bsAlert.close();
+            }
+        }, 5000); // 5 seconds
+    });
+});
+</script>
