@@ -108,6 +108,9 @@ $csrf_token = generateCSRFToken(); // Tạo token cho form Xóa
                                         <td><?= e($kh['email']) ?></td>
                                         <td class="text-center">
                                             <div class="btn-group btn-group-sm">
+                                                <a href="kh_lichsu.php?id=<?= urlencode($kh['maKH']) ?>" class="btn btn-outline-info" title="Xem lịch sử giao dịch">
+                                                    <i class="bi bi-clock-history"></i>
+                                                </a>
                                                 <a href="kh_sua.php?id=<?= urlencode($kh['maKH']) ?>" class="btn btn-outline-primary" title="Sửa thông tin">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </a>
