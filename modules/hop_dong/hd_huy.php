@@ -12,7 +12,7 @@ require_once __DIR__ . '/../../includes/common/auth.php';
 
 kiemTraSession();
 
-$soHD = trim($_GET['soHopDong'] ?? '');
+$soHD = trim($_GET['id'] ?? $_GET['soHopDong'] ?? '');
 if (empty($soHD)) die("Mất Dấu vết URL Tham Số.");
 
 $pdo = Database::getInstance()->getConnection();
@@ -97,7 +97,7 @@ $alertMsg = $_GET['msg'] ?? '';
         </div>
         
         <div class="text-center mt-4 border-top pt-4">
-            <a href="hd_hienthi.php" class="btn btn-secondary px-5 py-3 fs-5 fw-bold shadow"><i class="fa-solid fa-rotate-left me-2"></i> Quay Lại - Đòi Nợ Xong Rồi Tính</a>
+            <a href="hd_chitiet.php?id=<?= urlencode($soHD) ?>" class="btn btn-secondary px-5 py-3 fs-5 fw-bold shadow"><i class="fa-solid fa-rotate-left me-2"></i> Quay Lại - Đòi Nợ Xong Rồi Tính</a>
         </div>
 
     <?php else: ?>
@@ -107,7 +107,7 @@ $alertMsg = $_GET['msg'] ?? '';
         </p>
 
         <form action="hd_huy_submit.php" method="POST">
-            <input type="hidden" name="csrf_token" value="<?= validateCSRFToken('') ? '' : generateCSRFToken() ?>">
+            <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
             <input type="hidden" name="soHopDong" value="<?= htmlspecialchars($soHD) ?>">
             
             <div class="row g-4">
@@ -129,7 +129,7 @@ $alertMsg = $_GET['msg'] ?? '';
             </div>
 
             <div class="d-flex justify-content-between mt-5 border-top pt-4">
-                <a href="hd_hienthi.php" class="btn btn-light px-4 border fw-bold text-muted shadow-sm">
+                <a href="hd_chitiet.php?id=<?= urlencode($soHD) ?>" class="btn btn-light px-4 border fw-bold text-muted shadow-sm">
                     <i class="fa-solid fa-arrow-left me-1"></i> Không Hủy Nữa! 
                 </a>
                 

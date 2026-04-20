@@ -41,7 +41,7 @@ $soThangGiaHan = $_POST['soThangGiaHan'] ?? []; // Array: maCTHD => soThang
 
 if (empty($soHD) || empty($dsMaCTHD) || !is_array($dsMaCTHD)) {
     $_SESSION['error_msg'] = "Du lieu khong hop le. Ma hop dong va danh sach phong la bat buoc.";
-    header("Location: hd_hienthi.php");
+    header("Location: hd_hienthi.php"); // Chưa biết soHD nên redirect về danh sách
     exit();
 }
 
@@ -64,7 +64,7 @@ try {
     if (!$hdData) {
         $pdo->rollBack();
         $_SESSION['error_msg'] = "Hop dong [{$soHD}] khong ton tai.";
-        header("Location: hd_hienthi.php");
+        header("Location: hd_chitiet.php?id=" . urlencode($soHD));
         exit();
     }
 
@@ -72,7 +72,7 @@ try {
     if (!in_array((int)$hdData['trangThai'], [1, 4], true)) {
         $pdo->rollBack();
         $_SESSION['error_msg'] = "Hop dong khong o trang thai co the gia han (trang thai hien tai: {$hdData['trangThai']}). Chi gia han duoc hop dong dang hieu luc.";
-        header("Location: hd_hienthi.php");
+        header("Location: hd_chitiet.php?id=" . urlencode($soHD));
         exit();
     }
 
@@ -81,7 +81,7 @@ try {
     if ($ngayConLai > 30) {
         $pdo->rollBack();
         $_SESSION['error_msg'] = "Hop dong con {$ngayConLai} ngay moi het han (het han: {$hdData['ngayKetThuc']}). Chi gia han khi con <= 30 ngay.";
-        header("Location: hd_hienthi.php");
+        header("Location: hd_chitiet.php?id=" . urlencode($soHD));
         exit();
     }
 
@@ -96,7 +96,7 @@ try {
     if ((int)$stmtVerify->fetchColumn() !== count($dsMaCTHD)) {
         $pdo->rollBack();
         $_SESSION['error_msg'] = "Du lieu khong hop le. Co ma chi tiet khong thuoc hop dong nay.";
-        header("Location: hd_hienthi.php");
+        header("Location: hd_chitiet.php?id=" . urlencode($soHD));
         exit();
     }
 
@@ -139,7 +139,7 @@ try {
         if ($thangGiaHan > 60) {
             $pdo->rollBack();
             $_SESSION['error_msg'] = "So thang gia han khong hop le (toi da 60 thang).";
-            header("Location: hd_hienthi.php");
+            header("Location: hd_chitiet.php?id=" . urlencode($soHD));
             exit();
         }
 
@@ -147,7 +147,7 @@ try {
         if (empty($maPh)) {
             $pdo->rollBack();
             $_SESSION['error_msg'] = "Thieu thong tin ma phong cho chi tiet {$maCT}.";
-            header("Location: hd_hienthi.php");
+            header("Location: hd_chitiet.php?id=" . urlencode($soHD));
             exit();
         }
 
@@ -158,7 +158,7 @@ try {
         if (!$baseDate) {
             $pdo->rollBack();
             $_SESSION['error_msg'] = "Khong tim thay thong tin ngay het han cho chi tiet {$maCT}.";
-            header("Location: hd_hienthi.php");
+            header("Location: hd_chitiet.php?id=" . urlencode($soHD));
             exit();
         }
 
@@ -183,7 +183,7 @@ try {
     if ($soPhongXuLy === 0) {
         $pdo->rollBack();
         $_SESSION['error_msg'] = "Chua co phong nao duoc chon gia han (so thang phai > 0).";
-        header("Location: hd_hienthi.php");
+        header("Location: hd_chitiet.php?id=" . urlencode($soHD));
         exit();
     }
 
@@ -219,7 +219,7 @@ try {
     }
 
     $_SESSION['success_msg'] = "Gia han hop dong [{$soHD}] thanh cong. {$soPhongXuLy} phong da duoc cap nhat, het han moi: {$maxDateMoi}.";
-    header("Location: hd_hienthi.php?msg=giahan_success");
+    header("Location: hd_chitiet.php?id=" . urlencode($soHD) . "&msg=giahan_success");
     exit();
 
 } catch (PDOException $e) {
@@ -228,6 +228,6 @@ try {
     }
     error_log("[hd_gia_han_submit] PDO error: " . $e->getMessage());
     $_SESSION['error_msg'] = "Xay ra loi khi gia han hop dong. Du lieu da duoc rollback an toan. Vui long lien he quan tri vien.";
-    header("Location: hd_hienthi.php");
+    header("Location: hd_chitiet.php?id=" . urlencode($soHD));
     exit();
 }

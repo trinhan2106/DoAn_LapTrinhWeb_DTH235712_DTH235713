@@ -67,7 +67,7 @@ try {
     if (!in_array((int)$currentStatus, [1, 3], true)) {
         $pdo->rollBack();
         $_SESSION['error_msg'] = "Hop dong khong o trang thai co the huy (trang thai hien tai: {$currentStatus}). Chi huy duoc hop dong dang hieu luc hoac cho duyet.";
-        header("Location: hd_hienthi.php");
+        header("Location: hd_chitiet.php?id=" . urlencode($soHD));
         exit();
     }
 
@@ -83,7 +83,7 @@ try {
     if ($tongNo > 0) {
         $pdo->rollBack();
         $_SESSION['error_msg'] = "Khong the huy hop dong: con cong no " . number_format($tongNo, 0) . " VND chua thanh toan. Vui long xu ly cong no truoc.";
-        header("Location: hd_hienthi.php");
+        header("Location: hd_chitiet.php?id=" . urlencode($soHD));
         exit();
     }
 
@@ -99,7 +99,7 @@ try {
     if ($stmtHD->rowCount() === 0) {
         $pdo->rollBack();
         $_SESSION['error_msg'] = "Khong the cap nhat trang thai hop dong. Co the da bi thay doi boi nguoi khac.";
-        header("Location: hd_hienthi.php");
+        header("Location: hd_chitiet.php?id=" . urlencode($soHD));
         exit();
     }
 
@@ -146,7 +146,7 @@ try {
     }
 
     $_SESSION['success_msg'] = "Huy hop dong [{$soHD}] thanh cong.";
-    header("Location: hd_hienthi.php?msg=huy_toan_phan_thanh_cong");
+    header("Location: hd_chitiet.php?id=" . urlencode($soHD) . "&msg=huy_toan_phan_thanh_cong");
     exit();
 
 } catch (PDOException $e) {
@@ -155,6 +155,6 @@ try {
     }
     error_log("[hd_huy_submit] PDO error: " . $e->getMessage());
     $_SESSION['error_msg'] = "Xay ra loi khi huy hop dong. Du lieu da duoc rollback an toan. Vui long lien he quan tri vien.";
-    header("Location: hd_hienthi.php");
+    header("Location: hd_chitiet.php?id=" . urlencode($soHD));
     exit();
 }
