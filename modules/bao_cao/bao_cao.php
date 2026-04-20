@@ -69,10 +69,21 @@ $stmt4 = $pdo->query("
                 <h3 class="fw-bold text-navy mb-0"><i class="bi bi-graph-up-arrow me-2 text-warning"></i>Báo Cáo & Thống Kê</h3>
                 <p class="text-muted small mb-0">Theo dõi vận hành hệ thống cao ốc Blue Sky</p>
             </div>
-            <div class="mt-3 mt-md-0">
-                <a href="#" class="btn btn-navy bg-navy border-0 rounded-pill px-4 shadow-sm" onclick="alert('Tính năng đang được phát triển...')">
-                    <i class="bi bi-file-earmark-excel me-2"></i>Xuất Excel / In Báo Cáo
-                </a>
+            <div class="mt-3 mt-md-0 d-flex gap-2">
+                <button onclick="window.print()" class="btn btn-secondary shadow-sm rounded-pill px-3">
+                    <i class="bi bi-printer me-1"></i> In trang này
+                </button>
+                <div class="dropdown">
+                    <button class="btn btn-navy bg-navy border-0 rounded-pill px-4 shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-file-earmark-excel me-2"></i>Xuất Excel
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                        <li><a class="dropdown-item" href="export_csv.php?type=phong_trong"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Phòng Trống</a></li>
+                        <li><a class="dropdown-item" href="export_csv.php?type=phong_thue"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Phòng Đang Thuê</a></li>
+                        <li><a class="dropdown-item" href="export_csv.php?type=hd_hethan"><i class="bi bi-file-earmark-spreadsheet me-2"></i>HĐ Hết Hạn</a></li>
+                        <li><a class="dropdown-item" href="export_csv.php?type=nhan_su"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Nhân Sự</a></li>
+                    </ul>
+                </div>
             </div>
         </div>
 
@@ -107,6 +118,12 @@ $stmt4 = $pdo->query("
                     
                     <!-- TAB 1: PHÒNG ĐANG TRỐNG -->
                     <div class="tab-pane fade show active" id="phongtrong" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="fw-bold text-navy mb-0"><i class="bi bi-list-check me-1"></i> Danh sách phòng trống</h5>
+                            <a href="export_csv.php?type=phong_trong" class="btn btn-success btn-sm rounded-pill px-3 shadow-sm">
+                                <i class="bi bi-file-earmark-excel me-1"></i> Xuất CSV
+                            </a>
+                        </div>
                         <div class="table-responsive">
                             <table id="tablePhongTrong" class="table table-hover table-striped align-middle border">
                                 <thead class="bg-navy text-white">
@@ -143,6 +160,12 @@ $stmt4 = $pdo->query("
 
                     <!-- TAB 2: PHÒNG ĐANG THUÊ -->
                     <div class="tab-pane fade" id="phongthue" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="fw-bold text-navy mb-0"><i class="bi bi-house-door me-1"></i> Danh sách phòng đang thuê</h5>
+                            <a href="export_csv.php?type=phong_thue" class="btn btn-success btn-sm rounded-pill px-3 shadow-sm">
+                                <i class="bi bi-file-earmark-excel me-1"></i> Xuất CSV
+                            </a>
+                        </div>
                         <div class="table-responsive">
                             <table id="tablePhongThue" class="table table-hover table-striped align-middle border">
                                 <thead class="bg-navy text-white">
@@ -175,6 +198,12 @@ $stmt4 = $pdo->query("
 
                     <!-- TAB 3: HĐ SẮP HẾT HẠN -->
                     <div class="tab-pane fade" id="hopdong" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="fw-bold text-danger mb-0"><i class="bi bi-clock-history me-1"></i> Hợp đồng sắp hết hạn</h5>
+                            <a href="export_csv.php?type=hd_hethan" class="btn btn-success btn-sm rounded-pill px-3 shadow-sm">
+                                <i class="bi bi-file-earmark-excel me-1"></i> Xuất CSV
+                            </a>
+                        </div>
                         <div class="alert alert-warning border-0 rounded-3 mb-4">
                             <i class="bi bi-exclamation-triangle-fill me-2"></i><b>Lưu ý:</b> Dưới đây là các Hợp đồng sẽ hết hạn trong <b>Tháng <?= date('m/Y') ?></b>. Vui lòng liên hệ khách hàng để làm thủ tục gia hạn.
                         </div>
@@ -212,6 +241,12 @@ $stmt4 = $pdo->query("
 
                     <!-- TAB 4: NHÂN SỰ -->
                     <div class="tab-pane fade" id="nhansu" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="fw-bold text-navy mb-0"><i class="bi bi-people me-1"></i> Danh sách nhân sự</h5>
+                            <a href="export_csv.php?type=nhan_su" class="btn btn-success btn-sm rounded-pill px-3 shadow-sm">
+                                <i class="bi bi-file-earmark-excel me-1"></i> Xuất CSV
+                            </a>
+                        </div>
                         <div class="table-responsive">
                             <table id="tableNhanSu" class="table table-hover table-striped align-middle border">
                                 <thead class="bg-navy text-white">
@@ -276,6 +311,45 @@ $stmt4 = $pdo->query("
     
     .card { border: none; transition: transform 0.2s; }
     .rounded-4 { border-radius: 1rem !important; }
+
+    /* --- Cấu hình riêng cho bản IN --- */
+    @media print {
+        /* Ẩn Sidebar, Topbar, Tabs chuyển trang, Footer và các nút bấm */
+        .admin-sidebar, .admin-topbar, .nav-pills, .btn, .dropdown, footer, .alert, .admin-flash-messages {
+            display: none !important;
+        }
+        
+        /* Mở rộng không gian bảng in, xóa margin lề trái của sidebar */
+        .admin-main-wrapper {
+            margin-left: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+        
+        .admin-main-content {
+            padding: 0 !important;
+            max-width: 100% !important;
+        }
+
+        /* Đảm bảo bảng hiển thị rõ nét và không bị cắt ngang dòng quá xấu */
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            page-break-inside: auto;
+            border: 1px solid #dee2e6 !important;
+        }
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+        th {
+            background-color: #1e3a5f !important;
+            color: white !important;
+            -webkit-print-color-adjust: exact;
+        }
+        .bg-navy { background-color: #1e3a5f !important; color: white !important; -webkit-print-color-adjust: exact; }
+        .bg-danger { background-color: #dc3545 !important; color: white !important; -webkit-print-color-adjust: exact; }
+    }
 </style>
 
         </main> <!-- End admin-main-content -->
