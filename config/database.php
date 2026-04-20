@@ -17,8 +17,8 @@ define('DB_PASS', '');
 // Cấu hình SMTP (điền App Password của Gmail)
 define('SMTP_HOST', 'smtp.gmail.com');
 define('SMTP_PORT', 587);
-define('SMTP_USER', 'your_email@gmail.com');
-define('SMTP_PASS', 'your_app_password_here');
+define('SMTP_USER', 'nhan210605@gmail.com');
+define('SMTP_PASS', 'mhuc qqcz bjuv azxy');
 define('SMTP_FROM_EMAIL', 'no-reply@bluesky.vn');
 define('SMTP_FROM_NAME', 'Hệ Thống Blue Sky Tower');
 
