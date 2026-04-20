@@ -96,7 +96,7 @@ try {
     $placeholders = implode(',', array_fill(0, count($dsMaCTHD), '?'));
     $stmtVerify = $pdo->prepare("
         SELECT COUNT(*) FROM CHI_TIET_HOP_DONG 
-        WHERE soHopDong = ? AND maCTHD IN ({$placeholders}) AND trangThai = 1
+        WHERE soHopDong = ? AND maCTHD IN ({$placeholders}) AND trangThai = 'DangThue'
         FOR UPDATE
     ");
     $paramsVerify = array_merge([$soHD], $dsMaCTHD);
@@ -111,7 +111,7 @@ try {
     }
 
     // 3. Kiem tra khong duoc ket thuc tat ca phong (phai dung UC11 huy toan phan)
-    $stmtCheckCount = $pdo->prepare("SELECT COUNT(*) FROM CHI_TIET_HOP_DONG WHERE soHopDong = ? AND trangThai = 1");
+    $stmtCheckCount = $pdo->prepare("SELECT COUNT(*) FROM CHI_TIET_HOP_DONG WHERE soHopDong = ? AND trangThai = 'DangThue'");
     $stmtCheckCount->execute([$soHD]);
     $soPhongActive = (int)$stmtCheckCount->fetchColumn();
 
@@ -123,7 +123,7 @@ try {
     }
 
     // 4. Thuc hien UPDATE: ket thuc tung phong da chon
-    $stmtCT = $pdo->prepare("UPDATE CHI_TIET_HOP_DONG SET trangThai = 0 WHERE maCTHD = ? AND soHopDong = ?");
+    $stmtCT = $pdo->prepare("UPDATE CHI_TIET_HOP_DONG SET trangThai = 'DaKetThuc' WHERE maCTHD = ? AND soHopDong = ?");
     $stmtPH = $pdo->prepare("UPDATE PHONG SET trangThai = 1 WHERE maPhong = ?");
     $stmtLock = $pdo->prepare("DELETE FROM PHONG_LOCK WHERE maPhong = ?");
 

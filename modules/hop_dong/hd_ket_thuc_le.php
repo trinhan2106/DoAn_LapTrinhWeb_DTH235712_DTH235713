@@ -21,7 +21,7 @@ try {
     // ----------------------------------------------------------------------------------
     // KIỂM SOÁT RB-10.1: BUỘC PHẢI KHẾP KÍN Ở TRẠNG THÁI > 2 PHÒNG
     // ----------------------------------------------------------------------------------
-    $stmtCheckCount = $pdo->prepare("SELECT COUNT(*) FROM CHI_TIET_HOP_DONG WHERE soHopDong = ? AND trangThai = 1");
+    $stmtCheckCount = $pdo->prepare("SELECT COUNT(*) FROM CHI_TIET_HOP_DONG WHERE soHopDong = ? AND trangThai = 'DangThue'");
     $stmtCheckCount->execute([$soHD]);
     $soPhongActive = (int)$stmtCheckCount->fetchColumn();
 
@@ -38,7 +38,7 @@ try {
         FROM CHI_TIET_HOP_DONG c
         JOIN PHONG p ON c.maPhong = p.maPhong
         JOIN HOP_DONG h ON c.soHopDong = h.soHopDong
-        WHERE c.soHopDong = ? AND c.trangThai = 1
+        WHERE c.soHopDong = ? AND c.trangThai = 'DangThue'
     ");
     $stmtPh->execute([$soHD]);
     $listPh = $stmtPh->fetchAll(PDO::FETCH_ASSOC);

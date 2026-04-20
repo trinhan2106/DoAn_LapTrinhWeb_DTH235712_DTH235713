@@ -85,7 +85,7 @@ try {
 
     if (count($dsPhong) > 0) {
         // Cap nhat trang thai CTHD sang DangThue (1)
-        $stmtCT = $pdo->prepare("UPDATE CHI_TIET_HOP_DONG SET trangThai = 1 WHERE soHopDong = ?");
+        $stmtCT = $pdo->prepare("UPDATE CHI_TIET_HOP_DONG SET trangThai = 'DangThue' WHERE soHopDong = ?");
         $stmtCT->execute([$soHopDong]);
 
         // Prepare cac statement dung trong vong lap

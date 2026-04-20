@@ -124,7 +124,7 @@ try {
     // INSERT CHI_TIET_HOP_DONG — giaThue lay tu DB (chong F12 sua gia)
     $stmtCT = $pdo->prepare("
         INSERT INTO CHI_TIET_HOP_DONG (maCTHD, soHopDong, maPhong, giaThue, trangThai)
-        VALUES (:ct, :hd, :phong, :gia, 0)
+        VALUES (:ct, :hd, :phong, :gia, 'DangThue')
     ");
     $stmtCT->execute([
         ':ct'    => $maCTHD_Ran,

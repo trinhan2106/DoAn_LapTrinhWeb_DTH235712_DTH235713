@@ -104,7 +104,7 @@ try {
     }
 
     // 4. UPDATE CHI_TIET_HOP_DONG: tat ca phong -> trangThai = 0 (DaKetThuc)
-    $stmtCT = $pdo->prepare("UPDATE CHI_TIET_HOP_DONG SET trangThai = 0 WHERE soHopDong = ?");
+    $stmtCT = $pdo->prepare("UPDATE CHI_TIET_HOP_DONG SET trangThai = 'DaKetThuc' WHERE soHopDong = ?");
     $stmtCT->execute([$soHD]);
 
     // 5. Tra phong ve trang thai Trong (1) va don dep PHONG_LOCK
