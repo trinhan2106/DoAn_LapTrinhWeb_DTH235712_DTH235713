@@ -29,6 +29,7 @@ $current_user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 'guest';
                 </div>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="userMenuButton">
+                <li><a class="dropdown-item" href="<?= BASE_URL ?>index.php"><i class="bi bi-house-door me-2 text-muted"></i>Trang chủ hệ thống</a></li>
                 <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2 text-muted"></i>Hồ sơ cá nhân</a></li>
                 <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2 text-muted"></i>Cài đặt</a></li>
                 <li><hr class="dropdown-divider"></li>

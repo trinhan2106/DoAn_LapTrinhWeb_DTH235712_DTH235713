@@ -11,18 +11,37 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
         </button>
         <div class="collapse navbar-collapse" id="navMainMenu">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
-                <li class="nav-item">
-                    <a class="nav-link fw-semibold active text-white" href="<?= BASE_URL ?>index.php">Trang Chủ</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link fw-semibold text-white-50" href="#" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Danh Sách Phòng</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link fw-semibold text-white-50" href="#" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Tiện Ích</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link fw-semibold text-white-50" href="#" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Liên Hệ</a>
-                </li>
+                <?php 
+                    $currentUri = $_SERVER['REQUEST_URI'];
+                    $isTenant = (strpos($currentUri, 'modules/tenant/') !== false);
+                ?>
+                <?php if ($isTenant): ?>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold active text-white" href="<?= BASE_URL ?>modules/tenant/dashboard.php">Bảng Điều Khiển</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold text-white-50" href="<?= BASE_URL ?>modules/tenant/hoa_don.php" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Hóa Đơn</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold text-white-50" href="<?= BASE_URL ?>modules/tenant/hop_dong.php" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Hợp Đồng</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold text-white-50" href="<?= BASE_URL ?>modules/tenant/maintenance.php" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Bảo Trì</a>
+                    </li>
+                <?php else: ?>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold active text-white" href="<?= BASE_URL ?>index.php">Trang Chủ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold text-white-50" href="#" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Danh Sách Phòng</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold text-white-50" href="#" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Tiện Ích</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold text-white-50" href="#" onmouseover="this.classList.replace('text-white-50', 'text-white')" onmouseout="this.classList.replace('text-white', 'text-white-50')">Liên Hệ</a>
+                    </li>
+                <?php endif; ?>
             </ul>
             <div class="d-flex align-items-center gap-3">
                 <?php if (isset($_SESSION['user_id'])): ?>
@@ -42,13 +61,18 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
                             <li>
                                 <?php 
                                     $dashboardUrl = 'dangnhap.php'; // Fallback
-                                    $roleId = $_SESSION['role_id'] ?? 4;
+                                    $roleId = $_SESSION['user_role'] ?? 4;
                                     if ($roleId == 4) {
                                         $dashboardUrl = BASE_URL . 'modules/tenant/dashboard.php';
                                     } elseif (in_array($roleId, [1, 2, 3])) {
                                         $dashboardUrl = BASE_URL . 'modules/dashboard/admin.php';
                                     }
                                 ?>
+                                <a class="dropdown-item py-2" href="<?= BASE_URL ?>index.php">
+                                    <i class="fa-solid fa-house me-2 text-muted"></i> Trang chủ hệ thống
+                                </a>
+                            </li>
+                            <li>
                                 <a class="dropdown-item py-2" href="<?= $dashboardUrl ?>">
                                     <i class="fa-solid fa-gauge-high me-2 text-muted"></i> Bảng điều khiển
                                 </a>
@@ -78,3 +102,24 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 .dropdown-item { transition: all 0.2s; font-size: 0.9rem; }
 .dropdown-item:hover { background-color: #f8f9fa; color: #1e3a5f; padding-left: 1.25rem; }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tự động ẩn các thông báo thành công sau 5 giây
+    const alerts = document.querySelectorAll('.alert-success');
+    alerts.forEach(function(alert) {
+        setTimeout(function() {
+            // Sử dụng Bootstrap native API để ẩn alert nếu có sẵn
+            if (window.bootstrap && bootstrap.Alert) {
+                const bsAlert = bootstrap.Alert.getInstance(alert) || new bootstrap.Alert(alert);
+                bsAlert.close();
+            } else {
+                // Fallback nếu không có bootstrap instance
+                alert.style.transition = "opacity 0.5s ease";
+                alert.style.opacity = "0";
+                setTimeout(() => alert.remove(), 500);
+            }
+        }, 5000);
+    });
+});
+</script>

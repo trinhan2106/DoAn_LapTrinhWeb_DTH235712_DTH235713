@@ -90,22 +90,22 @@ include __DIR__ . '/../../includes/public/header.php';
     }
     .quick-link-item i { font-size: 1.5rem; color: var(--tenant-gold); }
     .quick-link-item:hover i { color: #fff; }
+
+    /* Animation pulse cho nút sắp hết hạn */
+    @keyframes pulse-yellow {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+        70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+    }
+    .pulse-expire {
+        animation: pulse-yellow 2s infinite;
+    }
 </style>
 
 <!-- Dùng Navbar chung -->
 <?php include __DIR__ . '/../../includes/public/navbar.php'; ?>
 
-<!-- Thanh điều hướng phụ cho Tenant -->
-<div class="bg-white border-bottom shadow-sm sticky-top" style="top: 70px; z-index: 1020;">
-    <div class="container py-2">
-        <ul class="nav nav-pills small gap-2">
-            <li class="nav-item"><a href="dashboard.php" class="nav-link active" style="background-color: var(--tenant-navy);">Tổng quan</a></li>
-            <li class="nav-item"><a href="hoa_don.php" class="nav-link text-secondary">Hóa đơn</a></li>
-            <li class="nav-item"><a href="hop_dong.php?soHopDong=<?php echo $hopDongList[0]['soHopDong'] ?? ''; ?>" class="nav-link text-secondary">Hợp đồng</a></li>
-            <li class="nav-item"><a href="maintenance.php" class="nav-link text-secondary">Bảo trì</a></li>
-        </ul>
-    </div>
-</div>
+
 
 <main>
     <!-- HERO -->
@@ -126,6 +126,21 @@ include __DIR__ . '/../../includes/public/header.php';
     </div>
 
     <div class="container pb-5">
+        <!-- Thông báo thành công/lỗi -->
+        <?php if(isset($_SESSION['success_msg'])): ?>
+            <div class="alert alert-success alert-dismissible fade show rounded-4 border-0 shadow-sm mb-4" role="alert" style="background-color: #d1e7dd; color: #0f5132;">
+                <i class="fa-solid fa-circle-check me-2"></i><strong>Thành công!</strong> <?php echo $_SESSION['success_msg']; unset($_SESSION['success_msg']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
+        <?php if(isset($_SESSION['error_msg'])): ?>
+            <div class="alert alert-danger alert-dismissible fade show rounded-4 border-0 shadow-sm mb-4" role="alert" style="background-color: #f8d7da; color: #842029;">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i><strong>Lỗi!</strong> <?php echo $_SESSION['error_msg']; unset($_SESSION['error_msg']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
         <!-- KPI ROW -->
         <div class="row g-4 mb-5">
             <div class="col-6 col-lg-3">
@@ -175,12 +190,32 @@ include __DIR__ . '/../../includes/public/header.php';
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($hopDongList as $hd): ?>
+                                    <?php foreach ($hopDongList as $hd): 
+                                        $ngayHetHan = strtotime($hd['ngayKetThuc']);
+                                        $homNay = time();
+                                        $soNgayConLai = round(($ngayHetHan - $homNay) / (60 * 60 * 24));
+                                        $isSapHetHan = ($soNgayConLai <= 30 && $soNgayConLai >= 0);
+                                    ?>
                                         <tr>
                                             <td class="fw-bold"><?php echo $hd['soHopDong']; ?></td>
                                             <td><span class="badge bg-light text-navy border"><?php echo $hd['danhSachPhong']; ?></span></td>
-                                            <td class="text-danger"><?php echo date('d/m/Y', strtotime($hd['ngayKetThuc'])); ?></td>
-                                            <td class="text-end"><a href="hop_dong.php?soHopDong=<?php echo $hd['soHopDong']; ?>" class="text-link">Xem</a></td>
+                                            <td>
+                                                <span class="text-danger fw-bold"><?php echo date('d/m/Y', $ngayHetHan); ?></span>
+                                                <?php if($isSapHetHan): ?>
+                                                    <br><span class="badge bg-danger mt-1 small">Sắp hết hạn</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="text-end">
+                                                <div class="d-flex justify-content-end gap-2">
+                                                    <?php if($isSapHetHan): ?>
+                                                        <a href="yeu_cau_giahan.php?soHopDong=<?php echo $hd['soHopDong']; ?>" 
+                                                           class="btn btn-sm btn-warning shadow-sm pulse-expire px-3 rounded-pill fw-bold">
+                                                            Gia hạn ngay
+                                                        </a>
+                                                    <?php endif; ?>
+                                                    <a href="hop_dong.php?soHopDong=<?php echo $hd['soHopDong']; ?>" class="btn btn-sm btn-outline-navy rounded-pill px-3">Xem</a>
+                                                </div>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -229,34 +264,39 @@ include __DIR__ . '/../../includes/public/header.php';
             <!-- CỘT PHỤ -->
             <div class="col-lg-4">
                 <!-- Truy cập nhanh -->
-                <div class="tenant-card mb-4">
+                <div class="tenant-card mb-4 text-navy">
                     <div class="tenant-card-header">
-                        <h5 class="m-0 fw-bold">Liên kết nhanh</h5>
+                        <h5 class="m-0 fw-bold"><i class="fa-solid fa-bolt me-2 text-warning"></i>Thao tác nhanh</h5>
                     </div>
                     <div class="p-3">
                         <div class="row g-2">
                             <div class="col-6">
-                                <a href="maintenance.php" class="quick-link-item small">
-                                    <i class="fa-solid fa-screwdriver-wrench"></i>
-                                    Sửa chữa
+                                <a href="hop_dong.php?soHopDong=<?php echo $hopDongList[0]['soHopDong'] ?? ''; ?>" class="quick-link-item small">
+                                    <i class="fa-solid fa-file-contract"></i>
+                                    Xem hợp đồng
+                                </a>
+                            </div>
+                            <div class="col-6">
+                                <a href="yeu_cau_giahan.php" class="quick-link-item small">
+                                    <i class="fa-solid fa-clock-rotate-left"></i>
+                                    Gia hạn HĐ
                                 </a>
                             </div>
                             <div class="col-6">
                                 <a href="hoa_don.php" class="quick-link-item small">
-                                    <i class="fa-solid fa-receipt"></i>
-                                    Đóng tiền
+                                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                                    Lịch sử hóa đơn
                                 </a>
                             </div>
                             <div class="col-6">
-                                <a href="#" class="quick-link-item small">
-                                    <i class="fa-solid fa-bullhorn"></i>
-                                    Khiếu nại
+                                <a href="maintenance.php" class="quick-link-item small">
+                                    <i class="fa-solid fa-screwdriver-wrench"></i>
+                                    Báo hỏng
                                 </a>
                             </div>
-                            <div class="col-6">
-                                <a href="<?= BASE_URL ?>dangxuat.php" class="quick-link-item small text-danger">
-                                    <i class="fa-solid fa-power-off"></i>
-                                    Thoát
+                            <div class="col-12 mt-2">
+                                <a href="<?= BASE_URL ?>dangxuat.php" class="btn btn-outline-danger w-100 rounded-pill btn-sm py-2 fw-bold">
+                                    <i class="fa-solid fa-power-off me-2"></i>Đăng xuất
                                 </a>
                             </div>
                         </div>

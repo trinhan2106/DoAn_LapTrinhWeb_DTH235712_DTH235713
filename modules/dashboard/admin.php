@@ -260,9 +260,16 @@ foreach ($chartData as $row) {
                     <h2 class="h3 card-title-navy mb-1">Hệ Thống Quản Lý Vận Hành</h2>
                     <p class="text-muted small mb-0">Chào mừng bạn trở lại, hệ thống đang vận hành ổn định.</p>
                 </div>
-                <div class="btn-group shadow-sm">
-                    <button class="btn btn-white border"><i class="bi bi-calendar3 me-2"></i><?php echo date('d/m/Y'); ?></button>
-                    <button class="btn btn-navy text-white" onclick="location.reload()"><i class="bi bi-arrow-clockwise"></i></button>
+                <div class="d-flex gap-2 shadow-sm">
+                    <a href="<?= BASE_URL ?>modules/dashboard/admin.php" class="btn btn-white border active">
+                        <i class="bi bi-speedometer2 me-2 text-brand-primary"></i>Tổng quan Admin
+                    </a>
+                    <button class="btn btn-white border d-none d-md-inline-block">
+                        <i class="bi bi-calendar3 me-2"></i><?php echo date('d/m/Y'); ?>
+                    </button>
+                    <button class="btn btn-navy text-white px-3" onclick="location.reload()">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
                 </div>
             </div>
 

@@ -46,6 +46,21 @@ require_once __DIR__ . '/../../includes/tenant/header.php';
 ?>
 
 <div class="container py-5" style="max-width: 1200px;">
+    <!-- Thông báo thành công/lỗi -->
+    <?php if(isset($_SESSION['success_msg'])): ?>
+        <div class="alert alert-success alert-dismissible fade show rounded-4 border-0 shadow-sm mb-4" role="alert" style="background-color: #d1e7dd; color: #0f5132;">
+            <i class="fa-solid fa-circle-check me-2"></i><strong>Thành công!</strong> <?php echo $_SESSION['success_msg']; unset($_SESSION['success_msg']); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
+
+    <?php if(isset($_SESSION['error_msg'])): ?>
+        <div class="alert alert-danger alert-dismissible fade show rounded-4 border-0 shadow-sm mb-4" role="alert" style="background-color: #f8d7da; color: #842029;">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i><strong>Lỗi!</strong> <?php echo $_SESSION['error_msg']; unset($_SESSION['error_msg']); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
+
     <!-- Head Breadcrumb & Title -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
