@@ -1,10 +1,10 @@
-﻿<?php
+<?php
 /**
- * PROJECT: Quáº£n lÃ½ Cao á»‘c (Office Rental Management)
- * PAGE: chi_tiet_phong.php (Chi tiáº¿t phÃ²ng)
+ * PROJECT: Quản lý Cao ốc (Office Rental Management)
+ * PAGE: chi_tiet_phong.php (Chi tiết phòng)
  */
 
-// 1. Khá»Ÿi táº¡o Session vÃ  CSRF Token báº£o máº­t
+// 1. Khởi tạo Session và CSRF Token bảo mật
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -12,22 +12,22 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-// 2. Kiá»ƒm tra input há»£p lá»‡
+// 2. Kiểm tra input hợp lệ
 if (empty($_GET['maPhong'])) {
-    $_SESSION['error_msg'] = "MÃ£ phÃ²ng khÃ´ng há»£p lá»‡ hoáº·c khÃ´ng Ä‘Æ°á»£c cung cáº¥p.";
+    $_SESSION['error_msg'] = "Mã phòng không hợp lệ hoặc không được cung cấp.";
     header("Location: phong_trong.php");
     exit;
 }
 $maPhong = $_GET['maPhong'];
 
-// 3. Káº¿t ná»‘i CSDL & Functions
+// 3. Kết nối CSDL & Functions
 require_once 'includes/common/db.php';
 require_once 'includes/common/functions.php';
 $pdo = Database::getInstance()->getConnection();
 
-// 4. Truy váº¥n CSDL
+// 4. Truy vấn CSDL
 try {
-    // 4.1. Láº¥y thÃ´ng tin phÃ²ng (JOIN TANG, CAO_OC)
+    // 4.1. Lấy thông tin phòng (JOIN TANG, CAO_OC)
     $sql = "
         SELECT p.maPhong, p.tenPhong, p.loaiPhong, p.dienTich, p.soChoLamViec, p.giaThue, p.trangThai, p.moTaViTri, 
                t.tenTang, 
@@ -41,27 +41,27 @@ try {
     $stmt->execute([':maPhong' => $maPhong]);
     $room = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // Náº¿u khÃ´ng tá»“n táº¡i phÃ²ng theo tham sá»‘ truyá»n vÃ o
+    // Nếu không tồn tại phòng theo tham số truyền vào
     if (!$room) {
-        $_SESSION['error_msg'] = "KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin phÃ²ng! PhÃ²ng cÃ³ thá»ƒ Ä‘Ã£ bá»‹ xÃ³a hoáº·c áº©m.";
+        $_SESSION['error_msg'] = "Không tìm thấy thông tin phòng! Phòng có thể đã bị xóa hoặc ẩn.";
         header("Location: phong_trong.php");
         exit;
     }
 
-    // 4.2. Láº¥y danh sÃ¡ch hÃ¬nh áº£nh (Gallery)
+    // 4.2. Lấy danh sách hình ảnh (Gallery)
     $sqlImages = "SELECT urlHinhAnh FROM PHONG_HINH_ANH WHERE maPhong = :maPhong ORDER BY is_thumbnail DESC";
     $stmtImages = $pdo->prepare($sqlImages);
     $stmtImages->execute([':maPhong' => $maPhong]);
     $images = $stmtImages->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (PDOException $ex) {
-    error_log("DB_ERROR á»Ÿ chi_tiet_phong.php: " . $ex->getMessage());
-    $_SESSION['error_msg'] = "Há»‡ thá»‘ng Ä‘ang gáº·p sá»± cá»‘, vui lÃ²ng thá»­ láº¡i sau.";
+    error_log("DB_ERROR tại chi_tiet_phong.php: " . $ex->getMessage());
+    $_SESSION['error_msg'] = "Hệ thống đang gặp sự cố, vui lòng thử lại sau.";
     header("Location: phong_trong.php");
     exit;
 }
 
-// 5. Layout & View (KhÃ´ng sá»­ dá»¥ng kiemTraSession Ä‘á»ƒ Public Access)
+// 5. Layout & View (Không sử dụng kiemTraSession để Public Access)
 include_once 'includes/public/header.php';
 include_once 'includes/public/navbar.php';
 ?>
@@ -159,104 +159,120 @@ include_once 'includes/public/navbar.php';
     }
 </style>
 
-<!-- Pháº§n Header TiÃªu Äá» PhÃ²ng -->
+<!-- Phần Header Tiêu Đề Phòng -->
 <section class="room-header text-center text-lg-start">
     <div class="container">
         <div class="row align-items-center">
             <div class="col-12 col-md-8">
                 <h1 class="display-5 fw-bold mb-2"><?= e($room['tenPhong']) ?></h1>
-                <p class="mb-1 opacity-75 fs-5">
-                    <i class="fa-solid fa-building me-2" style="color: #c9a66b;"></i>TÃ²a nhÃ : <strong><?= e($room['tenCaoOc']) ?></strong> - Vá»‹ trÃ­: <strong><?= e($room['tenTang']) ?></strong>
-                </p>
-                <p class="small opacity-75 mb-0">
-                    <i class="fa-solid fa-map-location-dot me-2"></i><?= e($room['diaChi']) ?>
+                <p class="lead mb-0 opacity-75">
+                    <i class="fa-solid fa-hotel me-2"></i> <?= e($room['tenCaoOc']) ?> - <?= e($room['tenTang']) ?>
                 </p>
             </div>
             <div class="col-12 col-md-4 text-lg-end mt-4 mt-lg-0">
-                <span class="badge rounded-pill fs-6 px-4 py-2 <?= $room['trangThai'] == 1 ? 'bg-success' : 'bg-danger' ?>">
-                    <i class="fa-solid <?= $room['trangThai'] == 1 ? 'fa-check-circle' : 'fa-lock' ?> me-2"></i>
-                    <?= $room['trangThai'] == 1 ? 'Sáºµn SÃ ng Cho ThuÃª' : 'ÄÃ£ ThuÃª / Äang Báº£o TrÃ¬' ?>
+                <span class="badge px-4 py-3 fs-6 <?= $room['trangThai'] == 1 ? 'bg-success' : 'bg-warning' ?>" style="border-radius: 50px;">
+                    <i class="fa-solid <?= $room['trangThai'] == 1 ? 'fa-check-circle' : 'fa-clock' ?> me-2"></i>
+                    <?= $room['trangThai'] == 1 ? 'Phòng Đang Trống' : 'Đã Có Người Thuê' ?>
                 </span>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Content Layout Cá»™t -->
-<div class="container pb-5">
-    <!-- Hiá»ƒn thá»‹ Box ThÃ´ng bÃ¡o Alert -->
-    <div class="mb-4">
-    </div>
-
-    <!-- Chia Layout Bootstrap Grid: 8/12 Gallery - 4/12 Specs & Form -->
+<div class="container mb-5">
     <div class="row g-5">
-        
-        <!-- Cá»™t Gallery áº¢nh (8/12) -->
-        <article class="col-12 col-lg-8">
-            <h3 class="fw-bold mb-4" style="color: #1e3a5f;">
-                <i class="fa-regular fa-images me-2" style="color: #c9a66b;"></i> HÃ¬nh áº¢nh KhÃ´ng Gian Thá»±c Táº¿
-            </h3>
+        <!-- == CỘT TRÁI: Gallery & Chi Tiết == -->
+        <div class="col-12 col-lg-8">
             
-            <?php if (!empty($images)): ?>
-                <!-- áº¢nh Äáº¡i Diá»‡n Lá»›n -->
-                <a href="<?= e($images[0]['urlHinhAnh']) ?>" data-lightbox="room-gallery" data-title="<?= e($room['tenPhong']) ?>">
-                    <img src="<?= e($images[0]['urlHinhAnh']) ?>" alt="<?= e($room['tenPhong']) ?>" class="room-gallery__main img-fluid">
-                </a>
-                
-                <!-- Danh SÃ¡ch áº¢nh Nhá» (Thumbnail) -->
-                <div class="row g-2 mt-2">
-                    <?php for ($i = 1; $i < count($images); $i++): ?>
-                        <div class="col-4 col-md-3">
-                            <a href="<?= e($images[$i]['urlHinhAnh']) ?>" data-lightbox="room-gallery" data-title="<?= e($room['tenPhong']) ?>">
-                                <img src="<?= e($images[$i]['urlHinhAnh']) ?>" alt="<?= e($room['tenPhong']) ?>" class="room-gallery__thumb img-fluid">
-                            </a>
-                        </div>
-                    <?php endfor; ?>
-                </div>
-            <?php else: ?>
-                <!-- Xá»­ lÃ½ Placeholder trá»‘ng khi khÃ´ng cÃ³ áº£nh -->
-                <div class="alert bg-light border-0 text-center py-5 rounded-3">
-                    <i class="fa-regular fa-image fs-1 text-muted mb-3"></i>
-                    <h5 class="text-muted fw-bold">ChÆ°a cáº­p nháº­t hÃ¬nh áº£nh</h5>
-                    <p class="mb-0 text-muted small">HÃ¬nh áº£nh cá»§a phÃ²ng nÃ y Ä‘ang trong quÃ¡ trÃ¬nh cáº­p nháº­t, xin vui lÃ²ng quay láº¡i sau</p>
-                </div>
-            <?php endif; ?>
-        </article>
+            <!-- Room Gallery -->
+            <div class="mb-5">
+                <?php if (!empty($images)): ?>
+                    <a href="<?= e($images[0]['urlHinhAnh']) ?>" data-lightbox="room-gallery">
+                        <img src="<?= e($images[0]['urlHinhAnh']) ?>" class="room-gallery__main" alt="Main View">
+                    </a>
+                    
+                    <div class="row g-2">
+                        <?php for($i = 1; $i < count($images); $i++): ?>
+                            <div class="col-3 col-md-2">
+                                <a href="<?= e($images[$i]['urlHinhAnh']) ?>" data-lightbox="room-gallery">
+                                    <img src="<?= e($images[$i]['urlHinhAnh']) ?>" class="room-gallery__thumb" alt="Thumb <?= $i ?>">
+                                </a>
+                            </div>
+                        <?php endfor; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="bg-secondary bg-opacity-10 d-flex flex-column align-items-center justify-content-center" style="height: 400px; border-radius: 12px;">
+                        <i class="fa-regular fa-image fs-1 text-muted mb-2"></i>
+                        <span class="text-muted small">Chưa có hình ảnh mô tả cho phòng này.</span>
+                    </div>
+                <?php endif; ?>
+            </div>
 
-        <!-- Cá»™t ThÃ´ng Sá»‘ Ká»¹ Thuáº­t (4/12) - RÆ¡i xuá»‘ng dÆ°á»›i cÃ¹ng lÃºc á»Ÿ Mobile 375px -->
-        <aside class="col-12 col-lg-4">
-            
-            <!-- Box ThÃ´ng Tin Chi Tiáº¿t -->
-            <div class="card card-brand shadow-sm border-0 mb-4">
-                <div class="card-header bg-white border-bottom p-4">
-                    <h5 class="fw-bold mb-0" style="color: #1e3a5f;">
-                        <i class="fa-solid fa-list-check me-2" style="color: #c9a66b;"></i>ThÃ´ng Tin Ká»¹ Thuáº­t
-                    </h5>
+            <!-- Features Icons -->
+            <div class="row g-4 mb-5">
+                <div class="col-6 col-md-3">
+                    <div class="info-card">
+                        <div class="info-label">Diện tích</div>
+                        <div class="info-value"><?= e($room['dienTich']) ?> m²</div>
+                    </div>
                 </div>
-                <div class="card-body p-4">
-                    <div class="table-responsive mb-3">
-                        <table class="table table-borderless align-middle mb-0">
+                <div class="col-6 col-md-3">
+                    <div class="info-card">
+                        <div class="info-label">Loại phòng</div>
+                        <div class="info-value text-truncate" title="<?= e($room['loaiPhong']) ?>"><?= e($room['loaiPhong']) ?></div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="info-card">
+                        <div class="info-label">Sức chứa</div>
+                        <div class="info-value"><?= e($room['soChoLamViec']) ?> người</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="info-card">
+                        <div class="info-label">Giá thuê</div>
+                        <div class="info-value"><?= formatTien($room['giaThue']) ?></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Table -->
+            <div class="mb-5">
+                <h4 class="fw-bold mb-4" style="color: #1e3a5f; border-bottom: 3px solid #c9a66b; display: inline-block; padding-bottom: 5px;">
+                    Thông Số Kỹ Thuật
+                </h4>
+                <div class="card border-0 bg-transparent">
+                    <div class="card-body p-0">
+                        <table class="table table-borderless table-striped align-middle mb-0">
                             <tbody>
                                 <tr class="border-bottom">
-                                    <th scope="row" class="text-muted text-uppercase fw-bold small py-3" style="width: 45%;">MÃ£ PhÃ²ng</th>
+                                    <th scope="row" class="text-muted text-uppercase fw-bold small py-3">Mã định danh</th>
                                     <td class="fw-semibold text-end py-3" style="color: #1e3a5f;"><?= e($room['maPhong']) ?></td>
                                 </tr>
                                 <tr class="border-bottom">
-                                    <th scope="row" class="text-muted text-uppercase fw-bold small py-3">PhÃ¢n loáº¡i</th>
+                                    <th scope="row" class="text-muted text-uppercase fw-bold small py-3">Cao ốc sở hữu</th>
+                                    <td class="fw-semibold text-end py-3" style="color: #1e3a5f;"><?= e($room['tenCaoOc']) ?></td>
+                                </tr>
+                                <tr class="border-bottom">
+                                    <th scope="row" class="text-muted text-uppercase fw-bold small py-3">Vị trí địa chỉ</th>
+                                    <td class="fw-semibold text-end py-3 text-muted small"><?= e($room['diaChi']) ?></td>
+                                </tr>
+                                <tr class="border-bottom">
+                                    <th scope="row" class="text-muted text-uppercase fw-bold small py-3">Tầng</th>
+                                    <td class="fw-semibold text-end py-3" style="color: #1e3a5f;"><?= e($room['tenTang']) ?></td>
+                                </tr>
+                                <tr class="border-bottom">
+                                    <th scope="row" class="text-muted text-uppercase fw-bold small py-3">Loại không gian</th>
                                     <td class="fw-semibold text-end py-3" style="color: #1e3a5f;"><?= e($room['loaiPhong']) ?></td>
                                 </tr>
                                 <tr class="border-bottom">
-                                    <th scope="row" class="text-muted text-uppercase fw-bold small py-3">Diá»‡n tÃ­ch</th>
-                                    <td class="fw-semibold text-end py-3" style="color: #1e3a5f;"><?= formatTien($room['dienTich']) ?> mÂ²</td>
-                                </tr>
-                                <tr class="border-bottom">
-                                    <th scope="row" class="text-muted text-uppercase fw-bold small py-3">Sá»©c chá»©a</th>
-                                    <td class="fw-semibold text-end py-3" style="color: #1e3a5f;"><?= e($room['soChoLamViec']) ?> ngÆ°á»i</td>
+                                    <th scope="row" class="text-muted text-uppercase fw-bold small py-3">Khả năng chứa</th>
+                                    <td class="fw-semibold text-end py-3" style="color: #1e3a5f;"><?= e($room['soChoLamViec']) ?> người</td>
                                 </tr>
                                 <tr>
-                                    <th scope="row" class="text-muted text-uppercase fw-bold small py-3 align-top">MÃ´ táº£ vá»‹ trÃ­</th>
+                                    <th scope="row" class="text-muted text-uppercase fw-bold small py-3 align-top">Mô tả vị trí</th>
                                     <td class="fw-semibold text-end py-3" style="color: #1e3a5f;">
-                                        <?= !empty($room['moTaViTri']) ? nl2br(e($room['moTaViTri'])) : 'Äang cáº­p nháº­t' ?>
+                                        <?= !empty($room['moTaViTri']) ? nl2br(e($room['moTaViTri'])) : 'Đang cập nhật' ?>
                                     </td>
                                 </tr>
                             </tbody>
@@ -264,43 +280,60 @@ include_once 'includes/public/navbar.php';
                     </div>
                     
                     <div class="p-4 text-center mt-4 shadow-sm" style="background-color: #1e3a5f; border-radius: 8px;">
-                        <div class="mb-1 text-uppercase fw-bold small" style="color: #c9a66b;">Má»©c GiÃ¡ ThuÃª Äá» Xuáº¥t</div>
+                        <div class="mb-1 text-uppercase fw-bold small" style="color: #c9a66b;">Mức Giá Thuê Đề Xuất</div>
                         <div class="fs-3 fw-bold" style="color: #ffffff;">
-                            <?= formatTien($room['giaThue']) ?> <span class="fs-6 fw-normal opacity-75">VND/thÃ¡ng</span>
+                            <?= formatTien($room['giaThue']) ?> <span class="fs-6 fw-normal opacity-75">VND/tháng</span>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Box Form ÄÄƒng KÃ½ ThuÃª PhÃ²ng -->
+        <!-- == CỘT PHẢI: Liên Hệ & Đăng Ký == -->
+        <aside class="col-12 col-lg-4">
+            
+            <div class="card card-brand shadow-sm border-0 mb-4 overflow-hidden">
+                <div class="p-4 text-center" style="background-color: #f1f3f5;">
+                    <h6 class="text-muted text-uppercase small fw-bold mb-3">Hotline Hỗ Trợ 24/7</h6>
+                    <h4 class="fw-bold mb-0" style="color: #1e3a5f;">(+84) 912 345 678</h4>
+                </div>
+                <div class="card-body p-4 text-center">
+                    <p class="text-muted small mb-4">Cần thêm thông tin chi tiết hoặc muốn xem văn phòng trực tiếp? Liên hệ ngay với chúng tôi.</p>
+                    <a href="tel:0912345678" class="btn w-100 py-3 fw-bold shadow-sm" style="background-color: #c9a66b; color: #1e3a5f;">
+                        <i class="fa-solid fa-phone-volume me-2"></i> GỌI TƯ VẤN NGAY
+                    </a>
+                </div>
+            </div>
+
+            <!-- Box Form Đăng Ký Thuê Phòng -->
             <div class="card card-brand shadow-sm border-0 mb-4" style="border-top: 5px solid #c9a66b !important;">
                 <div class="card-body p-4">
                     <h5 class="fw-bold mb-3 text-uppercase text-center" style="color: #1e3a5f;">
-                        ÄÄƒng KÃ½ TÆ° Váº¥n ThuÃª
+                        Đăng Ký Tư Vấn Thuê
                     </h5>
-                    <p class="text-muted text-center small mb-4">Äá»ƒ láº¡i thÃ´ng tin, chÃºng tÃ´i sáº½ liÃªn há»‡ láº¡i vá»›i báº¡n trong 24h.</p>
+                    <p class="text-muted text-center small mb-4">Để lại thông tin, chúng tôi sẽ liên hệ lại với bạn trong 24h.</p>
                     
                     <?php if ($room['trangThai'] == 1): ?>
                         <form action="dang_ky_thue_submit.php" method="POST" class="needs-validation" novalidate>
-                            <!-- Báº£o máº­t CSRF -->
+                            <!-- Bảo mật CSRF -->
                             <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
                             <input type="hidden" name="maPhong" value="<?= e($room['maPhong']) ?>">
                             
                             <div class="mb-3">
-                                <label for="hoTen" class="form-label small fw-bold text-muted">Há» vÃ  TÃªn <span class="text-danger">*</span></label>
+                                <label for="hoTen" class="form-label small fw-bold text-muted">Họ và Tên <span class="text-danger">*</span></label>
                                 <div class="input-group has-validation">
                                     <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-user text-muted"></i></span>
-                                    <input type="text" class="form-control bg-light border-start-0 ps-0 shadow-none" id="hoTen" name="hoTen" required placeholder="Nguyá»…n VÄƒn A" maxlength="100">
-                                    <div class="invalid-feedback">Vui lÃ²ng nháº­p há» vÃ  tÃªn há»£p lá»‡.</div>
+                                    <input type="text" class="form-control bg-light border-start-0 ps-0 shadow-none" id="hoTen" name="hoTen" required placeholder="Nguyễn Văn A" maxlength="100">
+                                    <div class="invalid-feedback">Vui lòng nhập họ và tên hợp lệ.</div>
                                 </div>
                             </div>
                             
                             <div class="mb-3">
-                                <label for="soDienThoai" class="form-label small fw-bold text-muted">Sá»‘ Ä‘iá»‡n thoáº¡i <span class="text-danger">*</span></label>
+                                <label for="soDienThoai" class="form-label small fw-bold text-muted">Số điện thoại <span class="text-danger">*</span></label>
                                 <div class="input-group has-validation">
                                     <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-phone text-muted"></i></span>
-                                    <input type="text" class="form-control bg-light border-start-0 ps-0 shadow-none" id="soDienThoai" name="soDienThoai" required pattern="(84|0[3|5|7|8|9])+([0-9]{8})\b" title="Vui lÃ²ng nháº­p Ä‘á»‹nh dáº¡ng sá»‘ Ä‘iá»‡n thoáº¡i Viá»‡t Nam (VD: 0912345678)" placeholder="09xx xxx xxx">
-                                    <div class="invalid-feedback">Vui lÃ²ng nháº­p sá»‘ Ä‘iá»‡n thoáº¡i Viá»‡t Nam há»£p lá»‡ (VD: 0912345678).</div>
+                                    <input type="text" class="form-control bg-light border-start-0 ps-0 shadow-none" id="soDienThoai" name="soDienThoai" required pattern="(84|0[3|5|7|8|9])+([0-9]{8})\b" title="Vui lòng nhập định dạng số điện thoại Việt Nam (VD: 0912345678)" placeholder="09xx xxx xxx">
+                                    <div class="invalid-feedback">Vui lòng nhập số điện thoại Việt Nam hợp lệ (VD: 0912345678).</div>
                                 </div>
                             </div>
                             
@@ -309,28 +342,28 @@ include_once 'includes/public/navbar.php';
                                 <div class="input-group has-validation">
                                     <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-envelope text-muted"></i></span>
                                     <input type="email" class="form-control bg-light border-start-0 ps-0 shadow-none" id="email" name="email" required placeholder="email@congty.com" maxlength="100">
-                                    <div class="invalid-feedback">Vui lÃ²ng nháº­p Ä‘á»‹nh dáº¡ng email há»£p lá»‡.</div>
+                                    <div class="invalid-feedback">Vui lòng nhập định dạng email hợp lệ.</div>
                                 </div>
                             </div>
                             
-                            <!-- Hiá»ƒn thá»‹ má»©c giÃ¡ (Readonly) cho ngÆ°á»i dÃ¹ng kiá»ƒm chá»©ng -->
+                            <!-- Hiển thị mức giá (Readonly) cho người dùng kiểm chứng -->
                             <div class="mb-4">
-                                <label for="giaThueDisplay" class="form-label small fw-bold text-muted">Má»©c GiÃ¡ Má»›i Nháº¥t</label>
-                                <input type="text" class="form-control fw-bold text-center border-0 py-2" style="background-color: #f1f3f5; color: #1e3a5f;" id="giaThueDisplay" value="<?= formatTien($room['giaThue']) ?> VND/thÃ¡ng" readonly>
+                                <label for="giaThueDisplay" class="form-label small fw-bold text-muted">Mức Giá Mới Nhất</label>
+                                <input type="text" class="form-control fw-bold text-center border-0 py-2" style="background-color: #f1f3f5; color: #1e3a5f;" id="giaThueDisplay" value="<?= formatTien($room['giaThue']) ?> VND/tháng" readonly>
                             </div>
                             
                             <button type="submit" class="btn btn-brand--accent btn-lg w-100 py-3 mt-2 shadow-sm d-flex justify-content-center align-items-center gap-2">
-                                <i class="fa-solid fa-paper-plane"></i> Gá»­i YÃªu Cáº§u ThuÃª PhÃ²ng
+                                <i class="fa-solid fa-paper-plane"></i> Gửi Yêu Cầu Thuê Phòng
                             </button>
                         </form>
                     <?php else: ?>
-                        <!-- áº¨n Form, Hiá»ƒn thá»‹ Alert khi tráº¡ng thÃ¡i khÃ¡c 1 (ÄÃ£ thuÃª/KhÃ¡c) -->
+                        <!-- Ẩn Form, Hiển thị Alert khi trạng thái khác 1 (Đã thuê/Khác) -->
                         <div class="alert alert-warning text-center border-warning-subtle shadow-sm py-4 my-2" style="border-radius: 8px;">
                             <i class="fa-solid fa-triangle-exclamation fs-1 mb-3 d-block" style="color: #fd7e14;"></i>
-                            <h6 class="fw-bold mb-2">PhÃ²ng hiá»‡n Ä‘Ã£ cÃ³ ngÆ°á»i thuÃª</h6>
-                            <p class="mb-0 small text-muted">Báº¡n khÃ´ng thá»ƒ Ä‘Äƒng kÃ½ tÆ° váº¥n cho khÃ´ng gian nÃ y vÃ o thá»i Ä‘iá»ƒm hiá»‡n táº¡i.</p>
+                            <h6 class="fw-bold mb-2">Phòng hiện đã có người thuê</h6>
+                            <p class="mb-0 small text-muted">Bạn không thể đăng ký tư vấn cho không gian này vào thời điểm hiện tại.</p>
                             <a href="phong_trong.php" class="btn btn-sm w-100 py-2 mt-3 fw-bold" style="background-color: #1e3a5f; color: white;">
-                                Nháº¥n xem phÃ²ng tÆ°Æ¡ng tá»±
+                                Nhấn xem phòng tương tự
                             </a>
                         </div>
                     <?php endif; ?>
@@ -344,11 +377,11 @@ include_once 'includes/public/navbar.php';
 <!-- Import Lightbox2 JS CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/js/lightbox.min.js"></script>
 <script>
-    // Tuá»³ chá»‰nh thuá»™c tÃ­nh cá»§a Lightbox
+    // Tùy chỉnh thuộc tính của Lightbox
     lightbox.option({
       'resizeDuration': 200,
       'wrapAround': true,
-      'albumLabel': "HÃ¬nh áº£nh %1 / %2"
+      'albumLabel': "Hình ảnh %1 / %2"
     });
 </script>
 

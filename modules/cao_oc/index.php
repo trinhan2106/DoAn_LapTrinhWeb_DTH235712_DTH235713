@@ -1,29 +1,24 @@
-﻿<?php
+<?php
 /**
  * modules/cao_oc/index.php
- * Trang danh sÃ¡ch Cao á»‘c - Thiáº¿t káº¿ Ä‘á»“ng bá»™ vá»›i module Táº§ng
+ * Giao diện quản lý Danh sách Cao ốc - Hệ thống Quản lý Cao ốc
  */
 
-// 1. KHá»žI Táº O & Báº¢O Máº¬T
+// 1. KHỞI TẠO & BẢO MẬT
 require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 
-// XÃ¡c thá»±c Session & Role
+// Xác thực Session & Phân quyền (ADMIN, QUAN_LY_NHA)
 kiemTraSession();
 kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
-// Káº¿t ná»‘i CSDL
 $db = Database::getInstance()->getConnection();
 
-// Truy váº¥n danh sÃ¡ch cao á»‘c kÃ¨m sá»‘ lÆ°á»£ng phÃ²ng hiá»‡n cÃ³ (chÆ°a xÃ³a)
-$sql = " 
-    SELECT 
-        c.maCaoOc, 
-        c.tenCaoOc, 
-        c.diaChi, 
-        c.soTang,
-        (SELECT COUNT(*) 
+// 2. TRUY VẤN DANH SÁCH CAO ỐC (Kèm số lượng phòng)
+$sql = "
+    SELECT c.*, 
+        (SELECT COUNT(p.maPhong) 
          FROM TANG t 
          JOIN PHONG p ON t.maTang = p.maTang 
          WHERE t.maCaoOc = c.maCaoOc AND p.deleted_at IS NULL AND t.deleted_at IS NULL) as tongSoPhong
@@ -74,7 +69,7 @@ $dsCaoOc = $db->query($sql)->fetchAll();
         .action-link--delete:hover { background-color: rgba(231, 76, 60, 0.1); }
         
         .card-main {
-            width: 90%; /* Máº­t Ä‘á»™ cao */
+            width: 95%; 
             margin: 0 auto;
         }
     </style>
@@ -92,17 +87,17 @@ $dsCaoOc = $db->query($sql)->fetchAll();
             <nav aria-label="breadcrumb" class="mb-4 card-main">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="<?= BASE_URL ?>admin_layout.php" class="text-decoration-none">Dashboard</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Quáº£n lÃ½ Cao á»‘c</li>
+                    <li class="breadcrumb-item active" aria-current="page">Quản lý Cao ốc</li>
                 </ol>
             </nav>
 
             <div class="card shadow-sm border-0 card-main">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h2 class="h4 mb-0 text-navy fw-bold">
-                        <i class="bi bi-buildings me-2"></i>DANH SÃCH CAO á»C
+                        <i class="bi bi-buildings me-2"></i>DANH SÁCH CAO ỐC
                     </h2>
                     <a href="them.php" class="btn btn-gold shadow-sm px-4">
-                        <i class="bi bi-plus-circle me-2"></i>ThÃªm Cao á»c Má»›i
+                        <i class="bi bi-plus-circle me-2"></i>Thêm Cao ốc Mới
                     </a>
                 </div>
                 <div class="card-body p-4">
@@ -110,12 +105,12 @@ $dsCaoOc = $db->query($sql)->fetchAll();
                         <table id="tblCaoOc" class="table table-hover align-middle table-navy">
                             <thead>
                                 <tr>
-                                    <th width="120">MÃ£</th>
-                                    <th>TÃªn Cao á»‘c</th>
-                                    <th>Äá»‹a chá»‰</th>
-                                    <th width="100" class="text-center">Sá»‘ táº§ng</th>
-                                    <th width="100" class="text-center">PhÃ²ng</th>
-                                    <th width="150" class="text-center">Thao tÃ¡c</th>
+                                    <th width="120">MÃ</th>
+                                    <th>Tên Cao ốc</th>
+                                    <th>Địa chỉ</th>
+                                    <th width="100" class="text-center">Số tầng</th>
+                                    <th width="100" class="text-center">Phòng</th>
+                                    <th width="150" class="text-center">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -131,11 +126,11 @@ $dsCaoOc = $db->query($sql)->fetchAll();
                                             </span>
                                         </td>
                                         <td class="text-center">
-                                            <a href="sua.php?id=<?= e($co['maCaoOc']) ?>" class="action-link action-link--edit me-1" title="Sá»­a">
-                                                <i class="bi bi-pencil-square"></i> Sá»­a
+                                            <a href="sua.php?id=<?= e($co['maCaoOc']) ?>" class="action-link action-link--edit me-1" title="Sửa">
+                                                <i class="bi bi-pencil-square"></i> Sửa
                                             </a>
-                                            <a href="javascript:void(0)" onclick="xacNhanXoa('<?= e($co['maCaoOc']) ?>', '<?= e($co['tenCaoOc']) ?>')" class="action-link action-link--delete" title="XÃ³a">
-                                                <i class="bi bi-trash"></i> XÃ³a
+                                            <a href="javascript:void(0)" onclick="xacNhanXoa('<?= e($co['maCaoOc']) ?>', '<?= e($co['tenCaoOc']) ?>')" class="action-link action-link--delete" title="Xóa">
+                                                <i class="bi bi-trash"></i> Xóa
                                             </a>
                                         </td>
                                     </tr>
@@ -151,21 +146,21 @@ $dsCaoOc = $db->query($sql)->fetchAll();
     </div>
 </div>
 
-<!-- Modal xÃ¡c nháº­n xÃ³a -->
+<!-- Modal xác nhận xóa -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>XÃ¡c nháº­n xÃ³a</h5>
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>Xác nhận xóa</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4 text-center">
-                <p class="mb-0">Báº¡n cÃ³ cháº¯c cháº¯n muá»‘n xÃ³a cao á»‘c <strong id="deleteBuildingName" class="text-danger"></strong>?</p>
-                <p class="text-muted small mt-2">HÃ nh Ä‘á»™ng nÃ y sáº½ thá»±c hiá»‡n "XÃ³a má»m" báº£n ghi. CÃ¡c dá»¯ liá»‡u liÃªn quan sáº½ táº¡m thá»i bá»‹ áº©n khá»i danh sÃ¡ch váº­n hÃ nh.</p>
+                <p class="mb-0">Bạn có chắc chắn muốn xóa cao ốc <strong id="deleteBuildingName" class="text-danger"></strong>?</p>
+                <p class="text-muted small mt-2">Hành động này sẽ thực hiện "Xóa mềm" bản ghi. Các dữ liệu liên quan sẽ tạm thời bị ẩn khỏi danh sách vận hành.</p>
             </div>
             <div class="modal-footer bg-light border-top-0">
-                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Há»§y</button>
-                <a id="btnConfirmDelete" href="#" class="btn btn-danger px-4 fw-bold">XÃ¡c nháº­n xÃ³a</a>
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Hủy</button>
+                <a id="btnConfirmDelete" href="#" class="btn btn-danger px-4 fw-bold">Xác nhận xóa</a>
             </div>
         </div>
     </div>
