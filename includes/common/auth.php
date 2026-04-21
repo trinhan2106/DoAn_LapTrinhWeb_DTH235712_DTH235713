@@ -35,7 +35,6 @@ function kiemTraSession(): void
     // Cập nhật lại thời điểm tương tác thao tác cuối cùng của người dùng
     $_SESSION['last_activity'] = time();
 
-    // BUG-F03: Check phai_doi_matkhau
     $currentScript = basename($_SERVER['PHP_SELF'] ?? '');
     $allowedScripts = ['doi_mat_khau_batbuoc.php', 'dangxuat.php'];
 

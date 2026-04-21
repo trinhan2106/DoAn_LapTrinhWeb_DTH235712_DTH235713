@@ -16,3 +16,5 @@ define('SESSION_TIMEOUT', 3600);
 // Khóa bí mật JWT (Dùng cho QR Code bảo mật - Task 9.2)
 // Trong thực tế nên dùng biến môi trường hoặc file .env
 define('JWT_SECRET_KEY', 'CaoOc_Sapphire_JWT_Secure_Key_2026_@#!');
+define('SECRET_KEY', 'CaoOc_Sapphire_JWT_Secure_Key_2026_@#!'); // Task 9.2: Khóa bí mật dùng chung
+

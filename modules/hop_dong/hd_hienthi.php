@@ -4,6 +4,10 @@ require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/auth.php';
+require_once __DIR__ . '/../../includes/common/jwt_helper.php';
+
+// Task 9.2: SECRET_KEY đã được định nghĩa trong config/app.php
+
 
 kiemTraSession();
 
@@ -96,7 +100,17 @@ function formatTrangThaiHD($tt) {
                     </thead>
                     <tbody>
                         <?php if (count($danhSachHD) > 0): ?>
-                            <?php foreach ($danhSachHD as $row): ?>
+                            <?php foreach ($danhSachHD as $row): 
+                                // Task 9.2: Tạo Token cho từng hợp đồng để xác thực nhanh
+                                $payload = [
+                                    'maKH' => 'ADMIN_VIEW', // Hoặc lấy maKH thật nếu có trong query
+                                    'soHopDong' => $row['soHopDong'],
+                                    'exp' => time() + 900 // Hết hạn sau 15 phút (Dùng phép cộng)
+                                ];
+                                $rowToken = JWT::encode($payload, SECRET_KEY);
+                                $rowQrUrl = BASE_URL . "modules/tenant_portal/index.php?token=" . $rowToken;
+                            ?>
+
                                 <tr>
                                     <td>
                                         <div class="fw-bold text-primary"><?= htmlspecialchars($row['soHopDong']) ?></div>
@@ -137,6 +151,16 @@ function formatTrangThaiHD($tt) {
                                                 <i class="fa-solid fa-print"></i> Bản In
                                             </a>
                                         <?php endif; ?>
+
+                                        <!-- Task 9.2: Nút mở Modal QR Code -->
+                                        <button type="button" 
+                                                class="btn btn-outline-dark btn-sm px-2 fw-bold shadow-sm btn-view-qr" 
+                                                data-qr-url="<?= $rowQrUrl ?>"
+                                                data-sohd="<?= htmlspecialchars($row['soHopDong']) ?>"
+                                                style="border-radius: 4px;" 
+                                                title="Mã QR Xác Thực">
+                                            <i class="fa-solid fa-qrcode"></i> QR
+                                        </button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -152,5 +176,46 @@ function formatTrangThaiHD($tt) {
         <?php include __DIR__ . '/../../includes/admin/admin-footer.php'; ?>
     </div>
 </div>
+
+<!-- Task 9.2: Modal hiển thị QR Code -->
+<div class="modal fade" id="modalVerifyQR" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header bg-navy text-white border-0 py-3" style="border-radius: 20px 20px 0 0; background-color: #1e3a5f;">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-shield-check me-2"></i>MÃ QR XÁC THỰC</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-5">
+                <p class="text-muted mb-4">Quét mã dưới đây để kiểm tra tính pháp lý của hợp đồng <br><strong id="displaySoHD" class="text-primary"></strong></p>
+                <div id="qrCodeContainer" class="d-inline-block p-3 bg-white rounded-3 shadow-sm mb-3"></div>
+                <div class="mt-2 text-danger fw-bold small">
+                    <i class="fa-solid fa-clock-rotate-left me-1"></i> Mã có hiệu lực trong 15 phút
+                </div>
+            </div>
+            <div class="modal-footer border-0 pb-4 justify-content-center">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng cửa sổ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+<script src="<?= BASE_URL ?>assets/js/qrcode-init.js"></script>
+<script>
+$(document).ready(function() {
+    $('.btn-view-qr').on('click', function() {
+        const qrUrl = $(this).data('qr-url');
+        const soHD = $(this).data('sohd');
+        
+        $('#displaySoHD').text(soHD);
+        $('#modalVerifyQR').modal('show');
+        
+        // Render QR Code (Hệ thống sẽ tự động dọn dẹp container cũ trong generateSecureQR)
+        setTimeout(() => {
+            generateSecureQR("qrCodeContainer", qrUrl);
+        }, 300);
+    });
+});
+</script>
 </body>
 </html>

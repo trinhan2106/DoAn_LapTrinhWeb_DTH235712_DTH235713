@@ -37,7 +37,6 @@ function ghiAuditLog(
     ?string $chiTiet = null,
     ?string $ipAddress = null
 ): bool {
-        // Tu dong lay IP neu khong truyen vao (FIX-20)
         if ($ipAddress === null) {
             $ipAddress = layIP();
         }

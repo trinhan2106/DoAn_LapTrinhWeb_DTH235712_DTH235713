@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../config/app.php';
 /**
  * modules/tenant/hoa_don.php
  * Quản lý hóa đơn dành cho Khách hàng (Tenant)
@@ -11,6 +12,10 @@ require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
+require_once __DIR__ . '/../../includes/common/jwt_helper.php';
+
+// Task 9.2: SECRET_KEY đã được định nghĩa trong config/app.php
+
 
 // P0: Bảo mật - Kiểm tra quyền truy cập
 kiemTraSession();
@@ -43,6 +48,19 @@ $sqlLatest = "SELECT hd.*
 $stmtLatest = $pdo->prepare($sqlLatest);
 $stmtLatest->execute([$maKH]);
 $latestInvoice = $stmtLatest->fetch(PDO::FETCH_ASSOC);
+
+// --- Task 9.2: Tạo QR Token cho Hóa đơn mới nhất ---
+$qrUrl = "";
+if ($latestInvoice) {
+    $payload = [
+        'maKH' => $maKH,
+        'soHopDong' => $latestInvoice['soHopDong'],
+        'exp' => time() + 900 // Hết hạn sau 15 phút (Đảm bảo dùng phép cộng)
+    ];
+    $qrToken = JWT::encode($payload, SECRET_KEY);
+    $qrUrl = BASE_URL . "modules/tenant_portal/index.php?token=" . $qrToken;
+}
+
 
 // 3. Lấy danh sách hóa đơn toàn bộ (Có áp dụng bộ lọc & tìm kiếm)
 $conditions = ["h.maKH = ?", "hd.deleted_at IS NULL"];
@@ -160,6 +178,14 @@ include __DIR__ . '/../../includes/tenant/header.php';
                         <?php if ($latestInvoice): ?>
                             <h3 class="fw-bold text-navy mb-0"><?= e($latestInvoice['soHoaDon']) ?></h3>
                             <small class="text-danger">Kỳ <?= e($latestInvoice['kyThanhToan']) ?> - <?= formatTien($latestInvoice['soTienConNo']) ?> ₫</small>
+                            
+                            <!-- Task 9.2: Vùng hiển thị QR Code -->
+                            <div class="mt-3 text-center border-top pt-3">
+                                <div id="qrCode-Invoice" class="d-inline-block"></div>
+                                <small class="text-danger d-block mt-2 fw-bold" style="font-size: 0.75rem;">
+                                    <i class="bi bi-shield-lock me-1"></i>Mã QR xác thực (Hết hạn sau 15 phút)
+                                </small>
+                            </div>
                         <?php else: ?>
                             <h4 class="fw-bold text-success mb-0">Hoàn thành nghĩa vụ</h4>
                         <?php endif; ?>
@@ -341,3 +367,15 @@ include __DIR__ . '/../../includes/tenant/header.php';
 
 
 <?php include __DIR__ . '/../../includes/tenant/footer.php'; ?>
+
+<!-- Scripts for QR Code (Task 9.2) -->
+<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+<script src="<?= BASE_URL ?>assets/js/qrcode-init.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        <?php if ($qrUrl): ?>
+            generateSecureQR("qrCode-Invoice", "<?= $qrUrl ?>");
+        <?php endif; ?>
+    });
+</script>
+

@@ -2,100 +2,65 @@
 /**
  * includes/common/jwt_helper.php
  * ==================================================================
- * Thư viện xử lý JSON Web Token (JWT) tùy chỉnh dành cho Task 9.2.
- * Hỗ trợ thuật toán: HS256 (HMAC-SHA256)
- * Tuân thủ chuẩn RFC 7519 với Base64Url Encoding.
+ * Thư viện xử lý JWT thuần (Native PHP) - Task 9.2
+ * Không phụ thuộc thư viện bên thứ 3.
  * ==================================================================
  */
 
-namespace Firebase\JWT;
-
 class JWT {
     /**
-     * Mã hóa payload thành chuỗi JWT (Header.Payload.Signature)
-     * 
-     * @param array $payload Dữ liệu cần mã hóa
-     * @param string $key Khóa bí mật
-     * @param string $alg Thuật toán (Mặc định HS256)
-     * @return string
+     * Mã hóa payload thành chuỗi JWT
      */
-    public static function encode(array $payload, string $key, string $alg = 'HS256'): string {
-        $header = ['typ' => 'JWT', 'alg' => $alg];
+    public static function encode($payload, $secret) {
+        $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
         
-        $segments = [];
-        $segments[] = self::base64UrlEncode(json_encode($header));
-        $segments[] = self::base64UrlEncode(json_encode($payload));
+        $base64UrlHeader = self::base64UrlEncode($header);
+        $base64UrlPayload = self::base64UrlEncode(json_encode($payload));
         
-        $signing_input = implode('.', $segments);
-        $signature = self::sign($signing_input, $key, $alg);
-        $segments[] = self::base64UrlEncode($signature);
+        $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, $secret, true);
+        $base64UrlSignature = self::base64UrlEncode($signature);
         
-        return implode('.', $segments);
+        return $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
     }
 
     /**
-     * Giải mã chuỗi JWT và xác thực chữ ký + thời hạn
-     * 
-     * @param string $jwt Chuỗi Token
-     * @param string $key Khóa bí mật
-     * @return object Payload dữ liệu
-     * @throws \Exception Nếu token lỗi hoặc hết hạn
+     * Giải mã và xác thực chuỗi JWT
      */
-    public static function decode(string $jwt, string $key): object {
-        $tks = explode('.', $jwt);
-        if (count($tks) !== 3) {
-            throw new \Exception('Token không đúng định dạng');
-        }
-        
-        list($headb64, $payloadb64, $sigb64) = $tks;
-        
-        $header = json_decode(self::base64UrlDecode($headb64));
-        $payload = json_decode(self::base64UrlDecode($payloadb64));
-        $sig = self::base64UrlDecode($sigb64);
-        
-        if ($header === null || $payload === null) {
-            throw new \Exception('Payload hoặc Header không hợp lệ');
+    public static function decode($token, $secret) {
+        $parts = explode('.', $token);
+        if (count($parts) !== 3) return false;
+
+        list($base64UrlHeader, $base64UrlPayload, $base64UrlSignature) = $parts;
+
+        $header = json_decode(self::base64UrlDecode($base64UrlHeader), true);
+        if (!$header || !isset($header['alg']) || $header['alg'] !== 'HS256') {
+            return false;
         }
 
-        // 1. Kiểm tra thuật toán (Chống thuật toán 'none' bypass)
-        if (empty($header->alg) || $header->alg !== 'HS256') {
-            throw new \Exception('Thuật toán ký không được hỗ trợ');
+        // Xác thực chữ ký bằng hash_equals để chống Timing Attack
+        $signature = self::base64UrlDecode($base64UrlSignature);
+        $expectedSignature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, $secret, true);
+        
+        if (!hash_equals($signature, $expectedSignature)) {
+            return false;
         }
 
-        // 2. Xác thực chữ ký
-        $signing_input = $headb64 . '.' . $payloadb64;
-        if (!self::verify($signing_input, $sig, $key, $header->alg)) {
-            throw new \Exception('Chữ ký không hợp lệ (Signature mismatch)');
-        }
+        $payload = json_decode(self::base64UrlDecode($base64UrlPayload), true);
+        if (!$payload) return false;
 
-        // 3. Kiểm tra thời hạn (exp)
-        if (isset($payload->exp) && $payload->exp < time()) {
-            throw new ExpiredException('Token đã hết hạn bảo mật');
+        // Kiểm tra thời hạn (exp)
+        if (isset($payload['exp']) && $payload['exp'] < time()) {
+            return false;
         }
 
         return $payload;
     }
 
-    private static function sign(string $msg, string $key, string $alg): string {
-        return hash_hmac('sha256', $msg, $key, true);
-    }
-
-    private static function verify(string $msg, string $signature, string $key, string $alg): bool {
-        $hash = self::sign($msg, $key, $alg);
-        return hash_equals($signature, $hash);
-    }
-
-    /**
-     * Mã hóa Base64Url (RFC 4648)
-     */
-    public static function base64UrlEncode(string $data): string {
+    private static function base64UrlEncode($data) {
         return str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($data));
     }
 
-    /**
-     * Giải mã Base64Url
-     */
-    public static function base64UrlDecode(string $data): string {
+    private static function base64UrlDecode($data) {
         $remainder = strlen($data) % 4;
         if ($remainder) {
             $data .= str_repeat('=', 4 - $remainder);
@@ -103,8 +68,3 @@ class JWT {
         return base64_decode(str_replace(['-', '_'], ['+', '/'], $data));
     }
 }
-
-/**
- * Exception class cho Token hết hạn
- */
-class ExpiredException extends \Exception {}
