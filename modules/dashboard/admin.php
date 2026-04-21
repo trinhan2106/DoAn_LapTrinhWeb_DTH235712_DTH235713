@@ -30,6 +30,7 @@ $sqlRoomKPI = "
         SUM(dienTich) as tong_dien_tich
     FROM PHONG 
     WHERE deleted_at IS NULL
+      AND maPhong NOT LIKE '%-V%'
 ";
 $roomKPI = $db->query($sqlRoomKPI)->fetch();
 $totalRooms = (int)$roomKPI['tong_phong'];
@@ -77,26 +78,44 @@ $totalDebt = $db->query($sqlTotalDebt)->fetch()['total_debt'] ?: 0;
 // Join để lấy Tên khách hàng nếu phòng đang được thuê (HD hieu luc)
 $sqlFloorMap = "
     SELECT 
-        p.maPhong, 
+        p.maPhong,
+        p.tenPhong,
         p.trangThai, 
         p.giaThue,
+        co.tenCaoOc,
         t.tenTang,
         kh.tenKH
     FROM PHONG p
     JOIN TANG t ON p.maTang = t.maTang
-    LEFT JOIN CHI_TIET_HOP_DONG cthd ON p.maPhong = cthd.maPhong
-    LEFT JOIN HOP_DONG h ON cthd.soHopDong = h.soHopDong 
-        AND h.trangThai = 1 
-        AND h.deleted_at IS NULL
-    LEFT JOIN KHACH_HANG kh ON h.maKH = kh.maKH 
+    JOIN CAO_OC co ON t.maCaoOc = co.maCaoOc
+    LEFT JOIN (
+        SELECT cthd.maPhong, h.maKH
+        FROM CHI_TIET_HOP_DONG cthd
+        JOIN HOP_DONG h ON cthd.soHopDong = h.soHopDong
+        WHERE h.trangThai = 1
+          AND h.deleted_at IS NULL
+          AND cthd.trangThai = 'DangThue'
+        GROUP BY cthd.maPhong
+    ) active_hd ON p.maPhong = active_hd.maPhong
+    LEFT JOIN KHACH_HANG kh ON active_hd.maKH = kh.maKH
         AND kh.deleted_at IS NULL
     WHERE p.deleted_at IS NULL
-    ORDER BY t.maTang ASC, p.maPhong ASC
+      AND p.maPhong NOT LIKE '%-V%'
+    ORDER BY co.tenCaoOc ASC, t.maTang ASC, p.maPhong ASC
 ";
 $roomsRaw = $db->query($sqlFloorMap)->fetchAll();
-$roomsByFloor = [];
+$roomsByBuilding = [];
+$buildingsList = [];
 foreach ($roomsRaw as $r) {
-    $roomsByFloor[$r['tenTang']][] = $r;
+    // Logic đồng bộ trạng thái
+    if (!empty($r['tenKH'])) {
+        $r['effective_status'] = 2;
+    } else {
+        $r['effective_status'] = ($r['trangThai'] == 2) ? 1 : $r['trangThai'];
+    }
+
+    $roomsByBuilding[$r['tenCaoOc']][$r['tenTang']][] = $r;
+    if (!in_array($r['tenCaoOc'], $buildingsList)) $buildingsList[] = $r['tenCaoOc'];
 }
 
 // ============================================================================
@@ -429,35 +448,73 @@ foreach ($chartData as $row) {
                         <span class="d-flex align-items-center"><span class="badge rounded-circle p-1 me-1 room--maintenance" style="width: 12px; height: 12px;">&nbsp;</span>Bảo trì</span>
                     </div>
                 </div>
+
+                <!-- Interactive Filters -->
+                <div class="bg-light px-4 py-3 border-bottom d-flex align-items-center gap-4 flex-nowrap overflow-auto">
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                        <label class="small fw-bold text-muted text-uppercase mb-0" style="white-space: nowrap;">Cao ốc:</label>
+                        <select class="form-select form-select-sm border-0 shadow-sm" id="filterBuilding" style="min-width: 200px;">
+                            <option value="all">Tất cả Cao ốc</option>
+                            <?php foreach($buildingsList as $b): ?>
+                                <option value="<?= htmlspecialchars($b) ?>"><?= htmlspecialchars($b) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                        <label class="small fw-bold text-muted text-uppercase mb-0" style="white-space: nowrap;">Trạng thái:</label>
+                        <select class="form-select form-select-sm border-0 shadow-sm" id="filterStatus" style="min-width: 150px;">
+                            <option value="all">Tất cả</option>
+                            <option value="status-1">Trống</option>
+                            <option value="status-2">Đang thuê</option>
+                            <option value="status-3">Bảo trì</option>
+                        </select>
+                    </div>
+                    <div class="ms-auto small text-muted text-nowrap">
+                        <span id="filteredCount" class="fw-bold text-navy">---</span> mặt bằng
+                    </div>
+                </div>
+
                 <div class="card-body p-4">
-                    <?php if (empty($roomsByFloor)): ?>
-                        <div class="text-center py-5 text-muted">Vui lòng khởi tạo dữ liệu Tầng và Phòng.</div>
+                    <?php if (empty($roomsByBuilding)): ?>
+                        <div class="text-center py-5 text-muted">Vui lòng khởi tạo dữ liệu Cao ốc và Tầng.</div>
                     <?php else: ?>
-                        <?php foreach ($roomsByFloor as $floorName => $floorRooms): ?>
-                            <div class="mb-5">
-                                <h6 class="text-navy fw-bold mb-4 d-flex align-items-center">
-                                    <span class="badge bg-navy me-2 px-3 py-2"><?php echo e($floorName); ?></span>
+                        <?php foreach ($roomsByBuilding as $buildingName => $floors): ?>
+                            <div class="building-section mb-5" data-building="<?= htmlspecialchars($buildingName) ?>">
+                                <div class="d-flex align-items-center mb-4">
+                                    <div class="rounded-3 px-3 py-2 me-3 text-white fw-bold" style="background:#1e3a5f; font-size:0.95rem; white-space:nowrap;">
+                                        <i class="bi bi-buildings me-2"></i><?php echo e($buildingName); ?>
+                                    </div>
                                     <hr class="flex-grow-1 opacity-10">
-                                </h6>
-                                <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3">
-                                    <?php foreach ($floorRooms as $room): 
-                                        $statusClass = 'room--available';
-                                        if ($room['trangThai'] == 2) $statusClass = 'room--rented';
-                                        elseif ($room['trangThai'] == 3) $statusClass = 'room--maintenance';
-                                    ?>
-                                        <div class="col">
-                                            <div class="room-box <?php echo $statusClass; ?>" 
-                                                 title="Giá thuê: <?php echo formatTien($room['giaThue']); ?> đ">
-                                                <div class="room-code"><?php echo e($room['maPhong']); ?></div>
-                                                <div class="room-tenant"><?php echo e($room['tenKH'] ?: 'TRỐNG'); ?></div>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
                                 </div>
+
+                                <?php foreach ($floors as $floorName => $floorRooms): ?>
+                                    <div class="mb-4 ps-2 floor-wrapper">
+                                        <h6 class="fw-semibold mb-3 d-flex align-items-center" style="color:#c9a66b;">
+                                            <i class="bi bi-layers me-2"></i><?php echo e($floorName); ?>
+                                            <span class="ms-2 text-muted fw-normal small">(<?php echo count($floorRooms); ?> phòng)</span>
+                                        </h6>
+                                        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3">
+                                            <?php foreach ($floorRooms as $room): 
+                                                $statusClass = 'room--available';
+                                                if ($room['effective_status'] == 2) $statusClass = 'room--rented';
+                                                elseif ($room['effective_status'] == 3) $statusClass = 'room--maintenance';
+                                            ?>
+                                                <div class="col room-item" data-status="status-<?= $room['effective_status'] ?>">
+                                                    <div class="room-box <?php echo $statusClass; ?>" 
+                                                         title="<?php echo e($buildingName); ?> - <?php echo e($floorName); ?>&#10;<?php echo e($room['tenPhong']); ?>&#10;Giá: <?php echo formatTien($room['giaThue']); ?> đ">
+                                                        <div class="room-code"><?php echo e($room['maPhong']); ?></div>
+                                                        <div class="room-tenant"><?php echo e($room['tenKH'] ?: 'TRỐNG'); ?></div>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
+
             </div>
 
         </main>
@@ -521,6 +578,59 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // ── BIÊN TẬP BỘ LỌC MẶT BẰNG ──
+    const filterBuilding = document.getElementById('filterBuilding');
+    const filterStatus = document.getElementById('filterStatus');
+    const buildingSections = document.querySelectorAll('.building-section');
+    const filteredCount = document.getElementById('filteredCount');
+
+    function applyFilters() {
+        const building = filterBuilding.value;
+        const status = filterStatus.value;
+        let count = 0;
+
+        buildingSections.forEach(section => {
+            // Lọc theo Cao ốc: Nếu chọn 'all' hoặc tên cao ốc khớp bản ghi
+            const matchBuilding = (building === 'all' || section.dataset.building === building);
+            
+            if (matchBuilding) {
+                section.classList.remove('d-none');
+                
+                // Lọc theo Trạng thái bên trong cao ốc đó
+                const roomItems = section.querySelectorAll('.room-item');
+                let visibleRoomsInSection = 0;
+
+                roomItems.forEach(room => {
+                    const matchStatus = (status === 'all' || room.dataset.status === status);
+                    if (matchStatus) {
+                        room.classList.remove('d-none');
+                        visibleRoomsInSection++;
+                        count++;
+                    } else {
+                        room.classList.add('d-none');
+                    }
+                });
+
+                // Ẩn tiêu đề Tầng nếu không còn phòng nào
+                section.querySelectorAll('.floor-wrapper').forEach(floor => {
+                    const visibleRoomsInFloor = floor.querySelectorAll('.room-item:not(.d-none)').length;
+                    floor.classList.toggle('d-none', visibleRoomsInFloor === 0);
+                });
+
+                // Nếu cao ốc không còn phòng nào khớp trạng thái -> ẩn luôn cả cao ốc
+                section.classList.toggle('d-none', visibleRoomsInSection === 0);
+            } else {
+                section.classList.add('d-none');
+            }
+        });
+
+        filteredCount.innerText = count;
+    }
+
+    filterBuilding.addEventListener('change', applyFilters);
+    filterStatus.addEventListener('change', applyFilters);
+    applyFilters();
 });
 </script>
 
