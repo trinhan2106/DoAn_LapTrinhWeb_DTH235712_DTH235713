@@ -1,125 +1,881 @@
 /* 
  * PROJECT: Quản lý Cao ốc (Office Rental Management)
- * MODULE: Dark Mode System
- * DESC: CSS Custom Properties adjustments cho .dark-theme
+ * MODULE: Dark Mode System - COMPLETE OVERRIDE v2.0
+ * DESC: CSS Custom Properties & comprehensive overrides for .dark-theme
  */
 
-body.dark-theme {
-    /* Color Palette - Dark Mode overrides */
-    --color-background: #111111;   /* Đen sâu / Xám đen sâu */
-    --color-text: #eae8e1;         /* Xám sáng / Trắng nhạt (Ivory) */
-    
-    /* Điều chỉnh primary sáng hơn một chút để nổi bật trên nền tối */
-    --color-primary: #3b5c8f;      
-    --color-primary-dark: #2c4a7c;
-    
-    /* Các thành phần nổi như card, modal sử dụng màu background hiển thị nhẹ hơn */
-    --color-white: #1e1e1e;
-    
-    /* Adjusting shadows cho dark mode */
-    --shadow-soft: 0 4px 15px rgba(0, 0, 0, 0.4);
-    --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.6);
+/* ============================================================
+   SECTION 1: ROOT VARIABLES + BODY BACKGROUND FIX
+   Fixes the issue where <body class="bg-light"> overrides body bg
+   ============================================================ */
+body.dark-theme,
+body.dark-theme.bg-light,
+body.dark-theme.bg-white {
+    /* Color Palette */
+    --color-background: #141414;
+    --color-text: #e8e6df;
+    --color-primary: #4a73b5;       /* Lightened Navy for dark bg */
+    --color-primary-dark: #3a5e9e;
+    --color-accent: #c9a66b;        /* Gold stays */
+    --color-white: #1e1e24;         /* Card/surface color */
+    --navy-primary: #4a73b5;        /* Sync with --color-primary */
+
+    /* Shadows */
+    --shadow-soft: 0 4px 15px rgba(0, 0, 0, 0.5);
+    --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.65);
+
+    /* CRITICAL: Fix body bg-light & bg-white applied directly on body */
+    background-color: #141414 !important;
+    color: var(--color-text) !important;
 }
 
-/* Adjustments cho Bootstrap 5 components trong Dark Mode */
-
-/* Cards */
-body.dark-theme .card,
-body.dark-theme .card-brand {
-    background-color: var(--color-white);
+/* ============================================================
+   SECTION 2: LAYOUT WRAPPERS - Fix white areas
+   ============================================================ */
+body.dark-theme .admin-main-wrapper,
+body.dark-theme .admin-main-content,
+body.dark-theme main {
+    background-color: #141414;
     color: var(--color-text);
-    border: 1px solid rgba(255, 255, 255, 0.08); /* 1px rule consistency */
-    box-shadow: none; 
 }
 
+/* Fix white containers (e.g., .container-fluid.bg-white in yc_quan_ly.php) */
+body.dark-theme .bg-white,
+body.dark-theme .bg-light,
+body.dark-theme [class*="bg-white"],
+body.dark-theme .container-fluid.bg-white,
+body.dark-theme .container.bg-white {
+    background-color: var(--color-white) !important;
+    color: var(--color-text) !important;
+}
+
+/* ============================================================
+   SECTION 3: CARDS
+   ============================================================ */
+body.dark-theme .card,
+body.dark-theme .card-brand,
+body.dark-theme .filter-section {
+    background-color: var(--color-white) !important;
+    color: var(--color-text) !important;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    box-shadow: var(--shadow-soft) !important;
+}
+
+body.dark-theme .card-header,
+body.dark-theme .card-footer,
 body.dark-theme .card-brand__header,
 body.dark-theme .card-brand__footer {
-    border-color: rgba(255, 255, 255, 0.08);
-    background-color: transparent;
+    background-color: transparent !important;
+    border-color: rgba(255, 255, 255, 0.07) !important;
+    color: var(--color-text) !important;
 }
 
-/* Tables */
+body.dark-theme .card-header.bg-white,
+body.dark-theme .card-header-gold {
+    background-color: transparent !important;
+    border-bottom: 2px solid var(--color-accent) !important;
+}
+
+body.dark-theme .modal-footer.bg-light,
+body.dark-theme .card-footer.bg-white {
+    background-color: #252527 !important;
+}
+
+/* ============================================================
+   SECTION 4: TYPOGRAPHY - THE ROOT CAUSE FIX
+   Uses high specificity to override inline page-level styles
+   ============================================================ */
+
+/* Muted / secondary text */
+body.dark-theme .text-muted,
+body.dark-theme .text-secondary,
+body.dark-theme .text-body-secondary,
+body.dark-theme .text-body-tertiary,
+body.dark-theme small.text-muted,
+body.dark-theme .small.text-muted {
+    color: #9a9a9a !important;
+}
+
+/* Navy overrides - CRITICAL: must beat inline .text-navy { color: #1e3a5f !important } */
+body.dark-theme .text-navy,
+body.dark-theme .text-brand-primary,
+body.dark-theme .card-title-navy,
+body.dark-theme h1.text-navy,
+body.dark-theme h2.text-navy,
+body.dark-theme h3.text-navy,
+body.dark-theme h4.text-navy,
+body.dark-theme h5.text-navy,
+body.dark-theme h6.text-navy,
+body.dark-theme p.text-navy,
+body.dark-theme div.text-navy,
+body.dark-theme span.text-navy,
+body.dark-theme td.text-navy,
+body.dark-theme a.text-navy {
+    color: #7aaae0 !important; /* Bright accessible blue */
+}
+
+/* Dark text */
+body.dark-theme .text-dark,
+body.dark-theme .text-black {
+    color: var(--color-text) !important;
+}
+
+/* Semantic colors */
+body.dark-theme .text-success { color: #4ade80 !important; }
+body.dark-theme .text-danger  { color: #f87171 !important; }
+body.dark-theme .text-warning { color: #fbbf24 !important; }
+body.dark-theme .text-info    { color: #38bdf8 !important; }
+body.dark-theme .text-primary { color: #7aaae0 !important; }
+
+/* ============================================================
+   SECTION 5: INLINE STYLE OVERRIDES (hardcoded color: #1e3a5f)
+   Use a broad selector to catch elements using inline style
+   ============================================================ */
+
+/* These override the `style="color: #1e3a5f"` hardcoded in PHP files */
+body.dark-theme h3[style*="color"],
+body.dark-theme h4[style*="color"],
+body.dark-theme h5[style*="color"],
+body.dark-theme p[style*="color"],
+body.dark-theme span[style*="color"],
+body.dark-theme div[style*="color: #1e3a5f"],
+body.dark-theme h3[style*="color: #1e3a5f"],
+body.dark-theme h5[style*="color: #1e3a5f"] {
+    color: #7aaae0 !important;
+}
+
+/* ============================================================
+   SECTION 6: TABLES
+   ============================================================ */
 body.dark-theme .table {
     --bs-table-color: var(--color-text);
     --bs-table-bg: transparent;
-    --bs-table-border-color: rgba(255, 255, 255, 0.1);
+    --bs-table-border-color: rgba(255, 255, 255, 0.08);
     --bs-table-striped-color: var(--color-text);
-    --bs-table-striped-bg: rgba(255, 255, 255, 0.03);
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.025);
     --bs-table-hover-color: var(--color-text);
     --bs-table-hover-bg: rgba(255, 255, 255, 0.05);
     color: var(--color-text);
 }
 
-/* Modals */
-body.dark-theme .modal-content {
-    background-color: var(--color-white);
-    color: var(--color-text);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+body.dark-theme .table td,
+body.dark-theme .table th {
+    color: var(--color-text) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-body.dark-theme .modal-header,
-body.dark-theme .modal-footer {
-    border-color: rgba(255, 255, 255, 0.08);
+/* thead overrides for tables with .table-navy, .table-custom, .bg-navy, .bg-danger etc */
+body.dark-theme .table thead.table-light,
+body.dark-theme .table-light > tr > th,
+body.dark-theme thead.table-light th {
+    --bs-table-bg: #2a2a30;
+    --bs-table-color: #e8e6df;
+    background-color: #2a2a30 !important;
+    color: #e8e6df !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Forms */
+/* Table warning rows (e.g., <tr class="table-warning">) */
+body.dark-theme .table-warning,
+body.dark-theme .table-warning > td {
+    --bs-table-bg: rgba(251, 191, 36, 0.08);
+    --bs-table-color: var(--color-text);
+    background-color: rgba(251, 191, 36, 0.08) !important;
+    color: var(--color-text) !important;
+}
+
+/* ============================================================
+   SECTION 7: FORMS
+   ============================================================ */
 body.dark-theme .form-control,
-body.dark-theme .form-select {
-    background-color: #2a2a2c;
-    color: var(--color-text);
-    border-color: rgba(255, 255, 255, 0.15);
+body.dark-theme .form-select,
+body.dark-theme input[type="text"],
+body.dark-theme input[type="email"],
+body.dark-theme input[type="number"],
+body.dark-theme input[type="password"],
+body.dark-theme textarea,
+body.dark-theme select {
+    background-color: #28282e !important;
+    color: var(--color-text) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
 }
 
 body.dark-theme .form-control:focus,
 body.dark-theme .form-select:focus {
-    background-color: #2a2a2c;
-    color: var(--color-text);
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 0.25rem rgba(201, 166, 107, 0.25);
+    background-color: #2e2e36 !important;
+    color: var(--color-text) !important;
+    border-color: var(--color-accent) !important;
+    box-shadow: 0 0 0 0.25rem rgba(201, 166, 107, 0.2) !important;
 }
 
-body.dark-theme .form-control::placeholder {
-    color: rgba(255, 255, 255, 0.4);
-}
+body.dark-theme .form-control::placeholder { color: rgba(232, 230, 223, 0.35); }
 
-/* Adjustments cho các màu mặc định bg-white */
-body.dark-theme .bg-white {
-    background-color: var(--color-white) !important;
-}
-
-body.dark-theme .text-dark {
+body.dark-theme .form-label,
+body.dark-theme label {
     color: var(--color-text) !important;
 }
 
-/* Buttons topbar / dropdown */
+/* ============================================================
+   SECTION 8: BUTTONS
+   ============================================================ */
+body.dark-theme .btn-light,
+body.dark-theme .btn-white {
+    background-color: #2a2a30 !important;
+    color: var(--color-text) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+body.dark-theme .btn-light:hover,
+body.dark-theme .btn-white:hover {
+    background-color: #35353d !important;
+    color: var(--color-text) !important;
+}
+
+body.dark-theme .btn-outline-primary { color: #7aaae0 !important; border-color: #7aaae0 !important; }
+body.dark-theme .btn-outline-primary:hover { background-color: #7aaae0 !important; color: #141414 !important; }
+body.dark-theme .btn-secondary { background-color: #3a3a42 !important; color: var(--color-text) !important; border-color: rgba(255,255,255,0.1) !important; }
+body.dark-theme .btn-secondary:hover { background-color: #48484e !important; }
+
+/* ============================================================
+   SECTION 9: BADGES
+   ============================================================ */
+body.dark-theme .bg-light,
+body.dark-theme .badge.bg-light {
+    background-color: #2e2e36 !important;
+    color: var(--color-text) !important;
+}
+
+/* Must override per-page badge-status--3 { color: #000000 } */
+body.dark-theme .badge-status--warning { background-color: rgba(251,191,36,0.12) !important; color: #fbbf24 !important; border-color: rgba(251,191,36,0.25) !important; }
+body.dark-theme .badge-status--success { background-color: rgba(74,222,128,0.12) !important; color: #4ade80 !important; border-color: rgba(74,222,128,0.25) !important; }
+body.dark-theme .badge-status--danger  { background-color: rgba(248,113,113,0.12) !important; color: #f87171 !important; border-color: rgba(248,113,113,0.25) !important; }
+
+body.dark-theme .badge.bg-warning.text-dark { color: #141414 !important; }  /* Keep warning badge text dark */
+
+/* Room/status badges in phong_hienthi */
+body.dark-theme .badge-status--1 { background-color: #27ae60 !important; color: #fff !important; }
+body.dark-theme .badge-status--2 { background-color: #3a73b5 !important; color: #fff !important; }
+body.dark-theme .badge-status--3 { background-color: #d4ac0d !important; color: #141414 !important; }
+body.dark-theme .badge-status--4 { background-color: #c0392b !important; color: #fff !important; }
+
+/* ============================================================
+   SECTION 10: MODALS
+   ============================================================ */
+body.dark-theme .modal-content {
+    background-color: #1e1e24 !important;
+    color: var(--color-text) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-theme .modal-header,
+body.dark-theme .modal-footer {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    background-color: transparent !important;
+}
+
+body.dark-theme .modal-footer.bg-light {
+    background-color: #252527 !important;
+}
+
+body.dark-theme .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* ============================================================
+   SECTION 11: DROPDOWNS
+   ============================================================ */
 body.dark-theme .dropdown-menu {
-    background-color: var(--color-white);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: #1e1e24 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 body.dark-theme .dropdown-item {
-    color: var(--color-text);
+    color: var(--color-text) !important;
 }
 
 body.dark-theme .dropdown-item:hover,
 body.dark-theme .dropdown-item:focus {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: var(--color-accent);
+    background-color: rgba(255, 255, 255, 0.07) !important;
+    color: var(--color-accent) !important;
 }
 
-body.dark-theme .btn-light {
-    background-color: #2a2a2c;
-    color: var(--color-text);
-    border-color: rgba(255, 255, 255, 0.1);
-}
-
-body.dark-theme .btn-light:hover {
-    background-color: #38383a;
-    color: var(--color-white);
-}
-
-/* Utilities */
-body.dark-theme .border-top,
-body.dark-theme .border-bottom {
+body.dark-theme .dropdown-divider {
     border-color: rgba(255, 255, 255, 0.08) !important;
 }
+
+/* ============================================================
+   SECTION 12: NAV PILLS / TABS
+   ============================================================ */
+body.dark-theme .nav-pills .nav-link {
+    color: var(--color-text) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-theme .nav-pills .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+body.dark-theme .nav-pills .nav-link.active {
+    background-color: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    color: #ffffff !important;
+}
+
+body.dark-theme .nav-tabs .nav-link {
+    color: #9a9a9a !important;
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+body.dark-theme .nav-tabs .nav-link.active {
+    background-color: var(--color-white) !important;
+    color: var(--color-text) !important;
+    border-color: rgba(255,255,255,0.1) rgba(255,255,255,0.1) var(--color-white) !important;
+}
+
+/* ============================================================
+   SECTION 13: ALERTS
+   ============================================================ */
+body.dark-theme .alert-warning {
+    background-color: rgba(251, 191, 36, 0.1) !important;
+    color: #fbbf24 !important;
+    border-color: rgba(251, 191, 36, 0.2) !important;
+}
+
+body.dark-theme .alert-success {
+    background-color: rgba(74, 222, 128, 0.1) !important;
+    color: #4ade80 !important;
+    border-color: rgba(74, 222, 128, 0.2) !important;
+}
+
+body.dark-theme .alert-danger {
+    background-color: rgba(248, 113, 113, 0.1) !important;
+    color: #f87171 !important;
+    border-color: rgba(248, 113, 113, 0.2) !important;
+}
+
+body.dark-theme .alert-info {
+    background-color: rgba(56, 189, 248, 0.1) !important;
+    color: #38bdf8 !important;
+    border-color: rgba(56, 189, 248, 0.2) !important;
+}
+
+/* ============================================================
+   SECTION 14: DATATABLE SPECIFIC
+   ============================================================ */
+body.dark-theme .dataTables_wrapper .dataTables_filter input,
+body.dark-theme .dataTables_wrapper .dataTables_length select {
+    background-color: #28282e !important;
+    color: var(--color-text) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+body.dark-theme .dataTables_wrapper .dataTables_filter label,
+body.dark-theme .dataTables_wrapper .dataTables_length label,
+body.dark-theme div.dataTables_wrapper div.dataTables_info {
+    color: #9a9a9a !important;
+}
+
+/* ============================================================
+   SECTION 21: TOPBAR SEARCH & NOTIFICATION DROPDOWN
+   ============================================================ */
+body.dark-theme .admin-topbar,
+body.dark-theme header.admin-topbar {
+    background-color: #1a1a20 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    color: var(--color-text) !important;
+}
+
+body.dark-theme .search-toggle {
+    background: #28282e !important;
+    color: var(--color-text) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+}
+
+body.dark-theme .search-toggle:hover {
+    background: var(--color-primary) !important;
+    color: #fff !important;
+}
+
+body.dark-theme .search-form .input-group {
+    background: #28282e !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.4) !important;
+}
+
+body.dark-theme .search-form .form-control {
+    background: #28282e !important;
+    color: var(--color-text) !important;
+}
+
+body.dark-theme .btn-submit,
+body.dark-theme .btn-close-search {
+    color: #9a9a9a !important;
+}
+
+body.dark-theme .btn-submit:hover { color: #7aaae0 !important; }
+body.dark-theme .btn-close-search { border-left-color: rgba(255,255,255,0.08) !important; }
+body.dark-theme .btn-close-search:hover { color: #f87171 !important; }
+
+/* Notification Dropdown glassmorphism override */
+body.dark-theme #notiList {
+    background: rgba(30, 30, 36, 0.96) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-theme #notiList .dropdown-header {
+    background: rgba(255, 255, 255, 0.03) !important;
+    color: #7aaae0 !important;
+    border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+}
+
+body.dark-theme #notiList .dropdown-item {
+    color: var(--color-text) !important;
+    border-bottom-color: rgba(255,255,255,0.05) !important;
+}
+
+body.dark-theme #notiList .notification-item:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+body.dark-theme .text-dark.fw-semibold {
+    color: var(--color-text) !important;
+}
+
+/* ============================================================
+   SECTION 22: FOOTER
+   ============================================================ */
+body.dark-theme footer,
+body.dark-theme footer.bg-white {
+    background-color: #1a1a20 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+    color: #9a9a9a !important;
+}
+
+body.dark-theme footer .text-muted,
+body.dark-theme footer .text-secondary {
+    color: #666 !important;
+}
+
+body.dark-theme footer a.text-secondary {
+    color: #7aaae0 !important;
+}
+
+/* ============================================================
+   SECTION 23: SWEETALERT2 (logout dialog)
+   ============================================================ */
+body.dark-theme .swal2-container .swal2-popup {
+    background-color: #1e1e24 !important;
+    color: var(--color-text) !important;
+}
+
+body.dark-theme .swal2-container .swal2-title,
+body.dark-theme .swal2-container .swal2-html-container {
+    color: var(--color-text) !important;
+}
+
+/* ============================================================
+   SECTION 24: GLOBAL LOADER
+   ============================================================ */
+body.dark-theme #global-loader {
+    background: rgba(20, 20, 20, 0.85) !important;
+}
+
+body.dark-theme .page-link {
+    background-color: #1e1e24 !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: var(--color-text) !important;
+}
+
+body.dark-theme .page-item.active .page-link {
+    background-color: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    color: #fff !important;
+}
+
+body.dark-theme .page-item.disabled .page-link {
+    background-color: #18181e !important;
+    color: #555 !important;
+}
+
+/* ============================================================
+   SECTION 15: KPI CARDS (dashboard/admin.php)
+   ============================================================ */
+body.dark-theme .kpi-card {
+    background-color: var(--color-white) !important;
+    color: var(--color-text) !important;
+}
+
+body.dark-theme .kpi-title { color: #9a9a9a !important; }
+body.dark-theme .kpi-value { color: #7aaae0 !important; }
+
+/* ============================================================
+   SECTION 16: STEPPER / TIMELINE (yc_hienthi.php)
+   ============================================================ */
+body.dark-theme .stepper-wrapper::before { background-color: rgba(255, 255, 255, 0.1) !important; }
+body.dark-theme .stepper-item .circle    { background-color: #2a2a30 !important; border-color: rgba(255,255,255,0.1) !important; color: var(--color-text) !important; }
+body.dark-theme .stepper-item.active .circle    { border-color: var(--color-primary) !important; color: var(--color-primary) !important; }
+body.dark-theme .stepper-item.completed .circle { background-color: var(--color-primary) !important; border-color: var(--color-primary) !important; color: #fff !important; }
+body.dark-theme .stepper-item.rejected .circle  { background-color: #c0392b !important; border-color: #c0392b !important; color: #fff !important; }
+body.dark-theme .stepper-label { color: #9a9a9a !important; }
+body.dark-theme .stepper-item.active .stepper-label,
+body.dark-theme .stepper-item.completed .stepper-label { color: #7aaae0 !important; }
+
+/* ============================================================
+   SECTION 17: AVATAR CIRCLE, ROOM BOX (dashboard floor map)
+   ============================================================ */
+body.dark-theme .avatar-circle { background-color: #2a2a30 !important; border-color: rgba(255,255,255,0.1) !important; }
+body.dark-theme .avatar-circle i { color: #7aaae0 !important; }
+
+/* ============================================================
+   SECTION 18: BORDERS & UTILITIES
+   ============================================================ */
+body.dark-theme .border-top,
+body.dark-theme .border-bottom,
+body.dark-theme .border-start,
+body.dark-theme .border-end,
+body.dark-theme .border {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-theme hr { border-color: rgba(255, 255, 255, 0.08) !important; }
+
+body.dark-theme code {
+    background-color: rgba(255,255,255,0.07);
+    color: #fbbf24;
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+}
+
+/* ============================================================
+   SECTION 19: TOPBAR
+   ============================================================ */
+body.dark-theme .admin-topbar {
+    background-color: #1a1a20 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+body.dark-theme .admin-topbar .navbar-toggler-icon {
+    filter: invert(1);
+}
+
+/* ============================================================
+   SECTION 20: SCROLLBAR (Global)
+   ============================================================ */
+body.dark-theme ::-webkit-scrollbar { width: 6px; height: 6px; }
+body.dark-theme ::-webkit-scrollbar-track { background: #141414; }
+body.dark-theme ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+body.dark-theme ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+/* ============================================================
+   SECTION 25: PUBLIC NAVBAR NOTIFICATION DROPDOWNS
+   Inline style overrides — uses !important + ID/attr selectors 
+   to beat `style="background:rgba(255,255,255,0.96)"` on elements
+   ============================================================ */
+
+/* Admin dropdown in public navbar */
+body.dark-theme #adminNotiList {
+    background: rgba(22, 22, 28, 0.97) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.55) !important;
+}
+
+body.dark-theme #tenantNotiList {
+    background: rgba(22, 22, 28, 0.97) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.55) !important;
+}
+
+/* Notification item header & items text inside those lists */
+body.dark-theme #adminNotiList .dropdown-item,
+body.dark-theme #tenantNotiList .dropdown-item {
+    color: var(--color-text) !important;
+    border-bottom-color: rgba(255,255,255,0.05) !important;
+}
+
+body.dark-theme #adminNotiList .admin-noti-item:hover,
+body.dark-theme #adminNotiList .dropdown-item:hover,
+body.dark-theme #tenantNotiList .dropdown-item:hover {
+    background-color: rgba(255,255,255,0.06) !important;
+}
+
+/* Dynamically injected text: fw-semibold text-dark */
+body.dark-theme .fw-semibold.text-dark,
+body.dark-theme .admin-noti-item .fw-semibold {
+    color: var(--color-text) !important;
+}
+
+/* Public navbar dropdown menu (user account) */
+body.dark-theme #userAccountDropdown + .dropdown-menu,
+body.dark-theme nav .dropdown-menu {
+    background-color: #1e1e24 !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+}
+
+/* Inline style override for dropdown-item hover in navbar.php */
+body.dark-theme nav .dropdown-item:hover {
+    background-color: rgba(255,255,255,0.07) !important;
+    color: var(--color-accent) !important;
+    padding-left: 1.25rem !important;
+}
+
+/* Hardcoded color: #1e3a5f in JS-injected HTML */
+body.dark-theme [style*="color:#1e3a5f"],
+body.dark-theme [style*="color: #1e3a5f"] {
+    color: #7aaae0 !important;
+}
+
+body.dark-theme [style*="color:#1e3a5f"] {
+    color: #7aaae0 !important;
+}
+
+/* Badge border on bell icons in navbar */
+body.dark-theme #adminNotiBadge,
+body.dark-theme #tenantNotiBadge {
+    border-color: #1a1a20 !important;
+}
+
+/* ============================================================
+   SECTION 26: REMAINING UTILITY OVERRIDES
+   ============================================================ */
+
+/* opacity-50 rows in maintenance table should still be readable */
+body.dark-theme .opacity-50 td {
+    color: #686868 !important;
+}
+
+/* code tags */
+body.dark-theme code {
+    background-color: rgba(255,255,255,0.07) !important;
+    color: #fbbf24 !important;
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+}
+
+/* input-group inside form (search filters) */
+body.dark-theme .input-group-text {
+    background-color: #28282e !important;
+    border-color: rgba(255,255,255,0.15) !important;
+    color: var(--color-text) !important;
+}
+
+/* Spinner */
+body.dark-theme .spinner-border.text-primary {
+    color: var(--color-primary) !important;
+}
+
+/* Table bordered */
+body.dark-theme .table-bordered,
+body.dark-theme .table-bordered > :not(caption) > * > * {
+    border-color: rgba(255,255,255,0.08) !important;
+}
+
+/* Bootstrap shadow utilities look bad on dark — soften */
+body.dark-theme .shadow-sm { box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important; }
+body.dark-theme .shadow    { box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important; }
+body.dark-theme .shadow-lg { box-shadow: 0 8px 30px rgba(0,0,0,0.6) !important; }
+
+/* list-group in modal (all notifications modal) */
+body.dark-theme .list-group-item {
+    background-color: var(--color-white) !important;
+    border-color: rgba(255,255,255,0.07) !important;
+    color: var(--color-text) !important;
+}
+
+body.dark-theme .list-group-item-action:hover {
+    background-color: rgba(255,255,255,0.05) !important;
+    color: var(--color-text) !important;
+}
+
+/* ============================================================
+   SECTION 27: FINAL TARGETED OVERRIDES
+   Covers badge bg-white text-navy, container bg-white, header-box
+   ============================================================ */
+
+/* Badges using bg-white (text stays readable) */
+body.dark-theme .badge.bg-white,
+body.dark-theme span.badge.bg-white {
+    background-color: #2e2e38 !important;
+    color: var(--color-text) !important;
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+/* Badge bg-white with text-navy specifically */
+body.dark-theme .badge.bg-white.text-navy,
+body.dark-theme .badge.bg-white.text-primary {
+    background-color: rgba(74, 115, 181, 0.15) !important;
+    color: #7aaae0 !important;
+    border-color: rgba(74, 115, 181, 0.25) !important;
+}
+
+/* Badge bg-white with text-dark (tenant dashboard etc) */
+body.dark-theme .badge.bg-white.text-dark {
+    background-color: #2e2e38 !important;
+    color: var(--color-text) !important;
+}
+
+/* Container wrappers using bg-white (standalone pages) */
+body.dark-theme .container.bg-white,
+body.dark-theme .container-fluid.bg-white,
+body.dark-theme div.bg-white.p-4,
+body.dark-theme div.bg-white.p-3,
+body.dark-theme .col-md-8.bg-white {
+    background-color: var(--color-white) !important;
+    color: var(--color-text) !important;
+}
+
+/* header-box in hd_hienthi.php */
+body.dark-theme .header-box.bg-white,
+body.dark-theme .header-box {
+    background-color: var(--color-white) !important;
+    color: var(--color-text) !important;
+}
+
+/* Audit log bg-white tab content */
+body.dark-theme .bg-white.p-3.shadow-sm,
+body.dark-theme .bg-white.rounded-3.shadow-sm {
+    background-color: var(--color-white) !important;
+    color: var(--color-text) !important;
+}
+
+/* input-group-text bg-white (form fields with icons) */
+body.dark-theme .input-group-text.bg-white {
+    background-color: #28282e !important;
+    color: var(--color-text) !important;
+    border-color: rgba(255,255,255,0.15) !important;
+}
+
+/* card-footer bg-white */
+body.dark-theme .card-footer.bg-white {
+    background-color: transparent !important;
+    color: var(--color-text) !important;
+    border-top: 1px solid rgba(255,255,255,0.07) !important;
+}
+
+/* card-header bg-white (generic) */
+body.dark-theme .card-header.bg-white {
+    background-color: transparent !important;
+    color: var(--color-text) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+}
+
+/* Inline style="color: #1e3a5f" attribute selectors — covering all variants */
+body.dark-theme [style*="color: #1e3a5f"],
+body.dark-theme [style*="color:#1e3a5f"],
+body.dark-theme [style*="color: #1E3A5F"],
+body.dark-theme [style*="color:#1E3A5F"] {
+    color: #7aaae0 !important;
+}
+
+/* Also catch hardcoded background navy on buttons */
+body.dark-theme [style*="background-color: #1e3a5f"],
+body.dark-theme [style*="background:#1e3a5f"],
+body.dark-theme [style*="background-color:#1e3a5f"] {
+    background-color: var(--color-primary) !important;
+}
+
+/* Alert border-start accent colors — readable in dark */
+body.dark-theme .alert.border-start.border-success { border-left-color: #4ade80 !important; }
+body.dark-theme .alert.border-start.border-danger  { border-left-color: #f87171 !important; }
+body.dark-theme .alert.border-start.border-warning { border-left-color: #fbbf24 !important; }
+
+/* End of dark-mode.css v2.0 */
+
+/* ============================================================
+   SECTION 28: THANH TOÁN / ĐIỆN NƯỚC PAGE OVERRIDES
+   Covers custom classes defined inline in dien_nuoc_ghi.php
+   and tt_tao.php that cannot be caught by generic selectors
+   ============================================================ */
+
+/* dien_nuoc_ghi.php */
+body.dark-theme .invoice-card {
+    background: var(--color-white) !important;   /* #1e1e24 */
+    border-top-color: var(--color-primary) !important;
+    box-shadow: var(--shadow-medium) !important;
+    color: var(--color-text) !important;
+}
+
+body.dark-theme .stat-box {
+    background: #252530 !important;
+    border-color: rgba(255,255,255,0.08) !important;
+    color: var(--color-text) !important;
+}
+
+/* Estimate money box: style="background-color:#fff9e6; border:2px dashed #f1c40f" */
+body.dark-theme [style*="background-color: #fff9e6"],
+body.dark-theme [style*="background-color:#fff9e6"] {
+    background-color: rgba(251, 191, 36, 0.08) !important;
+    border-color: rgba(251, 191, 36, 0.3) !important;
+    color: var(--color-text) !important;
+}
+
+body.dark-theme .money-text { color: #f87171 !important; }
+body.dark-theme .delta-warn { background: rgba(220,53,69,0.15) !important; color: #f87171 !important; }
+body.dark-theme .delta-suspect { background: rgba(230,81,0,0.15) !important; color: #fbbf24 !important; }
+
+/* tt_tao.php */
+body.dark-theme .pos-box {
+    background: var(--color-white) !important;
+    border-top-color: #4ade80 !important;
+    box-shadow: var(--shadow-medium) !important;
+    color: var(--color-text) !important;
+}
+
+body.dark-theme .bill-card {
+    background: #252530 !important;
+    border-color: rgba(255,255,255,0.07) !important;
+    color: var(--color-text) !important;
+}
+
+body.dark-theme .bill-header {
+    background: var(--color-primary) !important;
+    color: #fff !important;
+}
+
+/* bill-card inner bg-white section */
+body.dark-theme .bill-card .bg-white,
+body.dark-theme .bill-card > div.p-3.bg-white {
+    background: transparent !important;
+    color: var(--color-text) !important;
+}
+
+/* rb-orange / rb-green: inline estimate boxes */
+body.dark-theme .rb-orange {
+    background-color: rgba(245, 124, 0, 0.1) !important;
+    border-color: rgba(245, 124, 0, 0.3) !important;
+    color: #fbbf24 !important;
+}
+
+body.dark-theme .rb-green {
+    background-color: rgba(76, 175, 80, 0.1) !important;
+    border-color: rgba(76, 175, 80, 0.3) !important;
+    color: #4ade80 !important;
+}
+
+/* Readonly inputs (bg-light) in billing form */
+body.dark-theme input[readonly].bg-light,
+body.dark-theme input[readonly].form-control {
+    background-color: #252530 !important;
+    color: #9a9a9a !important;
+    border-color: rgba(255,255,255,0.08) !important;
+}
+
+/* bg-light search / payment method selects in tt_tao */
+body.dark-theme select.bg-light.fw-bold,
+body.dark-theme input.bg-light {
+    background-color: #28282e !important;
+    color: var(--color-text) !important;
+}
+
+/* Due balance live box */
+body.dark-theme .mb-4.p-3.bg-light.border.rounded.text-center {
+    background-color: #252530 !important;
+    border-color: rgba(255,255,255,0.08) !important;
+    color: var(--color-text) !important;
+}
+
