@@ -957,7 +957,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- 1. CƠ SỞ VẬT CHẤT (CAO ỐC, TẦNG, PHÒNG)
 -- =========================================================================
 INSERT IGNORE INTO CAO_OC (maCaoOc, tenCaoOc, diaChi, soTang) VALUES 
-('BLSK', 'Blue Sky Tower', '123 Cách Mạng Tháng 8, Quận 10', 10),
+('BLSK', 'THE SAPPHIRE', '123 Cách Mạng Tháng 8, Quận 10', 10),
 ('GRLN', 'Green Land Building', '456 Võ Văn Kiệt, Quận 1', 15);
 
 INSERT IGNORE INTO TANG (maTang, maCaoOc, tenTang, heSoGia) VALUES 
@@ -1201,7 +1201,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- 1. CƠ SỞ VẬT CHẤT (CAO ỐC, TẦNG, PHÒNG)
 -- =========================================================================
 INSERT IGNORE INTO CAO_OC (maCaoOc, tenCaoOc, diaChi, soTang) VALUES 
-('BLSK-V1', 'Blue Sky Tower', '123 Cách Mạng Tháng 8, Quận 10', 10),
+('BLSK-V1', 'THE SAPPHIRE', '123 Cách Mạng Tháng 8, Quận 10', 10),
 ('GRLN-V1', 'Green Land Building', '456 Võ Văn Kiệt, Quận 1', 15);
 
 INSERT IGNORE INTO TANG (maTang, maCaoOc, tenTang, heSoGia) VALUES 
@@ -1445,7 +1445,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- 1. CƠ SỞ VẬT CHẤT (CAO ỐC, TẦNG, PHÒNG)
 -- =========================================================================
 INSERT IGNORE INTO CAO_OC (maCaoOc, tenCaoOc, diaChi, soTang) VALUES 
-('BLSK-V2', 'Blue Sky Tower', '123 Cách Mạng Tháng 8, Quận 10', 10),
+('BLSK-V2', 'THE SAPPHIRE', '123 Cách Mạng Tháng 8, Quận 10', 10),
 ('GRLN-V2', 'Green Land Building', '456 Võ Văn Kiệt, Quận 1', 15);
 
 INSERT IGNORE INTO TANG (maTang, maCaoOc, tenTang, heSoGia) VALUES 
@@ -1689,7 +1689,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- 1. CƠ SỞ VẬT CHẤT (CAO ỐC, TẦNG, PHÒNG)
 -- =========================================================================
 INSERT IGNORE INTO CAO_OC (maCaoOc, tenCaoOc, diaChi, soTang) VALUES 
-('BLSK-V3', 'Blue Sky Tower', '123 Cách Mạng Tháng 8, Quận 10', 10),
+('BLSK-V3', 'THE SAPPHIRE', '123 Cách Mạng Tháng 8, Quận 10', 10),
 ('GRLN-V3', 'Green Land Building', '456 Võ Văn Kiệt, Quận 1', 15);
 
 INSERT IGNORE INTO TANG (maTang, maCaoOc, tenTang, heSoGia) VALUES 
@@ -1933,7 +1933,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- 1. CƠ SỞ VẬT CHẤT (CAO ỐC, TẦNG, PHÒNG)
 -- =========================================================================
 INSERT IGNORE INTO CAO_OC (maCaoOc, tenCaoOc, diaChi, soTang) VALUES 
-('BLSK-V4', 'Blue Sky Tower', '123 Cách Mạng Tháng 8, Quận 10', 10),
+('BLSK-V4', 'THE SAPPHIRE', '123 Cách Mạng Tháng 8, Quận 10', 10),
 ('GRLN-V4', 'Green Land Building', '456 Võ Văn Kiệt, Quận 1', 15);
 
 INSERT IGNORE INTO TANG (maTang, maCaoOc, tenTang, heSoGia) VALUES 
@@ -2177,7 +2177,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- 1. CƠ SỞ VẬT CHẤT (CAO ỐC, TẦNG, PHÒNG)
 -- =========================================================================
 INSERT IGNORE INTO CAO_OC (maCaoOc, tenCaoOc, diaChi, soTang) VALUES 
-('BLSK-V5', 'Blue Sky Tower', '123 Cách Mạng Tháng 8, Quận 10', 10),
+('BLSK-V5', 'THE SAPPHIRE', '123 Cách Mạng Tháng 8, Quận 10', 10),
 ('GRLN-V5', 'Green Land Building', '456 Võ Văn Kiệt, Quận 1', 15);
 
 INSERT IGNORE INTO TANG (maTang, maCaoOc, tenTang, heSoGia) VALUES 

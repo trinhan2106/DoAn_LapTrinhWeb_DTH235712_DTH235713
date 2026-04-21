@@ -141,7 +141,7 @@ try {
         $htmlBody = "
             <div style='font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; max-width: 600px;'>
                 <h2 style='color: #1e3a5f;'>Kinh gui {$hoTen_e},</h2>
-                <p>He thong quan ly <strong>Blue Sky Tower</strong> xin cam on anh/chi da quan tam va dang ky nhan tu van thue phong: <strong>{$maPhong_e}</strong>.</p>
+                <p>He thong quan ly <strong>THE SAPPHIRE</strong> xin cam on anh/chi da quan tam va dang ky nhan tu van thue phong: <strong>{$maPhong_e}</strong>.</p>
                 
                 <div style='background-color: #f4f7f9; padding: 15px; border-left: 4px solid #c9a66b; margin-top:15px; margin-bottom: 20px;'>
                     <strong>Ma yeu cau: <span style='color: #d35400; font-size: 1.25rem;'>{$maYC_e}</span></strong>

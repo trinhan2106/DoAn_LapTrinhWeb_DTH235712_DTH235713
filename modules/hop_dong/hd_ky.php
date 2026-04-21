@@ -177,9 +177,9 @@ try {
             <div class="fst-italic">Số Ref: <?= htmlspecialchars($thongTinHD['soHopDong']) ?>/BST-2026</div>
         </div>
 
-        <p>Hôm nay, ngày <?= date('d', strtotime($thongTinHD['ngayLap'])) ?> tháng <?= date('m', strtotime($thongTinHD['ngayLap'])) ?> năm <?= date('Y', strtotime($thongTinHD['ngayLap'])) ?>, tại BQL Blue Sky Tower, chúng tôi gồm:</p>
+        <p>Hôm nay, ngày <?= date('d', strtotime($thongTinHD['ngayLap'])) ?> tháng <?= date('m', strtotime($thongTinHD['ngayLap'])) ?> năm <?= date('Y', strtotime($thongTinHD['ngayLap'])) ?>, tại BQL THE SAPPHIRE, chúng tôi gồm:</p>
         
-        <p class="mb-0"><strong>BÊN CHO THUÊ (BÊN A): BAN QUẢN LÝ BLUE SKY TOWER</strong></p>
+        <p class="mb-0"><strong>BÊN CHO THUÊ (BÊN A): BAN QUẢN LÝ THE SAPPHIRE</strong></p>
         <p class="mb-0">- Đại diện kinh doanh: <strong>Ông/Bà <?= htmlspecialchars($thongTinHD['tenNV']) ?></strong></p>
         
         <p class="mb-0 mt-3"><strong>BÊN THUÊ (BÊN B): ĐỐI TÁC THƯƠNG MẠI</strong></p>

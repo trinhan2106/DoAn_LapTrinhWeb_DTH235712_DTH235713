@@ -23,5 +23,5 @@ define('SMTP_PORT', 587);
 define('SMTP_USER', 'your_email@gmail.com');
 define('SMTP_PASS', 'your_app_password_here');
 define('SMTP_FROM_EMAIL', 'no-reply@bluesky.vn');
-define('SMTP_FROM_NAME', 'Hệ Thống Blue Sky Tower');
+define('SMTP_FROM_NAME', 'Hệ Thống THE SAPPHIRE');
 

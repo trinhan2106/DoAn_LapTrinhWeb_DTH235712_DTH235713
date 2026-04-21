@@ -251,7 +251,7 @@ try {
         try {
             sendEmail(
                 $mMailPack['email'],
-                "[Blue Sky Tower] Bien lai thanh toan - {$soHopDong}",
+                "[THE SAPPHIRE] Bien lai thanh toan - {$soHopDong}",
                 $htmlMContent
             );
         } catch (Exception $mailErr) {
