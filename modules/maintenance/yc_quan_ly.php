@@ -67,8 +67,8 @@ function calculateSLADeadline($createdAt, $mucDoUT) {
         <main class="admin-main-content">
             <div class="container-fluid bg-white p-4 shadow rounded">
     <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
-        <h3 class="mb-0 fw-bold text-primary">SLA Maintenance Tracker</h3>
-        <a href="../../modules/dashboard/admin.php" class="btn btn-secondary btn-sm">Quay về Backoffice</a>
+        <h3 class="mb-0 fw-bold" style="color: #1e3a5f;"><i class="bi bi-tools me-2"></i>Bảo trì Cao ốc</h3>
+        <a href="../../modules/dashboard/admin.php" class="btn btn-secondary btn-sm">Quay về</a>
     </div>
 
     <?php if(isset($_SESSION['success_msg'])): ?>

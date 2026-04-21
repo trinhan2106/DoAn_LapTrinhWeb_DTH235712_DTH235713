@@ -84,6 +84,12 @@ if (!function_exists('is_nav_active')) {
                     <i class="bi bi-envelope-paper me-2"></i> Yêu cầu thuê phòng
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link <?= is_nav_active('modules/maintenance/', $current_script) ?>"
+                   href="<?= BASE_URL ?>modules/maintenance/yc_quan_ly.php">
+                    <i class="bi bi-tools me-2"></i> Bảo trì
+                </a>
+            </li>
 
             <hr class="admin-sidebar__divider">
             <span class="admin-sidebar__section-label">Tài chính</span>

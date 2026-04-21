@@ -201,14 +201,6 @@ include_once __DIR__ . '/../../includes/admin/admin-header.php';
         <?php include_once __DIR__ . '/../../includes/admin/topbar.php'; ?>
 
         <main class="admin-main-content p-4">
-            <!-- Breadcrumbs -->
-            <nav aria-label="breadcrumb" class="mb-4">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="<?= BASE_URL ?>modules/dashboard/admin.php" class="text-decoration-none"><i class="bi bi-house-door me-1"></i>Dashboard</a></li>
-                    <li class="breadcrumb-item active">Quản lý Yêu cầu thuê</li>
-                </ol>
-            </nav>
-
             <!-- Header Section -->
             <div class="card filter-section shadow-sm border-0 mb-4">
                 <div class="card-body p-4">
