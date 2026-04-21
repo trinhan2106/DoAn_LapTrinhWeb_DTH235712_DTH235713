@@ -125,7 +125,7 @@ $stmt4 = $pdo->query("
                             </a>
                         </div>
                         <div class="table-responsive">
-                            <table id="tablePhongTrong" class="table table-hover table-striped align-middle border">
+                            <table id="tablePhongTrong" class="table table-hover table-striped align-middle border table-datatable">
                                 <thead class="bg-navy text-white">
                                     <tr>
                                         <th>Tòa Nhà</th>
@@ -138,10 +138,7 @@ $stmt4 = $pdo->query("
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php if(empty($dsPhongTrong)): ?>
-                                        <tr><td colspan="7" class="text-center py-4 text-muted">Không có dữ liệu phù hợp</td></tr>
-                                    <?php else: ?>
-                                        <?php foreach($dsPhongTrong as $p): ?>
+                                    <?php foreach($dsPhongTrong as $p): ?>
                                             <tr>
                                                 <td><?= e($p['tenCaoOc']) ?></td>
                                                 <td><?= e($p['tenTang']) ?></td>
@@ -151,9 +148,9 @@ $stmt4 = $pdo->query("
                                                 <td class="text-end"><?= formatTien($p['donGiaM2']) ?></td>
                                                 <td class="text-end fw-bold text-success"><?= formatTien($p['giaThueThang']) ?> VNĐ</td>
                                             </tr>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
+                                    <?php endforeach; ?>
                                 </tbody>
+ 
                             </table>
                         </div>
                     </div>
@@ -167,7 +164,7 @@ $stmt4 = $pdo->query("
                             </a>
                         </div>
                         <div class="table-responsive">
-                            <table id="tablePhongThue" class="table table-hover table-striped align-middle border">
+                            <table id="tablePhongThue" class="table table-hover table-striped align-middle border table-datatable">
                                 <thead class="bg-navy text-white">
                                     <tr>
                                         <th>Tòa Nhà</th>
@@ -178,10 +175,7 @@ $stmt4 = $pdo->query("
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php if(empty($dsPhongThue)): ?>
-                                        <tr><td colspan="5" class="text-center py-4 text-muted">Không có dữ liệu phù hợp</td></tr>
-                                    <?php else: ?>
-                                        <?php foreach($dsPhongThue as $p): ?>
+                                    <?php foreach($dsPhongThue as $p): ?>
                                             <tr>
                                                 <td><?= e($p['tenCaoOc']) ?></td>
                                                 <td><?= e($p['tenTang']) ?></td>
@@ -189,8 +183,7 @@ $stmt4 = $pdo->query("
                                                 <td><?= e($p['tenPhong']) ?></td>
                                                 <td class="text-center"><?= number_format($p['dienTich'], 1) ?> m²</td>
                                             </tr>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
+                                    <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -208,7 +201,7 @@ $stmt4 = $pdo->query("
                             <i class="bi bi-exclamation-triangle-fill me-2"></i><b>Lưu ý:</b> Dưới đây là các Hợp đồng sẽ hết hạn trong <b>Tháng <?= date('m/Y') ?></b>. Vui lòng liên hệ khách hàng để làm thủ tục gia hạn.
                         </div>
                         <div class="table-responsive">
-                            <table id="tableHDHetHan" class="table table-hover table-striped align-middle border">
+                            <table id="tableHDHetHan" class="table table-hover table-striped align-middle border table-datatable">
                                 <thead class="bg-danger text-white">
                                     <tr>
                                         <th>Số Hợp Đồng</th>
@@ -219,10 +212,7 @@ $stmt4 = $pdo->query("
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php if(empty($dsHopDong)): ?>
-                                        <tr><td colspan="5" class="text-center py-4 text-muted">Không có dữ liệu phù hợp</td></tr>
-                                    <?php else: ?>
-                                        <?php foreach($dsHopDong as $h): ?>
+                                    <?php foreach($dsHopDong as $h): ?>
                                             <tr class="table-warning">
                                                 <td class="fw-bold"><?= e($h['soHopDong']) ?></td>
                                                 <td><?= e($h['tenKH']) ?></td> <!-- XSS Protected via e() -->
@@ -232,8 +222,7 @@ $stmt4 = $pdo->query("
                                                     <a href="#" class="btn btn-sm btn-outline-danger rounded-pill">Liên hệ KH</a>
                                                 </td>
                                             </tr>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
+                                    <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -248,7 +237,7 @@ $stmt4 = $pdo->query("
                             </a>
                         </div>
                         <div class="table-responsive">
-                            <table id="tableNhanSu" class="table table-hover table-striped align-middle border">
+                            <table id="tableNhanSu" class="table table-hover table-striped align-middle border table-datatable">
                                 <thead class="bg-navy text-white">
                                     <tr>
                                         <th>Mã NV</th>
@@ -259,10 +248,7 @@ $stmt4 = $pdo->query("
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php if(empty($dsNhanVien)): ?>
-                                        <tr><td colspan="5" class="text-center py-4 text-muted">Không có dữ liệu phù hợp</td></tr>
-                                    <?php else: ?>
-                                        <?php foreach($dsNhanVien as $nv): ?>
+                                    <?php foreach($dsNhanVien as $nv): ?>
                                             <tr>
                                                 <td class="fw-bold"><?= e($nv['maNV']) ?></td>
                                                 <td class="text-navy fw-bold"><?= e($nv['tenNV']) ?></td> <!-- XSS Protected via e() -->
@@ -270,8 +256,7 @@ $stmt4 = $pdo->query("
                                                 <td><?= e($nv['sdt']) ?></td>
                                                 <td><?= e($nv['email']) ?></td>
                                             </tr>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
+                                    <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
