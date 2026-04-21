@@ -150,7 +150,7 @@ try {
                 <p>Doi ngu chuyen vien se lien lac qua so dien thoai <i>{$soDienThoai_e}</i> de tu van va sap xep lich hen.</p>
                 <p>Tran trong cam on,</p>
                 <br/>
-                <p><strong>BQL Toa Nha Blue Sky Tower</strong></p>
+                <p><strong>BQL Toa Nha THE SAPPHIRE</strong></p>
                 <hr style='border: none; border-top: 1px dashed #ccc;'/>
                 <p style='font-size: 0.85em; color: #7f8c8d; text-align: center;'>Email tu dong, vui long khong reply.</p>
             </div>
