@@ -25,7 +25,7 @@ if (!empty($soHoaDon)) {
     $stmtCheck = $pdo->prepare("
         SELECT hd.soHoaDon, hd.tongTien, hd.soTienConNo, hd.kyThanhToan 
         FROM HOA_DON hd
-        JOIN HOP_DONG hp ON hd.soHoaDon = hp.soHoaDon
+        JOIN HOP_DONG hp ON hd.soHopDong = hp.soHopDong
         WHERE hd.soHoaDon = ? AND hp.maKH = ? AND hp.deleted_at IS NULL
     ");
     $stmtCheck->execute([$soHoaDon, $maKH]);
