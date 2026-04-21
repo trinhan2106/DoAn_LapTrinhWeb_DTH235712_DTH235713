@@ -2397,3 +2397,46 @@ INSERT IGNORE INTO LOGIN_ATTEMPT (username, ip_address, attempt_time, status) VA
 ('ketoan1', '192.168.1.5', '2026-04-20 08:30:00', 1);
 
 -- HOÀN THIỆN KỊCH BẢN SEED DATA.
+
+
+-- =========================================================================
+-- SECTION: WATERFALL SYSTEM TEST SCENARIOS (CREATED 2026-04-22)
+-- PHỤ CỤ PHỤC VỤ VIỆC TEST THUẬT TOÁN PHÂN BỔ CÔNG NỢ ĐA TẦNG
+-- =========================================================================
+
+-- KỊCH BẢN 1: NỢ ĐƠN GIẢN (1 HÓA ĐƠN)
+INSERT IGNORE INTO KHACH_HANG (maKH, tenKH, sdt, email, diaChi) 
+VALUES ('KH-DEMO-01', 'Cty Demo Đơn Giản', '0911000001', 'demo01@test.vn', 'Khu Công Nghệ Cao');
+INSERT IGNORE INTO HOP_DONG (soHopDong, maKH, maNV, ngayBatDau, trangThai) 
+VALUES ('HD-DEMO-01', 'KH-DEMO-01', 'NV-01', '2026-01-01', 1);
+INSERT IGNORE INTO HOA_DON (soHoaDon, soHopDong, thang, nam, kyThanhToan, tongTien, soTienDaNop, soTienConNo, trangThai, lyDo, loaiHoaDon)
+VALUES ('INV-D-01-01', 'HD-DEMO-01', 4, 2026, '04/2026', 5000000.00, 0.00, 5000000.00, 'ConNo', 'Tiền thuê tháng 4', 'Chinh');
+
+-- KỊCH BẢN 2: NỢ THÁC NƯỚC (3 THÁNG LIÊN TIẾP)
+INSERT IGNORE INTO KHACH_HANG (maKH, tenKH, sdt, email, diaChi) 
+VALUES ('KH-DEMO-02', 'Cty Demo Thác Nước', '0911000002', 'demo02@test.vn', 'Quận 1, TP.HCM');
+INSERT IGNORE INTO HOP_DONG (soHopDong, maKH, maNV, ngayBatDau, trangThai) 
+VALUES ('HD-DEMO-02', 'KH-DEMO-02', 'NV-01', '2026-01-01', 1);
+INSERT IGNORE INTO HOA_DON (soHoaDon, soHopDong, thang, nam, kyThanhToan, tongTien, soTienDaNop, soTienConNo, trangThai, lyDo, loaiHoaDon)
+VALUES ('INV-D-02-01', 'HD-DEMO-02', 1, 2026, '01/2026', 2000000.00, 0.00, 2000000.00, 'ConNo', 'Tiền thuê tháng 1', 'Chinh'),
+       ('INV-D-02-02', 'HD-DEMO-02', 2, 2026, '02/2026', 2000000.00, 0.00, 2000000.00, 'ConNo', 'Tiền thuê tháng 2', 'Chinh'),
+       ('INV-D-02-03', 'HD-DEMO-02', 3, 2026, '03/2026', 2000000.00, 0.00, 2000000.00, 'ConNo', 'Tiền thuê tháng 3', 'Chinh');
+
+-- KỊCH BẢN 3: NỢ MỘT PHẦN (PARTIAL PAYMENT)
+INSERT IGNORE INTO KHACH_HANG (maKH, tenKH, sdt, email, diaChi) 
+VALUES ('KH-DEMO-03', 'Cty Demo Một Phần', '0911000003', 'demo03@test.vn', 'Bình Thạnh, TP.HCM');
+INSERT IGNORE INTO HOP_DONG (soHopDong, maKH, maNV, ngayBatDau, trangThai) 
+VALUES ('HD-DEMO-03', 'KH-DEMO-03', 'NV-01', '2026-01-01', 1);
+INSERT IGNORE INTO HOA_DON (soHoaDon, soHopDong, thang, nam, kyThanhToan, tongTien, soTienDaNop, soTienConNo, trangThai, lyDo, loaiHoaDon)
+VALUES ('INV-D-03-01', 'HD-DEMO-03', 4, 2026, '04/2026', 10000000.00, 7000000.00, 3000000.00, 'DaThuMotPhan', 'Thanh toán đợt 1', 'Chinh');
+
+-- KỊCH BẢN 4: TIỀN DƯ/SỐ DƯ CÓ (CREDIT BALANCE)
+INSERT IGNORE INTO KHACH_HANG (maKH, tenKH, sdt, email, diaChi) 
+VALUES ('KH-DEMO-04', 'Cty Demo Tiền Dư', '0911000004', 'demo04@test.vn', 'Quận 7, TP.HCM');
+INSERT IGNORE INTO HOP_DONG (soHopDong, maKH, maNV, ngayBatDau, trangThai) 
+VALUES ('HD-DEMO-04', 'KH-DEMO-04', 'NV-01', '2026-01-01', 1);
+INSERT IGNORE INTO HOA_DON (soHoaDon, soHopDong, thang, nam, kyThanhToan, tongTien, soTienDaNop, soTienConNo, trangThai, lyDo, loaiHoaDon)
+VALUES ('INV-D-04-01', 'HD-DEMO-04', 3, 2026, '03/2026', 5000000.00, 6000000.00, -1000000.00, 'DaThu', 'Khách nộp thừa 1tr kỳ trước', 'Chinh');
+
+-- HOÀN TẤT KỊCH BẢN TEST WATERFALL SYSTEM.
+
