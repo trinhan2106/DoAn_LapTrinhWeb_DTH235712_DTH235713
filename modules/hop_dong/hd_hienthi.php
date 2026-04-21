@@ -95,7 +95,7 @@ function formatTrangThaiHD($tt) {
                             <th width="15%">Thời Gian Chốt</th>
                             <th width="15%">Đáo Hạn Cuối</th>
                             <th width="15%">Trạng Thái DB</th>
-                            <th width="20%" class="text-center">Thao Tác Tương Tác</th>
+                            <th width="20%" class="text-center" style="white-space: nowrap;">Thao Tác Tương Tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -134,37 +134,41 @@ function formatTrangThaiHD($tt) {
                                     <td>
                                         <?= formatTrangThaiHD($row['trangThai']) ?>
                                     </td>
-                                    <td class="text-center">
-                                        <a href="hd_chitiet.php?id=<?= urlencode($row['soHopDong']) ?>" class="btn btn-secondary btn-sm px-2 text-white fw-bold shadow-sm me-1" style="border-radius: 4px;" title="Xem Chi Tiết">
-                                            <i class="fa-regular fa-eye"></i> Xem
-                                        </a>
-                                        
-                                        <!-- Task 5.6: Nút Điều Hướng Sang Gia Hạn -->
-                                        <a href="hd_gia_han.php?soHopDong=<?= urlencode($row['soHopDong']) ?>" class="btn btn-info btn-sm px-2 text-dark fw-bold shadow-sm me-1" style="border-radius: 4px;" title="Tiến hành thủ tục Gia Hạn">
-                                            <i class="fa-solid fa-timeline"></i> Gia Hạn
-                                        </a>
-
-                                        <?php if((int)$row['trangThai'] === 3): ?>
-                                            <!-- Chờ Ký -->
-                                            <a href="hd_ky.php?id=<?= urlencode($row['soHopDong']) ?>" class="btn btn-success btn-sm px-2 text-white fw-bold shadow-sm" style="border-radius: 4px;">
-                                                <i class="fa-solid fa-file-signature"></i> Ký Duyệt
+                                    <td class="text-center" style="white-space: nowrap; min-width: 250px;">
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <a href="hd_chitiet.php?id=<?= urlencode($row['soHopDong']) ?>" class="btn btn-secondary btn-sm px-2 text-white fw-bold shadow-sm" style="border-radius: 4px;" title="Xem Chi Tiết">
+                                                <i class="fa-regular fa-eye"></i> Xem
                                             </a>
-                                        <?php else: ?>
-                                            <!-- Đã Ký / Trạng thái khác -> Xem Bản In -->
-                                            <a href="hd_ky.php?id=<?= urlencode($row['soHopDong']) ?>" class="btn btn-outline-primary btn-sm px-2 fw-bold shadow-sm" style="border-radius: 4px;" title="Xem / In Bản PDF Hợp Đồng">
-                                                <i class="fa-solid fa-print"></i> Bản In
+                                            
+                                            <!-- Task 5.6: Nút Điều Hướng Sang Gia Hạn -->
+                                            <a href="hd_gia_han.php?soHopDong=<?= urlencode($row['soHopDong']) ?>" class="btn btn-info btn-sm px-2 text-dark fw-bold shadow-sm" style="border-radius: 4px;" title="Tiến hành thủ tục Gia Hạn">
+                                                <i class="fa-solid fa-timeline"></i> Gia Hạn
                                             </a>
-                                        <?php endif; ?>
 
-                                        <!-- Task 9.2: Nút mở Modal QR Code -->
-                                        <button type="button" 
-                                                class="btn btn-outline-dark btn-sm px-2 fw-bold shadow-sm btn-view-qr" 
-                                                data-qr-url="<?= $rowQrUrl ?>"
-                                                data-sohd="<?= htmlspecialchars($row['soHopDong']) ?>"
-                                                style="border-radius: 4px;" 
-                                                title="Mã QR Xác Thực">
-                                            <i class="fa-solid fa-qrcode"></i> QR
-                                        </button>
+                                            <?php if((int)$row['trangThai'] === 3): ?>
+                                                <!-- Chờ Ký -->
+                                                <a href="hd_ky.php?id=<?= urlencode($row['soHopDong']) ?>" class="btn btn-success btn-sm px-2 text-white fw-bold shadow-sm" style="border-radius: 4px;">
+                                                    <i class="fa-solid fa-file-signature"></i> Ký Duyệt
+                                                </a>
+                                            <?php endif; ?>
+
+                                            <?php if(in_array((int)$row['trangThai'], [1, 3])): ?>
+                                                <!-- Đã Ký / Chờ Duyệt -> Xem Bản In -->
+                                                <a href="hd_ky.php?id=<?= urlencode($row['soHopDong']) ?>" class="btn btn-outline-primary btn-sm px-2 fw-bold shadow-sm" style="border-radius: 4px;" title="Xem / In Bản PDF Hợp Đồng">
+                                                    <i class="fa-solid fa-print"></i> Bản In
+                                                </a>
+                                            <?php endif; ?>
+
+                                            <!-- Task 9.2: Nút mở Modal QR Code -->
+                                            <button type="button" 
+                                                    class="btn btn-outline-dark btn-sm px-2 fw-bold shadow-sm btn-view-qr" 
+                                                    data-qr-url="<?= $rowQrUrl ?>"
+                                                    data-sohd="<?= htmlspecialchars($row['soHopDong']) ?>"
+                                                    style="border-radius: 4px;" 
+                                                    title="Mã QR Xác Thực">
+                                                <i class="fa-solid fa-qrcode"></i> QR
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

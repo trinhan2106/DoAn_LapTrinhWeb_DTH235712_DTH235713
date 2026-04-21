@@ -195,7 +195,7 @@ try {
                 <li>Mã Phòng <strong><?= htmlspecialchars($p['maPhong']) ?></strong> (<?= htmlspecialchars($p['tenPhong']) ?>) - Diện tích <?= $p['dienTich'] ?>m². Đơn giá: <?= number_format($p['giaThue'], 0) ?> VNĐ/tháng.</li>
             <?php endforeach; ?>
         </ul>
-        <p>2. Thời gian thuê từ ngày <strong><?= date('d/m/Y', strtotime($thongTinHD['ngayBatDau'])) ?></strong> đến hết ngày <strong><?= date('d/m/Y', strtotime($thongTinHD['ngayKetThuc'])) ?></strong>.</p>
+        <p>2. Thời gian thuê từ ngày <strong><?= date('d/m/Y', strtotime($thongTinHD['ngayBatDau'])) ?></strong> đến hết ngày <strong><?= !empty($thongTinHD['ngayHetHanCuoiCung']) ? date('d/m/Y', strtotime($thongTinHD['ngayHetHanCuoiCung'])) : (!empty($thongTinHD['ngayKetThuc']) ? date('d/m/Y', strtotime($thongTinHD['ngayKetThuc'])) : 'Đang cập nhật') ?></strong>.</p>
         <p>3. Trong ngày ký hiệu lực này Biên Bản này, Bên B xác nhận tiến hành giao một khoản Cọc Bền Vững (Security Deposit) trị giá: <strong class="text-danger"><?= number_format($thongTinHD['tienTienCoc'], 0) ?> VNĐ</strong> nhằm giữ không gian độc quyền.</p>
         
         <div class="row mt-5" style="line-height: 1.5; font-family: 'Segoe UI', sans-serif;">
@@ -214,9 +214,9 @@ try {
     </div>
 
     <!-- KHU VỰC NÚT ĐIỀU KHIỂN CHỐT GIAO DỊCH -->
-    <?php if((int)$thongTinHD['trangThai'] === 3): ?>
-        <div class="text-center mt-4 border-top pt-4" style="max-width: 850px; margin: 0 auto;">
-            <form action="hd_ky_submit.php" method="POST">
+    <div class="text-center mt-4 border-top pt-4" style="max-width: 850px; margin: 0 auto;">
+        <?php if((int)$thongTinHD['trangThai'] === 3): ?>
+            <form action="hd_ky_submit.php" method="POST" class="mb-3">
                 <input type="hidden" name="csrf_token" value="<?= function_exists('generateCSRFToken') ? generateCSRFToken() : '' ?>">
                 <input type="hidden" name="soHopDong" value="<?= htmlspecialchars($thongTinHD['soHopDong']) ?>">
                 
@@ -227,16 +227,16 @@ try {
                     <i class="fa-solid fa-signature me-2"></i> ỦY QUYỀN DUYỆT & ĐÓNG DẤU CHI MẠNG THÀNH CÔNG
                 </button>
             </form>
+        <?php endif; ?>
+
+        <!-- Nút in luôn khả dụng để in bản thảo hoặc bản chính -->
+        <div class="d-flex justify-content-center gap-2">
+            <a href="hd_hienthi.php" class="btn btn-outline-secondary px-4"><i class="fa-solid fa-arrow-left me-1"></i> Quay Lại</a>
+            <button onclick="window.print();" class="btn btn-outline-danger px-4" title="In / Xuất file PDF">
+                <i class="fa-solid fa-print me-1"></i> Xuất bản lưu Trữ Bản PDF
+            </button>
         </div>
-    <?php else: ?>
-        <!-- MÀN HÌNH ĐÃ KÝ THÀNH CÔNG -> NHẬT SẼ RÁP EXPORT BẢN IN PDF NẰM Ở ĐÂY SAU NÀY -->
-        <div class="text-center mt-4 border-top pt-4" style="max-width: 850px; margin: 0 auto;">
-             <a href="hd_hienthi.php" class="btn btn-outline-secondary px-4 me-2"><i class="fa-solid fa-arrow-left me-1"></i> Quay Lại Danh Sách</a>
-             <button onclick="window.print();" class="btn btn-outline-danger px-4" title="In / Xuất file PDF">
-                 <i class="fa-solid fa-print me-1"></i> Xuất bản lưu Trữ Bản PDF
-             </button>
-        </div>
-    <?php endif; ?>
+    </div>
 </div>
 
 </body>

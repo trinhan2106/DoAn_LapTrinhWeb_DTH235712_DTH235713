@@ -101,7 +101,7 @@ require_once __DIR__ . '/../../includes/tenant/header.php';
                         <div class="p-3 bg-light rounded-circle"><i class="fa-solid fa-calendar-check text-navy fs-4"></i></div>
                         <div>
                             <div class="small text-muted text-uppercase fw-bold">Ngày hiệu lực</div>
-                            <div class="fw-bold text-navy fs-5"><?php echo date('d/m/Y', strtotime($hopDong['ngayBatDau'])); ?></div>
+                            <div class="fw-bold text-navy fs-5"><?php echo !empty($hopDong['ngayBatDau']) ? date('d/m/Y', strtotime($hopDong['ngayBatDau'])) : 'Đang cập nhật'; ?></div>
                         </div>
                     </div>
                 </div>
@@ -110,7 +110,7 @@ require_once __DIR__ . '/../../includes/tenant/header.php';
                         <div class="p-3 bg-light rounded-circle"><i class="fa-solid fa-money-bill-transfer text-navy fs-4"></i></div>
                         <div>
                             <div class="small text-muted text-uppercase fw-bold">Thanh toán đầu</div>
-                            <div class="fw-bold text-navy fs-5"><?php echo $hopDong['ngayThanhToanDauTien'] ? date('d/m/Y', strtotime($hopDong['ngayThanhToanDauTien'])) : '—'; ?></div>
+                            <div class="fw-bold text-navy fs-5"><?php echo !empty($hopDong['ngayThanhToanDauTien']) ? date('d/m/Y', strtotime($hopDong['ngayThanhToanDauTien'])) : 'Đang cập nhật'; ?></div>
                         </div>
                     </div>
                 </div>
@@ -119,7 +119,12 @@ require_once __DIR__ . '/../../includes/tenant/header.php';
                         <div class="p-3 bg-light rounded-circle"><i class="fa-solid fa-calendar-xmark text-navy fs-4"></i></div>
                         <div>
                             <div class="small text-muted text-uppercase fw-bold">Ngày hết hạn</div>
-                            <div class="fw-bold text-danger fs-5"><?php echo date('d/m/Y', strtotime($hopDong['ngayHetHanCuoiCung'])); ?></div>
+                            <div class="fw-bold text-danger fs-5">
+                                <?php 
+                                    $ngayHienThi = !empty($hopDong['ngayHetHanCuoiCung']) ? $hopDong['ngayHetHanCuoiCung'] : $hopDong['ngayKetThuc'];
+                                    echo !empty($ngayHienThi) ? date('d/m/Y', strtotime($ngayHienThi)) : 'Đang cập nhật';
+                                ?>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -157,8 +162,8 @@ require_once __DIR__ . '/../../includes/tenant/header.php';
                                     <td class="ps-4 fw-bold text-navy"><?php echo e($phong['maPhong']); ?></td>
                                     <td><?php echo e($phong['tenPhong']); ?></td>
                                     <td class="text-muted"><small><?php echo e($phong['moTaViTri']); ?></small></td>
-                                    <td><small><?php echo date('d/m/Y', strtotime($phong['ngayBatDau'])); ?></small></td>
-                                    <td><small class="text-danger"><?php echo date('d/m/Y', strtotime($phong['ngayHetHan'])); ?></small></td>
+                                    <td><small><?php echo !empty($phong['ngayBatDau']) ? date('d/m/Y', strtotime($phong['ngayBatDau'])) : '—'; ?></small></td>
+                                    <td><small class="text-danger"><?php echo !empty($phong['ngayHetHan']) ? date('d/m/Y', strtotime($phong['ngayHetHan'])) : '—'; ?></small></td>
                                     <td class="text-end fw-bold text-navy"><?php echo number_format($phong['giaThue'], 0, ',', '.'); ?> ₫</td>
                                     <td class="text-center pe-4">
                                         <?php if ($phong['trangThai'] === 'DangThue'): ?>

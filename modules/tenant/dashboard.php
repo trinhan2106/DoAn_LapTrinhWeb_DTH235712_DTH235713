@@ -21,7 +21,7 @@ $pdo = Database::getInstance()->getConnection();
 
 // 1. TRUY VẤN DỮ LIỆU (Giữ nguyên logic nghiệp vụ)
 // [Logic truy vấn Hợp đồng, Hóa đơn, Bảo trì, Thông báo...]
-$stmtHD = $pdo->prepare("SELECT hd.soHopDong, hd.ngayBatDau, hd.ngayKetThuc, hd.trangThai, GROUP_CONCAT(p.tenPhong ORDER BY p.tenPhong SEPARATOR ', ') AS danhSachPhong FROM HOP_DONG hd LEFT JOIN CHI_TIET_HOP_DONG cthd ON hd.soHopDong = cthd.soHopDong LEFT JOIN PHONG p ON cthd.maPhong = p.maPhong WHERE hd.maKH = ? AND hd.trangThai = 1 AND hd.deleted_at IS NULL GROUP BY hd.soHopDong ORDER BY hd.ngayKetThuc ASC LIMIT 5");
+$stmtHD = $pdo->prepare("SELECT hd.soHopDong, hd.ngayBatDau, hd.ngayKetThuc, hd.ngayHetHanCuoiCung, hd.trangThai, GROUP_CONCAT(p.tenPhong ORDER BY p.tenPhong SEPARATOR ', ') AS danhSachPhong FROM HOP_DONG hd LEFT JOIN CHI_TIET_HOP_DONG cthd ON hd.soHopDong = cthd.soHopDong LEFT JOIN PHONG p ON cthd.maPhong = p.maPhong WHERE hd.maKH = ? AND hd.trangThai = 1 AND hd.deleted_at IS NULL GROUP BY hd.soHopDong ORDER BY hd.ngayKetThuc ASC LIMIT 5");
 $stmtHD->execute([$maKH]);
 $hopDongList = $stmtHD->fetchAll(PDO::FETCH_ASSOC);
 
@@ -199,8 +199,11 @@ include __DIR__ . '/../../includes/public/header.php';
                                         <tr>
                                             <td class="fw-bold"><?php echo $hd['soHopDong']; ?></td>
                                             <td><span class="badge" style="background-color: #f0f4f8; color: #1e3a5f; border: 1px solid #d1d9e6;"><?php echo $hd['danhSachPhong']; ?></span></td>
-                                            <td>
-                                                <span class="text-danger fw-bold"><?php echo date('d/m/Y', $ngayHetHan); ?></span>
+                                            <td class="fw-bold">
+                                                <?php 
+                                                    $ngayHienThi = !empty($hd['ngayHetHanCuoiCung']) ? $hd['ngayHetHanCuoiCung'] : $hd['ngayKetThuc'];
+                                                    echo !empty($ngayHienThi) ? date('d/m/Y', strtotime($ngayHienThi)) : 'Đang cập nhật';
+                                                ?>
                                                 <?php if($isSapHetHan): ?>
                                                     <br><span class="badge bg-danger mt-1 small">Sắp hết hạn</span>
                                                 <?php endif; ?>
