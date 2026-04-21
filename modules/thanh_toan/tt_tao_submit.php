@@ -173,9 +173,8 @@ try {
             WHERE soHoaDon = :soHoaDon
         ");
         
-        // Tính toán số nợ âm (Credit)
-        $noBillCuoi = (float)$lastBill['soTienConNo'];
-        $noAm = $noBillCuoi - $tienConLai; 
+        // Tính toán số nợ âm (Credit) - Phải là số tiền dư còn lại chuyển sang giá trị âm
+        $noAm = -$tienConLai; 
 
         $stmtCredit->execute([
             ':du'       => $tienConLai,

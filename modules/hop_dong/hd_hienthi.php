@@ -101,13 +101,17 @@ function formatTrangThaiHD($tt) {
                     <tbody>
                         <?php if (count($danhSachHD) > 0): ?>
                             <?php foreach ($danhSachHD as $row): 
-                                // Task 9.2: Tạo Token cho từng hợp đồng để xác thực nhanh
+                                // Task 9.2: Tạo Token cho từng hợp đồng (Đã nâng cấp lên SapphireAuth)
                                 $payload = [
-                                    'maKH' => 'ADMIN_VIEW', // Hoặc lấy maKH thật nếu có trong query
-                                    'soHopDong' => $row['soHopDong'],
-                                    'exp' => time() + 900 // Hết hạn sau 15 phút (Dùng phép cộng)
+                                    'iat' => time(),
+                                    'exp' => time() + 900,
+                                    'data' => [
+                                        'type' => 'contract',
+                                        'id' => $row['soHopDong'],
+                                        'maKH' => $row['maKH'] ?? 'ADMIN_VIEW'
+                                    ]
                                 ];
-                                $rowToken = JWT::encode($payload, SECRET_KEY);
+                                $rowToken = SapphireAuth::encode($payload, JWT_SECRET_KEY);
                                 $rowQrUrl = BASE_URL . "modules/tenant_portal/index.php?token=" . $rowToken;
                             ?>
 

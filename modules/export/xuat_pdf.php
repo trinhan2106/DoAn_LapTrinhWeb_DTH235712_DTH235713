@@ -10,7 +10,7 @@ require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/functions.php';
 require_once __DIR__ . '/../../includes/common/jwt_helper.php';
-use \Firebase\JWT\JWT;
+// Remove unused Firebase JWT
 
 // Xác thực session và quyền truy cập
 kiemTraSession();
@@ -103,9 +103,25 @@ if ($type === 'contract') {
         ");
         $stmtItems->execute([$id]);
         $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
+        
+        // TẠO TOKEN QR CODE BẢO MẬT (Xử lý cho Hợp đồng)
+        $issuedAt = time();
+        $expirationTime = $issuedAt + 1800; // Hợp đồng cho sống 30 phút
+        $payload = [
+            'iat'  => $issuedAt,
+            'exp'  => $expirationTime,
+            'data' => [
+                'type' => 'contract',
+                'id'   => $data['soHopDong'],
+                'maKH' => $data['maKH']
+            ]
+        ];
+        $jwtToken = SapphireAuth::encode($payload, JWT_SECRET_KEY);
+        $qrUrl = BASE_URL . "modules/tenant_portal/index.php?token=" . $jwtToken;
     }
     $fileName = "HopDong_" . $id . "_" . date('Ymd') . ".pdf";
     $title = "HỢP ĐỒNG THUÊ VĂN PHÒNG";
+
 
 } elseif ($type === 'invoice') {
     // Truy vấn Hóa đơn (JOIN HOA_DON, HOP_DONG, KHACH_HANG)
@@ -121,18 +137,19 @@ if ($type === 'contract') {
     $fileName = "HoaDon_" . $id . "_" . date('Ymd') . ".pdf";
     $title = "HÓA ĐƠN THANH TOÁN";
 
-    // TẠO TOKEN QR CODE BẢO MẬT (Task 9.2)
+    // TẠO TOKEN QR CODE BẢO MẬT (Xử lý cho Hóa đơn)
     $issuedAt = time();
-    $expirationTime = $issuedAt + 900; // Token sống đúng 15 phút
+    $expirationTime = $issuedAt + 900; // Hóa đơn sống 15 phút
     $payload = [
         'iat'  => $issuedAt,
         'exp'  => $expirationTime,
         'data' => [
-            'soHoaDon' => $data['soHoaDon'] ?? '',
-            'maKH'     => $data['maKH'] ?? ''
+            'type' => 'invoice',
+            'id'   => $data['soHoaDon'] ?? '',
+            'maKH' => $data['maKH'] ?? ''
         ]
     ];
-    $jwtToken = JWT::encode($payload, JWT_SECRET_KEY);
+    $jwtToken = SapphireAuth::encode($payload, JWT_SECRET_KEY);
     $qrUrl = BASE_URL . "modules/tenant_portal/index.php?token=" . $jwtToken;
 }
 
@@ -468,14 +485,14 @@ if (!$data) {
                 </div>
             </div>
 
-            <?php if ($type === 'invoice'): ?>
+            <?php if (isset($qrUrl)): ?>
             <!-- QR Code xác thực bảo mật (Task 9.2) -->
             <div class="text-center mt-5 mb-3">
                 <div id="qrcode-container" data-url="<?= $qrUrl ?>" class="d-inline-block p-2 bg-white border"></div>
                 <p class="text-muted small mt-2 mb-0">
-                    <i class="bi bi-shield-check me-1"></i>Quét mã để xác thực hóa đơn trực tuyến
+                    <i class="bi bi-shield-check me-1"></i>Quét mã để xác thực tài liệu trực tuyến
                 </p>
-                <p class="text-danger fw-bold" style="font-size: 10px;">(Mã có hiệu lực trong 15 phút kể từ lúc xem)</p>
+                <p class="text-danger fw-bold" style="font-size: 10px;">(Mã có hiệu lực trong vòng <?= ($type === 'contract' ? '30' : '15') ?> phút kể từ lúc xem)</p>
             </div>
             <?php endif; ?>
 

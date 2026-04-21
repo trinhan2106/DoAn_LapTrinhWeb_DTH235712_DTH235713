@@ -7,7 +7,7 @@
  * ==================================================================
  */
 
-class JWT {
+class SapphireAuth {
     /**
      * Mã hóa payload thành chuỗi JWT
      */
@@ -61,10 +61,11 @@ class JWT {
     }
 
     private static function base64UrlDecode($data) {
+        $data = str_replace(['-', '_'], ['+', '/'], $data);
         $remainder = strlen($data) % 4;
         if ($remainder) {
             $data .= str_repeat('=', 4 - $remainder);
         }
-        return base64_decode(str_replace(['-', '_'], ['+', '/'], $data));
+        return base64_decode($data);
     }
 }

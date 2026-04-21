@@ -49,15 +49,19 @@ $stmtLatest = $pdo->prepare($sqlLatest);
 $stmtLatest->execute([$maKH]);
 $latestInvoice = $stmtLatest->fetch(PDO::FETCH_ASSOC);
 
-// --- Task 9.2: Tạo QR Token cho Hóa đơn mới nhất ---
+// --- Task 9.2: Tạo QR Token cho Hóa đơn mới nhất (Đã nâng cấp SapphireAuth) ---
 $qrUrl = "";
 if ($latestInvoice) {
     $payload = [
-        'maKH' => $maKH,
-        'soHopDong' => $latestInvoice['soHopDong'],
-        'exp' => time() + 900 // Hết hạn sau 15 phút (Đảm bảo dùng phép cộng)
+        'iat' => time(),
+        'exp' => time() + 900,
+        'data' => [
+            'type' => 'invoice',
+            'id' => $latestInvoice['soHoaDon'],
+            'maKH' => $maKH
+        ]
     ];
-    $qrToken = JWT::encode($payload, SECRET_KEY);
+    $qrToken = SapphireAuth::encode($payload, JWT_SECRET_KEY);
     $qrUrl = BASE_URL . "modules/tenant_portal/index.php?token=" . $qrToken;
 }
 
