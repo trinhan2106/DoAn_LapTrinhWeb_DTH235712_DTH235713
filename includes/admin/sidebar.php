@@ -33,7 +33,7 @@ if (!function_exists('is_nav_active')) {
     </div>
     <div class="offcanvas-body p-0 py-2">
         <ul class="nav flex-column w-100 admin-sidebar__nav">
-            <!-- Tổng quan -->
+            <!-- TẤT CẢ ĐỀU THẤY: Tổng quan -->
             <li class="nav-item">
                 <a class="nav-link <?= (is_nav_active('modules/dashboard/admin.php', $current_script) || is_nav_active('admin_layout.php', $current_script)) ? 'active' : '' ?>"
                    href="<?= BASE_URL ?>modules/dashboard/admin.php">
@@ -41,89 +41,113 @@ if (!function_exists('is_nav_active')) {
                 </a>
             </li>
 
-            <hr class="admin-sidebar__divider">
-            <span class="admin-sidebar__section-label">Tài sản</span>
+            <!-- Quyền Admin & Quản lý tòa nhà (Role 1, 2) -->
+            <?php if (isset($_SESSION['user_role']) && in_array($_SESSION['user_role'], [ROLE_ADMIN, ROLE_QUAN_LY_NHA])): ?>
+                <hr class="admin-sidebar__divider">
+                <span class="admin-sidebar__section-label">Tài sản</span>
 
-            <li class="nav-item">
-                <a class="nav-link <?= is_nav_active('modules/cao_oc/', $current_script) ?>"
-                   href="<?= BASE_URL ?>modules/cao_oc/index.php">
-                    <i class="bi bi-building me-2"></i> Cao ốc
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= is_nav_active('modules/tang/', $current_script) ?>"
-                   href="<?= BASE_URL ?>modules/tang/index.php">
-                    <i class="bi bi-layers me-2"></i> Tầng
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= is_nav_active('modules/phong/', $current_script) ?>"
-                   href="<?= BASE_URL ?>modules/phong/phong_hienthi.php">
-                    <i class="bi bi-door-open me-2"></i> Phòng
-                </a>
-            </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= is_nav_active('modules/cao_oc/', $current_script) ?>"
+                       href="<?= BASE_URL ?>modules/cao_oc/index.php">
+                        <i class="bi bi-building me-2"></i> Cao ốc
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= is_nav_active('modules/tang/', $current_script) ?>"
+                       href="<?= BASE_URL ?>modules/tang/index.php">
+                        <i class="bi bi-layers me-2"></i> Tầng
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= is_nav_active('modules/phong/', $current_script) ?>"
+                       href="<?= BASE_URL ?>modules/phong/phong_hienthi.php">
+                        <i class="bi bi-door-open me-2"></i> Phòng
+                    </a>
+                </li>
+            <?php endif; ?>
 
+            <!-- Quyền Khách hàng & Vận hành (Hỗn hợp vai trò) -->
             <hr class="admin-sidebar__divider">
             <span class="admin-sidebar__section-label">Khách hàng</span>
 
-            <li class="nav-item">
-                <a class="nav-link <?= is_nav_active('modules/khach_hang/', $current_script) ?>"
-                   href="<?= BASE_URL ?>modules/khach_hang/kh_hienthi.php">
-                    <i class="bi bi-people me-2"></i> Khách hàng
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= is_nav_active('modules/khach_hang_account/', $current_script) ?>"
-                   href="<?= BASE_URL ?>modules/khach_hang_account/index.php">
-                    <i class="bi bi-person-badge me-2"></i> Tài khoản KH
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= is_nav_active('modules/yeu_cau_thue/', $current_script) ?>"
-                   href="<?= BASE_URL ?>modules/yeu_cau_thue/yc_hienthi.php">
-                    <i class="bi bi-envelope-paper me-2"></i> Yêu cầu thuê phòng
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= is_nav_active('modules/maintenance/', $current_script) ?>"
-                   href="<?= BASE_URL ?>modules/maintenance/yc_quan_ly.php">
-                    <i class="bi bi-tools me-2"></i> Bảo trì
-                </a>
-            </li>
+            <?php if (isset($_SESSION['user_role']) && in_array($_SESSION['user_role'], [ROLE_ADMIN, ROLE_QUAN_LY_NHA])): ?>
+                <li class="nav-item">
+                    <a class="nav-link <?= is_nav_active('modules/khach_hang/', $current_script) ?>"
+                       href="<?= BASE_URL ?>modules/khach_hang/kh_hienthi.php">
+                        <i class="bi bi-people me-2"></i> Khách hàng
+                    </a>
+                </li>
+            <?php endif; ?>
 
+            <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] == ROLE_ADMIN): ?>
+                <li class="nav-item">
+                    <a class="nav-link <?= is_nav_active('modules/khach_hang_account/', $current_script) ?>"
+                       href="<?= BASE_URL ?>modules/khach_hang_account/index.php">
+                        <i class="bi bi-person-badge me-2"></i> Tài khoản KH
+                    </a>
+                </li>
+            <?php endif; ?>
+
+            <?php if (isset($_SESSION['user_role']) && in_array($_SESSION['user_role'], [ROLE_ADMIN, ROLE_QUAN_LY_NHA])): ?>
+                <li class="nav-item">
+                    <a class="nav-link <?= is_nav_active('modules/yeu_cau_thue/', $current_script) ?>"
+                       href="<?= BASE_URL ?>modules/yeu_cau_thue/yc_hienthi.php">
+                        <i class="bi bi-envelope-paper me-2"></i> Yêu cầu thuê phòng
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= is_nav_active('modules/maintenance/', $current_script) ?>"
+                       href="<?= BASE_URL ?>modules/maintenance/yc_quan_ly.php">
+                        <i class="bi bi-tools me-2"></i> Bảo trì
+                    </a>
+                </li>
+            <?php endif; ?>
+
+            <!-- Phân cấp Tài chính -->
             <hr class="admin-sidebar__divider">
             <span class="admin-sidebar__section-label">Tài chính</span>
 
-            <li class="nav-item">
-                <a class="nav-link <?= is_nav_active('modules/hop_dong/hd_hienthi.php', $current_script) ?>"
-                   href="<?= BASE_URL ?>modules/hop_dong/hd_hienthi.php">
-                    <i class="bi bi-file-earmark-text me-2"></i> Hợp đồng
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= is_nav_active('modules/thanh_toan/tt_tao.php', $current_script) ?>"
-                   href="<?= BASE_URL ?>modules/thanh_toan/tt_tao.php">
-                    <i class="bi bi-receipt me-2"></i> Lập hóa đơn
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= is_nav_active('modules/thanh_toan/dien_nuoc_ghi.php', $current_script) ?>"
-                   href="<?= BASE_URL ?>modules/thanh_toan/dien_nuoc_ghi.php">
-                    <i class="bi bi-lightning-charge me-2"></i> Điện / Nước
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= is_nav_active('modules/thanh_toan/tranh_chap', $current_script) ?>"
-                   href="<?= BASE_URL ?>modules/thanh_toan/tranh_chap_hienthi.php">
-                    <i class="bi bi-shield-exclamation me-2"></i> Tranh chấp
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= is_nav_active('modules/tien_coc/coc_hienthi.php', $current_script) ?>"
-                   href="<?= BASE_URL ?>modules/tien_coc/coc_hienthi.php">
-                    <i class="bi bi-cash-stack me-2"></i> Tiền cọc
-                </a>
-            </li>
+            <?php if (isset($_SESSION['user_role']) && in_array($_SESSION['user_role'], [ROLE_ADMIN, ROLE_QUAN_LY_NHA])): ?>
+                <li class="nav-item">
+                    <a class="nav-link <?= is_nav_active('modules/hop_dong/hd_hienthi.php', $current_script) ?>"
+                       href="<?= BASE_URL ?>modules/hop_dong/hd_hienthi.php">
+                        <i class="bi bi-file-earmark-text me-2"></i> Hợp đồng
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= is_nav_active('modules/tien_coc/coc_hienthi.php', $current_script) ?>"
+                       href="<?= BASE_URL ?>modules/tien_coc/coc_hienthi.php">
+                        <i class="bi bi-cash-stack me-2"></i> Tiền cọc
+                    </a>
+                </li>
+            <?php endif; ?>
+
+            <?php if (isset($_SESSION['user_role']) && in_array($_SESSION['user_role'], [ROLE_ADMIN, ROLE_KE_TOAN])): ?>
+                <li class="nav-item">
+                    <a class="nav-link <?= is_nav_active('modules/thanh_toan/tt_tao.php', $current_script) ?>"
+                       href="<?= BASE_URL ?>modules/thanh_toan/tt_tao.php">
+                        <i class="bi bi-receipt me-2"></i> Lập hóa đơn
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= is_nav_active('modules/thanh_toan/dien_nuoc_ghi.php', $current_script) ?>"
+                       href="<?= BASE_URL ?>modules/thanh_toan/dien_nuoc_ghi.php">
+                        <i class="bi bi-lightning-charge me-2"></i> Điện / Nước
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= is_nav_active('modules/thanh_toan/tranh_chap', $current_script) ?>"
+                       href="<?= BASE_URL ?>modules/thanh_toan/tranh_chap_hienthi.php">
+                        <i class="bi bi-shield-exclamation me-2"></i> Tranh chấp
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= is_nav_active('modules/thanh_toan/bao_cao_no.php', $current_script) ?>"
+                       href="<?= BASE_URL ?>modules/thanh_toan/bao_cao_no.php">
+                        <i class="bi bi-file-earmark-bar-graph me-2 text-danger"></i> Báo cáo nợ xấu
+                    </a>
+                </li>
+            <?php endif; ?>
 
             <hr class="admin-sidebar__divider">
             <span class="admin-sidebar__section-label">Phân tích</span>

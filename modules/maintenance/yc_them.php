@@ -1,104 +1,156 @@
 <?php
-// modules/maintenance/yc_them.php
 /**
- * Module: Maintenance Request (Tenant side)
- * Chức năng: Giao diện form gửi yêu cầu kỹ thuật bảo trì.
+ * modules/maintenance/yc_them.php
+ * UI: Form gửi yêu cầu sửa chữa/bảo trì (Task 9.3)
  */
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
-require_once __DIR__ . '/../../config/constants.php';
-require_once __DIR__ . '/../../config/roles.php';
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../../includes/common/auth.php';
 require_once __DIR__ . '/../../includes/common/db.php';
 require_once __DIR__ . '/../../includes/common/csrf.php';
-require_once __DIR__ . '/../../includes/common/auth.php';
+require_once __DIR__ . '/../../includes/common/functions.php';
 
+// Bảo mật: Admin & Quản lý tòa nhà mới được tạo yêu cầu kỹ thuật
 kiemTraSession();
+kiemTraRole([ROLE_ADMIN, ROLE_QUAN_LY_NHA]);
 
-// Yêu cầu quyền Khách thuê
-if ((int)($_SESSION['user_role'] ?? 0) !== ROLE_KHACH_HANG) {
-    die("Access Denied: Chức năng dành riêng cho Khách hàng.");
-}
+$db = Database::getInstance()->getConnection();
 
-$maKH = $_SESSION['user_id'] ?? '';
-$pdo = Database::getInstance()->getConnection();
-
+// Lấy danh sách phòng đang có người thuê (Trạng thái = 2) để gán yêu cầu
 try {
-    // Truy vấn danh sách phòng khách đang thuê thực tế dựa trên Hợp đồng còn hiệu lực
-    $stmtPhong = $pdo->prepare("
-        SELECT DISTINCT p.maPhong, p.tenPhong 
-        FROM CHI_TIET_HOP_DONG c 
-        JOIN HOP_DONG h ON c.soHopDong = h.soHopDong 
-        JOIN PHONG p ON c.maPhong = p.maPhong 
-        WHERE h.maKH = ? AND h.trangThai = 'DangHieuLuc'
-    ");
-    $stmtPhong->execute([$maKH]);
-    $listPhong = $stmtPhong->fetchAll(PDO::FETCH_ASSOC);
+    $stmtRooms = $db->query("SELECT maPhong, tenPhong FROM PHONG WHERE trangThai = 2 AND deleted_at IS NULL ORDER BY maPhong ASC");
+    $rentedRooms = $stmtRooms->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    error_log("Maintenance Get Room Error: " . $e->getMessage());
-    die("Lỗi hệ thống khi tải danh sách phòng.");
+    error_log("[yc_them.php] Error: " . $e->getMessage());
+    $rentedRooms = [];
 }
+
+$pageTitle = "Gửi Yêu Cầu Bảo Trì";
+include __DIR__ . '/../../includes/admin/admin-header.php';
 ?>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tạo Yêu Cầu Bảo Trì Kỹ Thuật</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light p-4">
 
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8 bg-white p-4 rounded shadow-sm">
-            <h4 class="mb-4 text-primary border-bottom pb-2">Gửi Yêu Cầu Bảo Trì (Maintenance Request)</h4>
-
-            <?php if(isset($_SESSION['error_msg'])): ?>
-                <div class="alert alert-danger px-3 py-2"><?= htmlspecialchars($_SESSION['error_msg']); unset($_SESSION['error_msg']); ?></div>
-            <?php endif; ?>
-            <?php if(isset($_SESSION['success_msg'])): ?>
-                <div class="alert alert-success px-3 py-2"><?= htmlspecialchars($_SESSION['success_msg']); unset($_SESSION['success_msg']); ?></div>
-            <?php endif; ?>
-
-            <form action="yc_them_submit.php" method="POST">
-                <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
-
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Chọn Phòng Gặp Sự Cố *</label>
-                    <select name="maPhong" class="form-select" required>
-                        <option value="" disabled selected>-- Danh sách phòng đang thuê --</option>
-                        <?php foreach($listPhong as $phong): ?>
-                            <option value="<?= htmlspecialchars($phong['maPhong']) ?>">Phòng <?= htmlspecialchars($phong['tenPhong']) ?> (<?= htmlspecialchars($phong['maPhong']) ?>)</option>
-                        <?php endforeach; ?>
-                    </select>
-                    <?php if(empty($listPhong)): ?>
-                        <small class="text-danger">Không có phòng hợp lệ do Hợp đồng chưa có hiệu lực.</small>
-                    <?php endif; ?>
+<div class="admin-layout">
+    <?php include __DIR__ . '/../../includes/admin/sidebar.php'; ?>
+    
+    <div class="admin-main-wrapper flex-grow-1">
+        <?php include __DIR__ . '/../../includes/admin/topbar.php'; ?>
+        
+        <main class="admin-main-content p-4">
+            <div class="container-fluid">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2 class="h3 fw-bold text-navy mb-0"><i class="bi bi-tools me-2 text-gold-accent"></i> TẠO YÊU CẦU BẢO TRÌ</h2>
+                        <p class="text-muted small mb-0">Gửi yêu cầu sửa chữa kỹ thuật cho các mặt bằng đang khai thác.</p>
+                    </div>
+                    <a href="yc_quan_ly.php" class="btn btn-outline-secondary btn-sm shadow-sm ring-0">
+                        <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
+                    </a>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Mức Độ Ưu Tiên (SLA Impact) *</label>
-                    <select name="mucDoUT" class="form-select" required>
-                        <option value="1">1 - Thấp (Giải quyết trong 72 giờ)</option>
-                        <option value="2" selected>2 - Trung Bình (Giải quyết trong 48 giờ)</option>
-                        <option value="3">3 - Cao (Giải quyết trong 24 giờ)</option>
-                        <option value="4">4 - Khẩn cấp cực độ (Giải quyết trong 4 giờ)</option>
-                    </select>
-                </div>
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                            <div class="card-header bg-navy text-white py-3 px-4">
+                                <h5 class="card-title mb-0 small text-uppercase fw-bold"><i class="bi bi-pencil-square me-2"></i> Nội dung yêu cầu</h5>
+                            </div>
+                            <div class="card-body p-4 p-md-5">
+                                
+                                <!-- Alert thông báo lỗi (nếu có) -->
+                                <?php if (isset($_SESSION['error_msg'])): ?>
+                                    <div class="alert alert-danger shadow-sm border-0 mb-4">
+                                        <i class="bi bi-exclamation-octagon-fill me-2"></i> <?= $_SESSION['error_msg']; unset($_SESSION['error_msg']); ?>
+                                    </div>
+                                <?php endif; ?>
 
-                <div class="mb-4">
-                    <label class="form-label fw-bold">Mô Tả Nhanh Vấn Đề (Mô tả kỹ thuật) *</label>
-                    <textarea name="moTa" class="form-control" rows="4" placeholder="Ví dụ: Rò rỉ ống nước khu vực máy lạnh, đèn chớp tắt liên tục..." required></textarea>
-                </div>
+                                <form action="yc_them_submit.php" method="POST" id="formMaintenance">
+                                    <input type="hidden" name="csrf_token" value="<?= generateCSRFToken(); ?>">
 
-                <div class="d-flex justify-content-end gap-2 border-top pt-3">
-                    <a href="../../modules/tenant/dashboard.php" class="btn btn-secondary">Về Cổng Khách Hàng</a>
-                    <button type="submit" class="btn btn-primary" <?= empty($listPhong) ? 'disabled' : '' ?>>Gửi Lên Trạm Điều Hành</button>
+                                    <div class="row g-4">
+                                        <!-- Chọn phòng -->
+                                        <div class="col-md-6">
+                                            <div class="form-floating mb-3">
+                                                <select class="form-select border-focus-navy shadow-none" id="maPhong" name="maPhong" required>
+                                                    <option value="" selected disabled>--- Chọn phòng cần sửa ---</option>
+                                                    <?php foreach ($rentedRooms as $room): ?>
+                                                        <option value="<?= htmlspecialchars($room['maPhong']) ?>">
+                                                            <?= htmlspecialchars($room['maPhong']) ?> - <?= htmlspecialchars($room['tenPhong']) ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <label for="maPhong" class="fw-bold"><i class="bi bi-door-open me-2"></i>Phòng / Mặt bằng</label>
+                                            </div>
+                                        </div>
+
+                                        <!-- Mức độ ưu tiên -->
+                                        <div class="col-md-6">
+                                            <div class="form-floating mb-3">
+                                                <select class="form-select border-focus-navy shadow-none" id="mucDoUT" name="mucDoUT" required>
+                                                    <option value="1">1. Thấp (Bình thường)</option>
+                                                    <option value="2" selected>2. Trung Bình</option>
+                                                    <option value="3">3. Cao (Cần xử lý sớm)</option>
+                                                    <option value="4">4. Khẩn cấp (Nguy hiểm/Hỏng hóc nặng)</option>
+                                                </select>
+                                                <label for="mucDoUT" class="fw-bold"><i class="bi bi-flag-fill me-2"></i>Mức độ ưu tiên</label>
+                                            </div>
+                                        </div>
+
+                                        <!-- Tiêu đề yêu cầu -->
+                                        <div class="col-12">
+                                            <div class="form-floating mb-3">
+                                                <input type="text" class="form-control border-focus-navy shadow-none" id="tieuDe" name="tieuDe" placeholder="Ví dụ: Hỏng vòi nước, Điều hòa không mát..." required>
+                                                <label for="tieuDe" class="fw-bold"><i class="bi bi-chat-left-text me-2"></i>Tiêu đề ngắn gọn</label>
+                                            </div>
+                                        </div>
+
+                                        <!-- Mô tả chi tiết -->
+                                        <div class="col-12">
+                                            <div class="form-group mb-4">
+                                                <label for="moTa" class="form-label fw-bold small text-muted text-uppercase mb-2"><i class="bi bi-info-circle me-1"></i> Mô tả tình trạng chi tiết</label>
+                                                <textarea class="form-control border-focus-navy shadow-none" id="moTa" name="moTa" rows="5" placeholder="Mô tả cụ thể vị trí hỏng, hiện tượng xảy ra và các yêu cầu kỹ thuật đi kèm nếu có..." required></textarea>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 text-center">
+                                            <hr class="my-4 opacity-10">
+                                            <button type="submit" class="btn btn-navy btn-lg px-5 py-3 fw-bold shadow-sm rounded-3">
+                                                <i class="bi bi-send-fill me-2"></i> GỬI YÊU CẦU KỸ THUẬT
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </form>
-        </div>
+            </div>
+        </main>
+        
+        <?php include __DIR__ . '/../../includes/admin/admin-footer.php'; ?>
     </div>
 </div>
+
+<style>
+    .bg-navy { background-color: #1e3a5f !important; }
+    .text-navy { color: #1e3a5f !important; }
+    .btn-navy {
+        background-color: #1e3a5f;
+        color: white;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .btn-navy:hover {
+        background-color: #152943;
+        color: #c9a66b;
+        transform: translateY(-2px);
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #1e3a5f;
+        box-shadow: 0 0 0 0.25rem rgba(30, 58, 95, 0.1);
+    }
+    .text-gold-accent { color: #c9a66b; }
+</style>
 
 </body>
 </html>

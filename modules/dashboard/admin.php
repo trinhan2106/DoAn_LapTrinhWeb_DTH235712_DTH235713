@@ -366,7 +366,7 @@ foreach ($chartData as $row) {
                                     <thead class="table-light">
                                         <tr>
                                             <th class="ps-3 py-3">Khách hàng / HĐ</th>
-                                            <th class="text-end pe-3">Số tiền nợ</th>
+                                            <th class="text-end pe-3">Thao tác / Nợ</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -377,8 +377,11 @@ foreach ($chartData as $row) {
                                                         <div class="fw-bold text-navy"><?php echo e($debt['tenKH']); ?></div>
                                                         <div class="text-muted" style="font-size: 0.7rem;">HĐ: <?php echo e($debt['soHopDong']); ?></div>
                                                     </td>
-                                                    <td class="text-end pe-3 fw-bold text-danger">
-                                                        <?php echo number_format($debt['total_debt_amount'], 0, ',', '.'); ?> đ
+                                                    <td class="text-end pe-3">
+                                                        <div class="fw-bold text-danger mb-1"><?php echo number_format($debt['total_debt_amount'], 0, ',', '.'); ?> đ</div>
+                                                        <a href="../thanh_toan/tt_tao.php?soHopDong=<?= urlencode($debt['soHopDong']) ?>" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 0.65rem;">
+                                                            <i class="bi bi-cash-coin me-1"></i>Xử lý nợ
+                                                        </a>
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>
@@ -392,7 +395,7 @@ foreach ($chartData as $row) {
                             </div>
                         </div>
                         <div class="card-footer bg-white border-0 text-center py-3">
-                            <a href="../thanh_toan/bao_cao_no.php" class="small text-navy fw-bold text-decoration-none">Xem báo cáo chi tiết <i class="bi bi-chevron-right"></i></a>
+                            <a href="../thanh_toan/bao_cao_no.php" class="small text-navy fw-bold text-decoration-none text-uppercase">XEM TẤT CẢ <i class="bi bi-chevron-right"></i></a>
                         </div>
                     </div>
 

@@ -160,25 +160,37 @@ try {
         ]);
     }
 
-    // Xu ly tien du nop thua: ghi nhan vao hoa don cuoi cung lam credit
+    // [FIX LOGIC]: Xử lý tiền dư nộp thừa (Overpayment) - Ghi nhận vào hóa đơn cuối cùng làm Credit
     if ($tienConLai > 0) {
-        $lastBill = end($listHD_PhaiChiu);
+        $lastBill = end($listHD_PhaiChiu); // Xác định hóa đơn cuối cùng đã xử lý trong waterfall
+        
+        // Cập nhật hóa đơn cuối: trừ nợ thành âm (Credit), cộng dồn tiền đã nộp, và chuyển sang trạng thái DaThu
         $stmtCredit = $pdo->prepare("
             UPDATE HOA_DON 
-            SET soTienDaNop = soTienDaNop + :du, soTienConNo = soTienConNo - :du 
+            SET soTienDaNop = soTienDaNop + :du, 
+                soTienConNo = :noAm,
+                trangThai   = 'DaThu' 
             WHERE soHoaDon = :soHoaDon
         ");
+        
+        // Tính toán số nợ âm (Credit)
+        $noBillCuoi = (float)$lastBill['soTienConNo'];
+        $noAm = $noBillCuoi - $tienConLai; 
+
         $stmtCredit->execute([
-            ':du' => $tienConLai,
+            ':du'       => $tienConLai,
+            ':noAm'     => $noAm,
             ':soHoaDon' => $lastBill['soHoaDon']
         ]);
 
-        // Ghi nhan phan tien du vao chi tiet phieu thu
+        // Ghi nhận phần tiền dư này vào chi tiết phiếu thu để khớp sổ sách kế toán
         $stmtChiTiet->execute([
             $soPhieuThu,
             $lastBill['soHoaDon'],
             $tienConLai
         ]);
+
+        $tienConLai = 0;
     }
 
     // COMMIT transaction truoc khi lay thong tin KH gui mail (giam lock time)
