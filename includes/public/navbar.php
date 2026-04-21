@@ -54,6 +54,18 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
                 <?php endif; ?>
             </ul>
             <div class="d-flex align-items-center gap-3">
+                <?php if (isset($_SESSION['user_id']) && in_array((int)($_SESSION['user_role'] ?? 0), [1, 2, 3])): ?>
+                    <!-- Chuông thông báo Admin/QLN/Kế Toán -->
+                    <div class="dropdown">
+                        <a class="position-relative d-flex align-items-center justify-content-center rounded-circle admin-bell-btn" href="javascript:void(0);" id="adminNotiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="width:38px;height:38px;background:rgba(201,166,107,0.15);border:1px solid rgba(201,166,107,0.4);text-decoration:none;transition:all 0.3s;">
+                            <i class="bi bi-bell-fill" style="color:#c9a66b;font-size:1.1rem;"></i>
+                            <span id="adminNotiBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none admin-badge-pulse" style="font-size:0.6rem;border:2px solid #1e3a5f;padding:0.3em 0.55em;">0</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-3 p-0" aria-labelledby="adminNotiDropdown" id="adminNotiList" style="width:340px;border-radius:16px;max-height:480px;overflow-y:auto;background:rgba(255,255,255,0.96);backdrop-filter:blur(15px);">
+                            <li><span class="dropdown-item text-center text-muted py-4 small">Đang tải thông báo...</span></li>
+                        </ul>
+                    </div>
+                <?php endif; ?>
                 <?php if (isset($_SESSION['user_id']) && ($_SESSION['user_role'] ?? 0) == 4): ?>
                     <!-- Chuông thông báo cho Khách hàng -->
                     <div class="dropdown">
@@ -124,15 +136,78 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 @keyframes slideIn { 0% { transform: translateY(10px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
 .dropdown-item { transition: all 0.2s; font-size: 0.9rem; }
 .dropdown-item:hover { background-color: #f8f9fa; color: #1e3a5f; padding-left: 1.25rem; }
+
+/* Admin Bell Animation */
+.admin-bell-btn:hover { background: rgba(201,166,107,0.3) !important; transform: scale(1.08); }
+.admin-badge-pulse { animation: adminPulse 2s infinite; }
+@keyframes adminPulse {
+    0%   { transform: translate(100%,-50%) scale(1);   box-shadow: 0 0 0 0 rgba(220,53,69,0.7); }
+    70%  { transform: translate(100%,-50%) scale(1.15); box-shadow: 0 0 0 7px rgba(220,53,69,0); }
+    100% { transform: translate(100%,-50%) scale(1);   box-shadow: 0 0 0 0 rgba(220,53,69,0); }
+}
+#adminNotiList::-webkit-scrollbar { width: 4px; }
+#adminNotiList::-webkit-scrollbar-thumb { background: #ddd; border-radius: 10px; }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const baseUrl = '<?php echo defined("BASE_URL") ? BASE_URL : "/"; ?>';
+
+    <?php if (isset($_SESSION['user_id']) && in_array((int)($_SESSION['user_role'] ?? 0), [1, 2, 3])): ?>
+    // ── Admin / QLN / Kế Toán notification bell ──
+    const adminBadge = document.getElementById('adminNotiBadge');
+    const adminList  = document.getElementById('adminNotiList');
+
+    function fetchAdminNoti() {
+        fetch(baseUrl + 'includes/admin/notifications.php')
+            .then(r => { if (r.status === 403) return null; return r.ok ? r.json() : null; })
+            .then(data => {
+                if (!data) return;
+                if (data.total > 0) {
+                    adminBadge.textContent = data.total > 99 ? '99+' : data.total;
+                    adminBadge.classList.remove('d-none');
+                } else {
+                    adminBadge.classList.add('d-none');
+                }
+                const gradients = {
+                    'text-primary': 'linear-gradient(135deg,#0d6efd,#0a58ca)',
+                    'text-danger':  'linear-gradient(135deg,#dc3545,#a71d2a)',
+                    'text-warning': 'linear-gradient(135deg,#ffc107,#e0a800)',
+                    'text-info':    'linear-gradient(135deg,#0dcaf0,#0aa2c0)'
+                };
+                if (data.items.length === 0) {
+                    adminList.innerHTML = `<li><span class="dropdown-item text-center text-muted py-5 d-block"><i class="bi bi-bell-slash d-block mb-2 fs-2 opacity-25"></i><small>Không có thông báo mới</small></span></li>`;
+                } else {
+                    let html = `<li><div class="px-4 py-3 border-bottom d-flex align-items-center justify-content-between"><span class="fw-bold small" style="color:#1e3a5f;"><i class="bi bi-bell-fill me-2" style="color:#c9a66b;"></i>Thông báo hệ thống</span><span class="badge rounded-pill" style="background:#1e3a5f;">${data.total}</span></div></li>`;
+                    data.items.forEach(item => {
+                        const grad = gradients[item.color] || 'linear-gradient(135deg,#6c757d,#495057)';
+                        html += `<li>
+                            <a class="dropdown-item py-3 px-4 border-bottom d-flex align-items-start gap-3 admin-noti-item" href="${item.link}" style="white-space:normal;">
+                                <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center text-white shadow-sm" style="width:40px;height:40px;min-width:40px;background:${grad};">
+                                    <i class="bi ${item.icon} fs-6"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size:0.85rem;" class="fw-semibold text-dark lh-sm">${item.title}</div>
+                                    <div class="text-muted mt-1" style="font-size:0.72rem;"><i class="bi bi-clock me-1"></i>Vừa cập nhật</div>
+                                </div>
+                            </a>
+                        </li>`;
+                    });
+                    html += `<li><div class="p-2"><a href="${baseUrl}modules/dashboard/admin.php" class="d-block text-center py-2 rounded-3 small fw-bold text-decoration-none" style="background:rgba(30,58,95,0.06);color:#1e3a5f;">Vào bảng điều khiển <i class="bi bi-arrow-right ms-1"></i></a></div></li>`;
+                    adminList.innerHTML = html;
+                }
+            })
+            .catch(() => {});
+    }
+
+    fetchAdminNoti();
+    setInterval(fetchAdminNoti, 60000);
+    <?php endif; ?>
+
     <?php if (isset($_SESSION['user_id']) && ($_SESSION['user_role'] ?? 0) == 4): ?>
     // Tenant notification bell
     const tenantBadge = document.getElementById('tenantNotiBadge');
     const tenantList  = document.getElementById('tenantNotiList');
-    const baseUrl     = '<?php echo defined("BASE_URL") ? BASE_URL : "/"; ?>';
 
     function fetchTenantNoti() {
         fetch(baseUrl + 'includes/tenant/notifications.php')
