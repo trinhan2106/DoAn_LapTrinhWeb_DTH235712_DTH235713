@@ -7,9 +7,9 @@
 
 // Đường dẫn gốc của ứng dụng (Lưu ý dấu slash / ở cuối)
 // Có thể tùy chỉnh nếu source code không đặt trực tiếp đúng như cấu trúc localhost
-// define('BASE_URL', 'http://localhost/DoAn_LapTrinhWeb_DTH235712_DTH235713/');
+define('BASE_URL', 'http://localhost/DoAn_LapTrinhWeb_DTH235712_DTH235713/');
 
-define('BASE_URL', 'http://192.168.88.150/DoAn_LapTrinhWeb_DTH235712_DTH235713/');
+// define('BASE_URL', 'http://192.168.88.150/DoAn_LapTrinhWeb_DTH235712_DTH235713/');
 
 // Tên hiển thị hệ thống (dùng trong email, header...)
 define('APP_NAME', 'THE SAPPHIRE');
