@@ -213,45 +213,47 @@ include_once 'includes/public/navbar.php';
 <!-- == 2. QUICK SEARCH == -->
 <section class="container px-3 px-md-4">
     <div class="quick-search-wrapper">
-        <form action="danh_sach_phong.php" method="GET" class="row g-3 align-items-end justify-content-center">
+        <form action="phong_trong.php" method="GET" class="row g-3 align-items-end justify-content-center">
             
             <!-- Bảo mật Form: CSRF Token -->
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
 
             <div class="col-12 col-md-3">
+                <label for="keyword" class="form-label fw-bold text-brand-primary mb-1">Tìm kiếm:</label>
+                <input type="text" id="keyword" name="keyword" class="form-control border-0 shadow-sm rounded-3 py-2 bg-light" placeholder="Nhập tên phòng, vị trí...">
+            </div>
+
+            <div class="col-12 col-md-3">
                 <label for="khoangGia" class="form-label fw-bold text-brand-primary mb-1">Khoảng giá:</label>
                 <select id="khoangGia" name="khoangGia" class="form-select border-0 shadow-sm rounded-3 py-2 bg-light">
                     <option value="">Tất cả mức giá</option>
-                    <option value="duoi-10">Dưới 10 Triệu</option>
+                    <option value="0-10">Dưới 10 Triệu</option>
                     <option value="10-20">10 - 20 Triệu</option>
                     <option value="20-50">20 - 50 Triệu</option>
-                    <option value="tren-50">Trên 50 Triệu</option>
+                    <option value="50-1000">Trên 50 Triệu</option>
                 </select>
             </div>
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-md-2">
                 <label for="dienTich" class="form-label fw-bold text-brand-primary mb-1">Diện tích (m²):</label>
                 <select id="dienTich" name="dienTich" class="form-select border-0 shadow-sm rounded-3 py-2 bg-light">
                     <option value="">Mọi diện tích</option>
-                    <option value="duoi-50">Dưới 50m²</option>
+                    <option value="0-50">Dưới 50m²</option>
                     <option value="50-100">50 - 100m²</option>
                     <option value="100-200">100 - 200m²</option>
-                    <option value="tren-200">Trên 200m²</option>
+                    <option value="200-5000">Trên 200m²</option>
                 </select>
             </div>
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-md-2">
                 <label for="tang" class="form-label fw-bold text-brand-primary mb-1">Tầng:</label>
                 <select id="tang" name="tang" class="form-select border-0 shadow-sm rounded-3 py-2 bg-light">
                     <option value="">Chọn tầng</option>
-                    <option value="T">Trệt</option>
-                    <option value="1">Tầng 1</option>
-                    <option value="2">Tầng 2</option>
-                    <option value="3">Tầng 3</option>
-                    <option value="4">Tầng 4</option>
+                    <option value="Trệt">Trệt</option>
+                    <?php for($i=1; $i<=10; $i++) echo "<option value=\"Tầng $i\">Tầng $i</option>"; ?>
                 </select>
             </div>
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-md-2">
                 <button type="submit" class="btn btn-brand--accent w-100 py-2 shadow-sm rounded-3 text-uppercase">
-                    <i class="fa-solid fa-magnifying-glass me-2"></i>Tìm ngay
+                    <i class="fa-solid fa-magnifying-glass me-2"></i>Tìm
                 </button>
             </div>
         </form>

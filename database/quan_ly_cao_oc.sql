@@ -48,6 +48,7 @@ CREATE TABLE PHONG (
 
 -- Thêm FULLTEXT INDEX cho tìm kiếm phòng (MySQL 5.6+ InnoDB hỗ trợ Fulltext)
 ALTER TABLE PHONG ADD FULLTEXT INDEX ft_phong_search(maPhong, tenPhong);
+ALTER TABLE PHONG ADD FULLTEXT INDEX ft_phong_mota(moTaViTri);
 
 
 -- 4. Bảng KHACH_HANG

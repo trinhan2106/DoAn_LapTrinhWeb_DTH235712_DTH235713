@@ -51,35 +51,52 @@ $params = [];
 
 // 4. Thuật toán Dynamic Where Builder (Chống SQL Injection)
 
+// Bắt lọc Keyword (Tìm kiếm theo Mã phòng hoặc Mô tả vị trí - Full-text)
+$f_keyword = $_GET['keyword'] ?? '';
+if (!empty($f_keyword)) {
+    // Sếp ép buộc: maPhong khớp chính xác HOẶC Full-text trên moTaViTri
+    $whereConditions[] = "(p.maPhong = :keyword OR MATCH(p.moTaViTri) AGAINST(:keyword_ft IN BOOLEAN MODE))";
+    $params[':keyword'] = $f_keyword;
+    
+    // Thêm các toán tử + để tìm kiếm Boolean hiệu quả hơn
+    $ft_terms = array_filter(explode(' ', $f_keyword));
+    $ft_query = '';
+    foreach ($ft_terms as $term) {
+        $ft_query .= '+' . $term . '* ';
+    }
+    $params[':keyword_ft'] = trim($ft_query);
+}
+
 // Bắt lọc Tầng
 $f_tang = $_GET['tang'] ?? '';
 if (!empty($f_tang)) {
-    // Nếu db lưu 'Tầng 1' hay '1', dùng LIKE an toàn
-    $whereConditions[] = "t.tenTang LIKE :tang";
-    $params[':tang'] = "%$f_tang%";
+    $whereConditions[] = "t.tenTang = :tang";
+    $params[':tang'] = $f_tang;
 }
 
-// Bắt lọc Khoảng Giá (Tối đa) theo thiết kế select option HTML
+// Bắt lọc Khoảng Giá (Sử dụng BETWEEN)
 $f_gia = $_GET['khoangGia'] ?? '';
-if (!empty($f_gia) && is_numeric($f_gia)) {
-    $whereConditions[] = "p.giaThue <= :gia";
-    $params[':gia'] = $f_gia;
+if (!empty($f_gia) && strpos($f_gia, '-') !== false) {
+    list($min, $max) = explode('-', $f_gia);
+    $whereConditions[] = "p.giaThue BETWEEN :min_gia AND :max_gia";
+    $params[':min_gia'] = (float)$min * 1000000;
+    $params[':max_gia'] = (float)$max * 1000000;
 }
 
-// Bắt lọc Loại Phòng
+// Bắt lọc Diện tích (Sử dụng BETWEEN)
+$f_dt = $_GET['dienTich'] ?? '';
+if (!empty($f_dt) && strpos($f_dt, '-') !== false) {
+    list($min_dt, $max_dt) = explode('-', $f_dt);
+    $whereConditions[] = "p.dienTich BETWEEN :min_dt AND :max_dt";
+    $params[':min_dt'] = (float)$min_dt;
+    $params[':max_dt'] = (float)$max_dt;
+}
+
+// Bắt lọc Loại Phòng (Giữ lại nếu người dùng chọn từ trang danh sách)
 $f_loai = $_GET['loaiPhong'] ?? '';
 if (!empty($f_loai)) {
-    $searchTerm = trim($f_loai);
-    $shortTerm = str_replace('Văn phòng ', '', $searchTerm);
-    $val = '%' . $searchTerm . '%';
-    $sVal = '%' . $shortTerm . '%';
-    
-    // Lưu ý bảo mật: Khi ATTR_EMULATE_PREPARES = false, không được dùng trùng tên Placeholder trong 1 query.
-    $whereConditions[] = "(p.loaiPhong LIKE :lp1 OR p.tenPhong LIKE :lp2 OR p.loaiPhong LIKE :st1 OR p.tenPhong LIKE :st2)";
-    $params[':lp1'] = $val;
-    $params[':lp2'] = $val;
-    $params[':st1'] = $sVal;
-    $params[':st2'] = $sVal;
+    $whereConditions[] = "p.loaiPhong = :loai";
+    $params[':loai'] = $f_loai;
 }
 
 // Nội suy (Implode) mảng thành chuỗi WHERE cuối cùng
@@ -230,31 +247,41 @@ include_once 'includes/public/navbar.php';
                     <h5 class="filter-title"><i class="fa-solid fa-filter me-2"></i> Lọc kết quả</h5>
                     
                     <form action="phong_trong.php" method="GET">
-                        <div class="mb-4">
-                            <label class="form-label small fw-bold text-muted">Vị trí (Tầng)</label>
-                            <input type="text" name="tang" class="form-control" placeholder="VD: Tầng 5" value="<?php echo htmlspecialchars($f_tang); ?>">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Từ khóa</label>
+                            <input type="text" name="keyword" class="form-control" placeholder="Mã phòng, vị trí..." value="<?php echo htmlspecialchars($f_keyword); ?>">
                         </div>
 
-                        <div class="mb-4">
-                            <label class="form-label small fw-bold text-muted">Khoảng giá tối đa</label>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Vị trí (Tầng)</label>
+                            <select name="tang" class="form-select">
+                                <option value="">Tất cả các tầng</option>
+                                <option value="Trệt" <?php echo $f_tang == 'Trệt' ? 'selected' : ''; ?>>Trệt</option>
+                                <?php for($i=1; $i<=10; $i++): $tName = "Tầng $i"; ?>
+                                    <option value="<?php echo $tName; ?>" <?php echo $f_tang == $tName ? 'selected' : ''; ?>><?php echo $tName; ?></option>
+                                <?php endfor; ?>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Khoảng giá</label>
                             <select name="khoangGia" class="form-select">
                                 <option value="">Tất cả mức giá</option>
-                                <option value="5000000" <?php echo $f_gia == '5000000' ? 'selected' : ''; ?>>Dưới 5 Triệu</option>
-                                <option value="10000000" <?php echo $f_gia == '10000000' ? 'selected' : ''; ?>>Dưới 10 Triệu</option>
-                                <option value="20000000" <?php echo $f_gia == '20000000' ? 'selected' : ''; ?>>Dưới 20 Triệu</option>
-                                <option value="50000000" <?php echo $f_gia == '50000000' ? 'selected' : ''; ?>>Dưới 50 Triệu</option>
+                                <option value="0-10" <?php echo $f_gia == '0-10' ? 'selected' : ''; ?>>Dưới 10 Triệu</option>
+                                <option value="10-20" <?php echo $f_gia == '10-20' ? 'selected' : ''; ?>>10 - 20 Triệu</option>
+                                <option value="20-50" <?php echo $f_gia == '20-50' ? 'selected' : ''; ?>>20 - 50 Triệu</option>
+                                <option value="50-1000" <?php echo $f_gia == '50-1000' ? 'selected' : ''; ?>>Trên 50 Triệu</option>
                             </select>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label small fw-bold text-muted">Loại văn phòng</label>
-                             <select name="loaiPhong" class="form-select">
-                                <option value="">Tất cả loại hình</option>
-                                <?php foreach ($availableTypes as $type): ?>
-                                    <option value="<?php echo htmlspecialchars($type); ?>" <?php echo $f_loai == $type ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($type); ?>
-                                    </option>
-                                <?php endforeach; ?>
+                            <label class="form-label small fw-bold text-muted">Diện tích (m²)</label>
+                            <select name="dienTich" class="form-select">
+                                <option value="">Mọi diện tích</option>
+                                <option value="0-50" <?php echo $f_dt == '0-50' ? 'selected' : ''; ?>>Dưới 50m²</option>
+                                <option value="50-100" <?php echo $f_dt == '50-100' ? 'selected' : ''; ?>>50 - 100m²</option>
+                                <option value="100-200" <?php echo $f_dt == '100-200' ? 'selected' : ''; ?>>100 - 200m²</option>
+                                <option value="200-5000" <?php echo $f_dt == '200-5000' ? 'selected' : ''; ?>>Trên 200m²</option>
                             </select>
                         </div>
 
