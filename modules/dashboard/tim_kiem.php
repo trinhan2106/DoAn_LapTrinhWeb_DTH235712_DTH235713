@@ -109,7 +109,7 @@ if ($keyword !== '') {
             -- Nhóm 2: Hợp Đồng (3 dấu ?)
             SELECT 'HopDong' AS loai_ket_qua, hd.soHopDong AS tieu_de,
                 CONCAT('Ngày BĐ: ', IFNULL(DATE_FORMAT(hd.ngayBatDau,'%d/%m/%Y'),'—')) AS mo_ta_phu,
-                CONCAT('modules/hop_dong/index.php?search=', hd.soHopDong) AS url_lien_ket,
+                CONCAT('modules/hop_dong/hd_chitiet.php?id=', hd.soHopDong) AS url_lien_ket,
                 MATCH(hd.soHopDong) AGAINST (? IN BOOLEAN MODE) AS relevance
             FROM HOP_DONG hd
             WHERE (MATCH(hd.soHopDong) AGAINST (? IN BOOLEAN MODE) OR hd.soHopDong LIKE ?)
@@ -120,7 +120,7 @@ if ($keyword !== '') {
             -- Nhóm 3: Phòng (3 dấu ?)
             SELECT 'Phong' AS loai_ket_qua, p.maPhong AS tieu_de,
                 CONCAT('Phòng: ', p.tenPhong, ' | Giá: ', FORMAT(p.giaThue,0)) AS mo_ta_phu,
-                CONCAT('modules/phong/phong_hienthi.php?search=', p.maPhong) AS url_lien_ket,
+                CONCAT('modules/phong/phong_sua.php?id=', p.maPhong) AS url_lien_ket,
                 MATCH(p.maPhong, p.tenPhong) AGAINST (? IN BOOLEAN MODE) AS relevance
             FROM PHONG p
             WHERE (MATCH(p.maPhong, p.tenPhong) AGAINST (? IN BOOLEAN MODE) OR p.maPhong LIKE ?)
