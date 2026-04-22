@@ -34,7 +34,7 @@ $statusFilter = $_GET['status'] ?? '';
 $sqlDebt = "SELECT SUM(hd.soTienConNo) as tong_no 
             FROM HOA_DON hd 
             JOIN HOP_DONG h ON hd.soHopDong = h.soHopDong 
-            WHERE h.maKH = ? AND hd.trangThai IN ('ConNo', 'DaThuMotPhan') AND hd.deleted_at IS NULL";
+            WHERE h.maKH = ? AND hd.trangThai = 'ConNo' AND hd.loaiHoaDon = 'Chinh' AND hd.deleted_at IS NULL";
 $stmtDebt = $pdo->prepare($sqlDebt);
 $stmtDebt->execute([$maKH]);
 $tongNo = (float)$stmtDebt->fetchColumn();
