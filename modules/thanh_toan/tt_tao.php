@@ -41,7 +41,7 @@ if (!empty($soHD)) {
             // Lấy danh sách hóa đơn còn nợ (Chỉ loại Chinh)
             $stmtHD = $pdo->prepare("
                 SELECT * FROM HOA_DON 
-                WHERE soHopDong = ? AND trangThai = 'ConNo' AND loaiHoaDon = 'Chinh'
+                WHERE soHopDong = ? AND trangThai IN ('ConNo', 'DaThuMotPhan') AND loaiHoaDon = 'Chinh' AND deleted_at IS NULL
                 ORDER BY kyThanhToan ASC, created_at ASC
             ");
             $stmtHD->execute([$soHD]);

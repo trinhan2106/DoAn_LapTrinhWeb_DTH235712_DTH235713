@@ -76,7 +76,7 @@ try {
     $stmtLock = $pdo->prepare("
         SELECT soHoaDon, soTienConNo, soTienDaNop, tongTien 
         FROM HOA_DON 
-        WHERE soHopDong = ? AND trangThai = 'ConNo' AND loaiHoaDon = 'Chinh'
+        WHERE soHopDong = ? AND trangThai IN ('ConNo', 'DaThuMotPhan') AND loaiHoaDon = 'Chinh'
         ORDER BY kyThanhToan ASC, created_at ASC 
         FOR UPDATE
     ");
@@ -139,7 +139,7 @@ try {
             // Khong du tien, thanh toan mot phan
             $phanBoChoBill = $tienConLai;
             $noConLai = $noBillHienTai - $tienConLai;
-            $trangThaiMoi = 'ConNo';
+            $trangThaiMoi = 'DaThuMotPhan';
             $tienConLai = 0;
         }
 

@@ -29,7 +29,7 @@ $stmtHoaDon = $pdo->prepare("SELECT hd.soHoaDon, hd.kyThanhToan, hd.tongTien, hd
 $stmtHoaDon->execute([$maKH]);
 $hoaDonList = $stmtHoaDon->fetchAll(PDO::FETCH_ASSOC);
 
-$stmtNo = $pdo->prepare("SELECT COALESCE(SUM(hd.soTienConNo), 0) as tong_no FROM HOA_DON hd JOIN HOP_DONG h ON hd.soHopDong = h.soHopDong WHERE h.maKH = ? AND hd.trangThai = 'ConNo' AND hd.loaiHoaDon = 'Chinh' AND hd.deleted_at IS NULL");
+$stmtNo = $pdo->prepare("SELECT COALESCE(SUM(hd.soTienConNo), 0) as tong_no FROM HOA_DON hd JOIN HOP_DONG h ON hd.soHopDong = h.soHopDong WHERE h.maKH = ? AND (hd.trangThai IN ('ConNo', 'DaThuMotPhan') OR hd.soTienConNo < 0) AND hd.loaiHoaDon = 'Chinh' AND hd.deleted_at IS NULL");
 $stmtNo->execute([$maKH]);
 $tongNo = (float)$stmtNo->fetchColumn();
 

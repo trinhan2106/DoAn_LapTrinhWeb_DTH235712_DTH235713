@@ -31,10 +31,10 @@ $statusFilter = $_GET['status'] ?? '';
 // --- LOGIC TRUY VẤN DỮ LIỆU ---
 
 // 1. Tính tổng nợ còn lại (Fix-01) - Không bị ảnh hưởng bởi bộ lọc tìm kiếm để khách luôn thấy tổng nợ thực tế
-$sqlDebt = "SELECT SUM(hd.soTienConNo) as tong_no 
+$sqlDebt = "SELECT COALESCE(SUM(hd.soTienConNo), 0) as tong_no 
             FROM HOA_DON hd 
             JOIN HOP_DONG h ON hd.soHopDong = h.soHopDong 
-            WHERE h.maKH = ? AND hd.trangThai = 'ConNo' AND hd.loaiHoaDon = 'Chinh' AND hd.deleted_at IS NULL";
+            WHERE h.maKH = ? AND (hd.trangThai IN ('ConNo', 'DaThuMotPhan') OR hd.soTienConNo < 0) AND hd.loaiHoaDon = 'Chinh' AND hd.deleted_at IS NULL";
 $stmtDebt = $pdo->prepare($sqlDebt);
 $stmtDebt->execute([$maKH]);
 $tongNo = (float)$stmtDebt->fetchColumn();

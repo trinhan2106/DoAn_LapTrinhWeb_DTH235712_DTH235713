@@ -18,16 +18,16 @@ $db = Database::getInstance()->getConnection();
 // --- TRUY VẤN KPI BÁO CÁO NỢ ---
 try {
     // 1. Tổng tiền nợ toàn bộ khách hàng
-    $totalDebt = $db->query("SELECT SUM(soTienConNo) FROM HOA_DON WHERE trangThai = 'ConNo' AND deleted_at IS NULL AND loaiHoaDon = 'Chinh'")->fetchColumn() ?: 0;
+    $totalDebt = $db->query("SELECT COALESCE(SUM(soTienConNo), 0) FROM HOA_DON WHERE (trangThai IN ('ConNo', 'DaThuMotPhan') OR soTienConNo < 0) AND deleted_at IS NULL AND loaiHoaDon = 'Chinh'")->fetchColumn() ?: 0;
     
     // 2. Số lượng khách hàng đang nợ
-    $debtorCount = $db->query("SELECT COUNT(DISTINCT h.maKH) FROM HOA_DON hd JOIN HOP_DONG h ON hd.soHopDong = h.soHopDong WHERE hd.trangThai = 'ConNo' AND hd.deleted_at IS NULL AND hd.loaiHoaDon = 'Chinh'")->fetchColumn() ?: 0;
+    $debtorCount = $db->query("SELECT COUNT(DISTINCT h.maKH) FROM HOA_DON hd JOIN HOP_DONG h ON hd.soHopDong = h.soHopDong WHERE (hd.trangThai IN ('ConNo', 'DaThuMotPhan') OR hd.soTienConNo < 0) AND hd.deleted_at IS NULL AND hd.loaiHoaDon = 'Chinh'")->fetchColumn() ?: 0;
     
     // 3. Khoản nợ lớn nhất
     $maxDebt = $db->query("
         SELECT SUM(hd.soTienConNo) as total 
         FROM HOA_DON hd 
-        WHERE hd.trangThai = 'ConNo' AND hd.deleted_at IS NULL AND hd.loaiHoaDon = 'Chinh'
+        WHERE (hd.trangThai IN ('ConNo', 'DaThuMotPhan') OR hd.soTienConNo < 0) AND hd.deleted_at IS NULL AND hd.loaiHoaDon = 'Chinh'
         GROUP BY hd.soHopDong 
         ORDER BY total DESC LIMIT 1
     ")->fetchColumn() ?: 0;
@@ -38,17 +38,24 @@ try {
             kh.tenKH, 
             kh.sdt,
             h.soHopDong, 
+            SUM(CASE 
+                WHEN hd.thang = MONTH(CURRENT_DATE()) AND hd.nam = YEAR(CURRENT_DATE()) 
+                THEN hd.soTienConNo ELSE 0 END) as no_trong_han,
+            SUM(CASE 
+                WHEN (hd.nam < YEAR(CURRENT_DATE())) OR (hd.nam = YEAR(CURRENT_DATE()) AND hd.thang < MONTH(CURRENT_DATE())) 
+                THEN hd.soTienConNo ELSE 0 END) as no_qua_han,
             SUM(hd.soTienConNo) as tong_no,
             MIN(hd.created_at) as ngay_no_dau_tien,
             COUNT(hd.soHoaDon) as so_luong_hd_no
         FROM HOA_DON hd
         JOIN HOP_DONG h ON hd.soHopDong = h.soHopDong
         JOIN KHACH_HANG kh ON h.maKH = kh.maKH
-        WHERE hd.trangThai = 'ConNo' 
+        WHERE (hd.trangThai IN ('ConNo', 'DaThuMotPhan') OR hd.soTienConNo < 0)
           AND hd.loaiHoaDon = 'Chinh'
           AND hd.deleted_at IS NULL
           AND h.deleted_at IS NULL
         GROUP BY kh.maKH, h.soHopDong
+        HAVING tong_no > 0
         ORDER BY tong_no DESC
     ";
     $debtList = $db->query($sqlDetails)->fetchAll(PDO::FETCH_ASSOC);
@@ -126,8 +133,9 @@ include __DIR__ . '/../../includes/admin/admin-header.php';
                                     <tr>
                                         <th class="ps-4">Khách Hàng / SDT</th>
                                         <th>Hợp Đồng</th>
-                                        <th class="text-center">Số Hóa Đơn Nợ</th>
-                                        <th class="text-center">Ngày Phát Sinh</th>
+                                        <th class="text-center">HĐ Nợ</th>
+                                        <th class="text-end">Trong Hạn</th>
+                                        <th class="text-end">Quá Hạn</th>
                                         <th class="text-end">Tổng Nợ (VND)</th>
                                         <th class="text-center pe-4">Hành Động</th>
                                     </tr>
@@ -144,10 +152,13 @@ include __DIR__ . '/../../includes/admin/admin-header.php';
                                                     <span class="badge bg-light text-dark border"><?= htmlspecialchars($debt['soHopDong']) ?></span>
                                                 </td>
                                                 <td class="text-center">
-                                                    <span class="badge rounded-pill bg-danger"><?= $debt['so_luong_hd_no'] ?></span>
+                                                    <span class="badge rounded-pill bg-secondary"><?= $debt['so_luong_hd_no'] ?></span>
                                                 </td>
-                                                <td class="text-center text-muted small">
-                                                    <?= date('d/m/Y', strtotime($debt['ngay_no_dau_tien'])) ?>
+                                                <td class="text-end text-primary">
+                                                    <?= number_format($debt['no_trong_han'], 0) ?> đ
+                                                </td>
+                                                <td class="text-end text-warning fw-bold">
+                                                    <?= number_format($debt['no_qua_han'], 0) ?> đ
                                                 </td>
                                                 <td class="text-end fw-bold text-danger">
                                                     <?= number_format($debt['tong_no'], 0) ?> đ
