@@ -152,12 +152,23 @@ if (!function_exists('is_nav_active')) {
             <hr class="admin-sidebar__divider">
             <span class="admin-sidebar__section-label">Phân tích</span>
 
-            <li class="nav-item mb-2">
+            <li class="nav-item">
                 <a class="nav-link <?= is_nav_active('modules/bao_cao/', $current_script) ?>"
                    href="<?= BASE_URL ?>modules/bao_cao/bao_cao.php">
                     <i class="bi bi-graph-up-arrow me-2"></i> Báo cáo & Thống kê
                 </a>
             </li>
+
+            <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] == ROLE_ADMIN): ?>
+                <hr class="admin-sidebar__divider">
+                <span class="admin-sidebar__section-label">Hệ thống</span>
+                <li class="nav-item mb-2">
+                    <a class="nav-link <?= is_nav_active('modules/dashboard/log_he_thong.php', $current_script) ?>"
+                       href="<?= BASE_URL ?>modules/dashboard/log_he_thong.php">
+                        <i class="bi bi-journal-text me-2"></i> Nhật ký hệ thống
+                    </a>
+                </li>
+            <?php endif; ?>
         </ul>
     </div>
 </div>
